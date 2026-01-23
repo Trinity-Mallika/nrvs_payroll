@@ -506,10 +506,12 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                                         <span id="remaining_c_off_text" class="text-success"></span>
                                                     <?php } ?>
                                                 </div>
+                                                <div>
+                                                    This Month Leave : <?= $total_att_leave ?>
 
+                                                </div>
                                             </div>
                                         </div>
-
                                     </div>
                                 </div>
                             </div>
@@ -567,10 +569,10 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                             <label for="">Present Days</label>
                                             <input type="text" class="form-control form-control-sm" value="<?= $total_working_day ?>" name="present_days" id="present_days" readonly>
                                         </div>
-                                        <div class="col-lg-2 col-12 mb-3">
-                                            <label for="">Advaced Leave</label>
-                                            <input type="text" class="form-control form-control-sm" value="<?= $total_att_leave ?>" name="advance_leave" id="advance_leave" readonly>
-                                        </div>
+                                        <!-- <div class="col-lg-2 col-12 mb-3"> -->
+                                        <!-- <label for="">Advaced Leave</label> -->
+                                        <input type="hidden" class="form-control form-control-sm" value="<?= $total_att_leave ?>" name="advance_leave" id="advance_leave" readonly>
+                                        <!-- </div> -->
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">Paid Holidays</label>
                                             <input type="text" class="form-control form-control-sm" value="<?= $holiday ?>" name="paid_holiday" id="paid_holiday" readonly>
@@ -581,7 +583,7 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                             <input type="text" class="form-control form-control-sm" value="<?= $week_leave ?>" name="weekly_off" id="weekly_off" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
-                                            <label for="">Leave</label>
+                                            <label for="">Monthly Leave</label>
                                             <input type="text" class="form-control form-control-sm" value="<?= $monthly_leave ?>" name="leave_days" id="leave_days" readonly>
                                         </div>
 
@@ -802,7 +804,7 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
 
             if (is_esic == '1') {
                 if (basicRate <= 21000) {
-                    esic_val = round(basicDA * slab.esic_per / 100);
+                    esic_val = Math.ceil(basicDA * slab.esic_per / 100);
                     esic_emp_val = round(basicDA * slab.esic_emp_per / 100);
                 }
             }
@@ -849,7 +851,7 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
             if (is_all_leave_add == '1') {
                 baseTotal = presentDays + holidays + weeklyOff + leaveDays + advance_leave + overtime_days;
             } else {
-                baseTotal = presentDays + holidays + weeklyOff + advance_leave + overtime_days;
+                baseTotal = presentDays + holidays + weeklyOff + leaveDays + overtime_days;
             }
 
             let shortage = daysInMonth - baseTotal;

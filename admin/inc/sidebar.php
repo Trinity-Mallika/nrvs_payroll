@@ -172,7 +172,7 @@
                     <div class="collapse menu-dropdown" id="week_off_module">
                         <ul class="nav nav-sm flex-column">
                             <li class="nav-item">
-                                <a href="c_off_setting.php" class="nav-link">Leave Setting</a>
+                                <a href="c_off_setting.php" class="nav-link">Monthly Leave Setting</a>
                             </li>
                             <li class="nav-item">
                                 <a href="weekly_off_settings.php" class="nav-link"> Weekly Off Setting</a>

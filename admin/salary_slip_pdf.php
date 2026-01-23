@@ -35,6 +35,7 @@ $fields = [
     'conveyance',
     'special_allow',
     'total_salary',
+    'total_net_salary',
     'pf_emp',
     'esic_emp',
     'pf_employer',
@@ -68,7 +69,7 @@ if (isset($_GET[$tblpkey])) {
     $unit_logo = $obj->getvalfield("unit_master", "logo_image", "unit_id='$unit_id'");
 
 
-    $total_deduction = $lpg_ded + $shoes_ded + $other;
+    $total_deduction = $lpg_ded + $shoes_ded + $other + $pf_emp + $esic_emp;
 
     // If $month is like "January", "Feb", etc.
     if (!is_numeric($month)) {
@@ -285,7 +286,7 @@ $html = '<!DOCTYPE html>
             <td colspan="2"><b>GROSS SALARY</b></td>
             <td ><b>' . $revised_salary . '</b></td>
             <td style="border-left:1px solid #000;"><b>NET SALARY</b></td>
-            <td ><b>' . $total_salary . '</b></td>
+            <td ><b>' . $total_net_salary . '</b></td>
         </tr>
         <tr>
             <td colspan="5" style="border: 1px solid black;"><b>Rs. ' . $total_salary_words . '</b></td>

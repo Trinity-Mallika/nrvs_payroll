@@ -19,26 +19,26 @@
         ? (document.getElementById("header-lang-img").src =
             "assets/images/flags/us.svg")
         : "sp" == e
-        ? (document.getElementById("header-lang-img").src =
-            "assets/images/flags/spain.svg")
-        : "gr" == e
-        ? (document.getElementById("header-lang-img").src =
-            "assets/images/flags/germany.svg")
-        : "it" == e
-        ? (document.getElementById("header-lang-img").src =
-            "assets/images/flags/italy.svg")
-        : "ru" == e
-        ? (document.getElementById("header-lang-img").src =
-            "assets/images/flags/russia.svg")
-        : "ch" == e
-        ? (document.getElementById("header-lang-img").src =
-            "assets/images/flags/china.svg")
-        : "fr" == e
-        ? (document.getElementById("header-lang-img").src =
-            "assets/images/flags/french.svg")
-        : "ar" == e &&
-          (document.getElementById("header-lang-img").src =
-            "assets/images/flags/ae.svg"),
+          ? (document.getElementById("header-lang-img").src =
+              "assets/images/flags/spain.svg")
+          : "gr" == e
+            ? (document.getElementById("header-lang-img").src =
+                "assets/images/flags/germany.svg")
+            : "it" == e
+              ? (document.getElementById("header-lang-img").src =
+                  "assets/images/flags/italy.svg")
+              : "ru" == e
+                ? (document.getElementById("header-lang-img").src =
+                    "assets/images/flags/russia.svg")
+                : "ch" == e
+                  ? (document.getElementById("header-lang-img").src =
+                      "assets/images/flags/china.svg")
+                  : "fr" == e
+                    ? (document.getElementById("header-lang-img").src =
+                        "assets/images/flags/french.svg")
+                    : "ar" == e &&
+                      (document.getElementById("header-lang-img").src =
+                        "assets/images/flags/ae.svg"),
       localStorage.setItem("language", e),
       null == (a = localStorage.getItem("language")) && n(t),
       (e = new XMLHttpRequest()).open("GET", "assets/lang/" + a + ".json"),
@@ -62,7 +62,7 @@
       ((e = document.querySelectorAll(".navbar-nav .collapse")),
       Array.from(e).forEach(function (t) {
         var a = new bootstrap.Collapse(t, { toggle: !1 });
-        t.addEventListener("show.bs.collapse", function (e) {
+        (t.addEventListener("show.bs.collapse", function (e) {
           e.stopPropagation();
           var e = t.parentElement.closest(".collapse");
           e
@@ -73,7 +73,8 @@
               }))
             : ((e = (function (e) {
                 for (var t = [], a = e.parentNode.firstChild; a; )
-                  1 === a.nodeType && a !== e && t.push(a), (a = a.nextSibling);
+                  (1 === a.nodeType && a !== e && t.push(a),
+                    (a = a.nextSibling));
                 return t;
               })(t.parentElement)),
               Array.from(e).forEach(function (e) {
@@ -81,13 +82,13 @@
                   e.firstElementChild.setAttribute("aria-expanded", "false");
                 e = e.querySelectorAll("*[id]");
                 Array.from(e).forEach(function (e) {
-                  e.classList.remove("show"),
+                  (e.classList.remove("show"),
                     2 < e.childNodes.length &&
                       ((e = e.querySelectorAll("ul li a")),
                       Array.from(e).forEach(function (e) {
                         e.hasAttribute("aria-expanded") &&
                           e.setAttribute("aria-expanded", "false");
-                      }));
+                      })));
                 });
               }));
         }),
@@ -98,7 +99,7 @@
               (childCollapseInstance =
                 bootstrap.Collapse.getInstance(e)).hide();
             });
-          });
+          }));
       }));
   }
   function i() {
@@ -113,12 +114,12 @@
       ((n = document.createElement("ul")).innerHTML =
         '<a href="#" class="logo"><img src="assets/images/logo-sm.png" alt="" height="22"></a>'),
       Array.from(
-        document.getElementById("navbar-nav").querySelectorAll(".menu-link")
+        document.getElementById("navbar-nav").querySelectorAll(".menu-link"),
       ).forEach(function (e) {
         n.className = "twocolumn-iconview";
         var t = document.createElement("li"),
           a = e;
-        a.querySelectorAll("span").forEach(function (e) {
+        (a.querySelectorAll("span").forEach(function (e) {
           e.classList.add("d-none");
         }),
           e.parentElement.classList.contains("twocolumn-item-show") &&
@@ -127,13 +128,13 @@
           n.appendChild(t),
           a.classList.contains("nav-link") &&
             a.classList.replace("nav-link", "nav-icon"),
-          a.classList.remove("collapsed", "menu-link");
+          a.classList.remove("collapsed", "menu-link"));
       }),
       (e = (e =
         "/" == location.pathname
           ? "index.html"
           : location.pathname.substring(1)).substring(
-        e.lastIndexOf("/") + 1
+        e.lastIndexOf("/") + 1,
       )) &&
         (t = document
           .getElementById("navbar-nav")
@@ -149,28 +150,28 @@
             .closest(".collapse")
             .previousElementSibling.classList.add("active"),
         e.parentElement.parentElement.parentElement.parentElement.closest(
-          ".collapse.menu-dropdown"
+          ".collapse.menu-dropdown",
         )) &&
         (e.parentElement.parentElement.parentElement.parentElement
           .closest(".collapse")
           .classList.add("show"),
         e.parentElement.parentElement.parentElement.parentElement.closest(
-          ".collapse"
+          ".collapse",
         ).previousElementSibling) &&
         e.parentElement.parentElement.parentElement.parentElement
           .closest(".collapse")
           .previousElementSibling.classList.add("active"),
       (document.getElementById("two-column-menu").innerHTML = n.outerHTML),
       Array.from(
-        document.querySelector("#two-column-menu ul").querySelectorAll("li a")
+        document.querySelector("#two-column-menu ul").querySelectorAll("li a"),
       ).forEach(function (a) {
         var n = (n =
           "/" == location.pathname
             ? "index.php"
             : location.pathname.substring(1)).substring(n.lastIndexOf("/") + 1);
-        a.addEventListener("click", function (e) {
+        (a.addEventListener("click", function (e) {
           var t;
-          (n != "/" + a.getAttribute("href") ||
+          ((n != "/" + a.getAttribute("href") ||
             a.getAttribute("data-bs-toggle")) &&
             document.body.classList.contains("twocolumn-panel") &&
             document.body.classList.remove("twocolumn-panel"),
@@ -182,7 +183,7 @@
               (e.target && e.target.matches("i"))) &&
               (null !==
                 document.querySelector(
-                  "#two-column-menu ul .nav-icon.active"
+                  "#two-column-menu ul .nav-icon.active",
                 ) &&
                 document
                   .querySelector("#two-column-menu ul .nav-icon.active")
@@ -200,7 +201,7 @@
               document.getElementById(t)) &&
               document
                 .getElementById(t)
-                .parentElement.classList.add("twocolumn-item-show");
+                .parentElement.classList.add("twocolumn-item-show"));
         }),
           n != "/" + a.getAttribute("href") ||
             a.getAttribute("data-bs-toggle") ||
@@ -209,13 +210,13 @@
               .getElementById("navbar-nav")
               .classList.add("twocolumn-nav-hide"),
             document.querySelector(".hamburger-icon") &&
-              document.querySelector(".hamburger-icon").classList.add("open"));
+              document.querySelector(".hamburger-icon").classList.add("open")));
       }),
       "horizontal" !== document.documentElement.getAttribute("data-layout") &&
         ((t = new (document.getElementById("navbar-nav"))()) &&
           t.getContentElement(),
         (e = new (document.getElementsByClassName(
-          "twocolumn-iconview"
+          "twocolumn-iconview",
         )[0])())) &&
         e.getContentElement());
   }
@@ -227,7 +228,7 @@
         o = e.offsetHeight;
       if (e.offsetParent)
         for (; e.offsetParent; )
-          (t += (e = e.offsetParent).offsetTop), (a += e.offsetLeft);
+          ((t += (e = e.offsetParent).offsetTop), (a += e.offsetLeft));
       return (
         t >= window.pageYOffset &&
         a >= window.pageXOffset &&
@@ -238,7 +239,7 @@
   }
 
   function m() {
-    ("vertical" != document.documentElement.getAttribute("data-layout") &&
+    (("vertical" != document.documentElement.getAttribute("data-layout") &&
       "semibox" != document.documentElement.getAttribute("data-layout")) ||
       ((document.getElementById("two-column-menu").innerHTML = ""),
       document.querySelector(".navbar-menu") &&
@@ -250,7 +251,7 @@
         (document.getElementById("scrollbar").removeAttribute("data-simplebar"),
         document.getElementById("scrollbar").classList.remove("h-100")),
       "horizontal" == document.documentElement.getAttribute("data-layout") &&
-        b();
+        b());
   }
 
   function r() {
@@ -262,7 +263,7 @@
             "twocolumn" == sessionStorage.getItem("data-layout") &&
               (document.documentElement.setAttribute(
                 "data-layout",
-                "twocolumn"
+                "twocolumn",
               ),
               document.getElementById("customizer-layout03") &&
                 document.getElementById("customizer-layout03").click(),
@@ -276,58 +277,64 @@
             document.querySelector(".hamburger-icon") &&
               document.querySelector(".hamburger-icon").classList.add("open"))
           : 1025 <= e
-          ? (document.body.classList.remove("twocolumn-panel"),
-            "twocolumn" == sessionStorage.getItem("data-layout") &&
-              (document.documentElement.setAttribute(
-                "data-layout",
-                "twocolumn"
-              ),
-              document.getElementById("customizer-layout03") &&
-                document.getElementById("customizer-layout03").click(),
-              i(),
-              u(),
-              s()),
-            "vertical" == sessionStorage.getItem("data-layout") &&
-              document.documentElement.setAttribute(
-                "data-sidebar-size",
-                sessionStorage.getItem("data-sidebar-size")
-              ),
-            "semibox" == sessionStorage.getItem("data-layout") &&
-              document.documentElement.setAttribute(
-                "data-sidebar-size",
-                sessionStorage.getItem("data-sidebar-size")
-              ),
-            document.querySelector(".hamburger-icon") &&
-              document
-                .querySelector(".hamburger-icon")
-                .classList.remove("open"))
-          : e <= 767 &&
-            (document.body.classList.remove("vertical-sidebar-enable"),
-            document.body.classList.add("twocolumn-panel"),
-            "twocolumn" == sessionStorage.getItem("data-layout") &&
-              (document.documentElement.setAttribute("data-layout", "vertical"),
-              y("vertical"),
-              s()),
-            "horizontal" != sessionStorage.getItem("data-layout") &&
-              document.documentElement.setAttribute("data-sidebar-size", "lg"),
-            document.querySelector(".hamburger-icon")) &&
-            document.querySelector(".hamburger-icon").classList.add("open"),
+            ? (document.body.classList.remove("twocolumn-panel"),
+              "twocolumn" == sessionStorage.getItem("data-layout") &&
+                (document.documentElement.setAttribute(
+                  "data-layout",
+                  "twocolumn",
+                ),
+                document.getElementById("customizer-layout03") &&
+                  document.getElementById("customizer-layout03").click(),
+                i(),
+                u(),
+                s()),
+              "vertical" == sessionStorage.getItem("data-layout") &&
+                document.documentElement.setAttribute(
+                  "data-sidebar-size",
+                  sessionStorage.getItem("data-sidebar-size"),
+                ),
+              "semibox" == sessionStorage.getItem("data-layout") &&
+                document.documentElement.setAttribute(
+                  "data-sidebar-size",
+                  sessionStorage.getItem("data-sidebar-size"),
+                ),
+              document.querySelector(".hamburger-icon") &&
+                document
+                  .querySelector(".hamburger-icon")
+                  .classList.remove("open"))
+            : e <= 767 &&
+              (document.body.classList.remove("vertical-sidebar-enable"),
+              document.body.classList.add("twocolumn-panel"),
+              "twocolumn" == sessionStorage.getItem("data-layout") &&
+                (document.documentElement.setAttribute(
+                  "data-layout",
+                  "vertical",
+                ),
+                y("vertical"),
+                s()),
+              "horizontal" != sessionStorage.getItem("data-layout") &&
+                document.documentElement.setAttribute(
+                  "data-sidebar-size",
+                  "lg",
+                ),
+              document.querySelector(".hamburger-icon")) &&
+              document.querySelector(".hamburger-icon").classList.add("open"),
         document.querySelectorAll("#navbar-nav > li.nav-item"));
     Array.from(e).forEach(function (e) {
-      e.addEventListener("click", c.bind(this), !1),
-        e.addEventListener("mouseover", c.bind(this), !1);
+      (e.addEventListener("click", c.bind(this), !1),
+        e.addEventListener("mouseover", c.bind(this), !1));
     });
   }
 
   function c(e) {
     if (e.target && e.target.matches("a.nav-link span"))
       if (0 == l(e.target.parentElement.nextElementSibling)) {
-        e.target.parentElement.nextElementSibling.classList.add(
-          "dropdown-custom-right"
+        (e.target.parentElement.nextElementSibling.classList.add(
+          "dropdown-custom-right",
         ),
           e.target.parentElement.parentElement.parentElement.parentElement.classList.add(
-            "dropdown-custom-right"
-          );
+            "dropdown-custom-right",
+          ));
         var t = e.target.parentElement.nextElementSibling;
         Array.from(t.querySelectorAll(".menu-dropdown")).forEach(function (e) {
           e.classList.add("dropdown-custom-right");
@@ -339,15 +346,14 @@
         for (
           var a = document.getElementsByClassName("dropdown-custom-right");
           0 < a.length;
-
         )
           a[0].classList.remove("dropdown-custom-right");
     if (e.target && e.target.matches("a.nav-link"))
       if (0 == l(e.target.nextElementSibling)) {
-        e.target.nextElementSibling.classList.add("dropdown-custom-right"),
+        (e.target.nextElementSibling.classList.add("dropdown-custom-right"),
           e.target.parentElement.parentElement.parentElement.classList.add(
-            "dropdown-custom-right"
-          );
+            "dropdown-custom-right",
+          ));
         t = e.target.nextElementSibling;
         Array.from(t.querySelectorAll(".menu-dropdown")).forEach(function (e) {
           e.classList.add("dropdown-custom-right");
@@ -359,14 +365,13 @@
         for (
           a = document.getElementsByClassName("dropdown-custom-right");
           0 < a.length;
-
         )
           a[0].classList.remove("dropdown-custom-right");
   }
 
   function O() {
     var e = document.documentElement.clientWidth;
-    767 < e &&
+    (767 < e &&
       document.querySelector(".hamburger-icon").classList.toggle("open"),
       "horizontal" === document.documentElement.getAttribute("data-layout") &&
         (document.body.classList.contains("menu")
@@ -379,19 +384,25 @@
               ? document.documentElement.setAttribute("data-sidebar-size", "")
               : document.documentElement.setAttribute(
                   "data-sidebar-size",
-                  "sm"
+                  "sm",
                 ))
           : 1025 < e
-          ? (document.body.classList.remove("vertical-sidebar-enable"),
-            "lg" == document.documentElement.getAttribute("data-sidebar-size")
-              ? document.documentElement.setAttribute("data-sidebar-size", "sm")
-              : document.documentElement.setAttribute(
-                  "data-sidebar-size",
-                  "lg"
-                ))
-          : e <= 767 &&
-            (document.body.classList.add("vertical-sidebar-enable"),
-            document.documentElement.setAttribute("data-sidebar-size", "lg"))),
+            ? (document.body.classList.remove("vertical-sidebar-enable"),
+              "lg" == document.documentElement.getAttribute("data-sidebar-size")
+                ? document.documentElement.setAttribute(
+                    "data-sidebar-size",
+                    "sm",
+                  )
+                : document.documentElement.setAttribute(
+                    "data-sidebar-size",
+                    "lg",
+                  ))
+            : e <= 767 &&
+              (document.body.classList.add("vertical-sidebar-enable"),
+              document.documentElement.setAttribute(
+                "data-sidebar-size",
+                "lg",
+              ))),
       "semibox" === document.documentElement.getAttribute("data-layout") &&
         (767 < e
           ? "show" ==
@@ -402,7 +413,7 @@
             : (document.getElementById("sidebar-visibility-show").click(),
               document.documentElement.setAttribute(
                 "data-sidebar-size",
-                document.documentElement.getAttribute("data-sidebar-size")
+                document.documentElement.getAttribute("data-sidebar-size"),
               ))
           : e <= 767 &&
             (document.body.classList.add("vertical-sidebar-enable"),
@@ -410,12 +421,12 @@
       "twocolumn" == document.documentElement.getAttribute("data-layout") &&
         (document.body.classList.contains("twocolumn-panel")
           ? document.body.classList.remove("twocolumn-panel")
-          : document.body.classList.add("twocolumn-panel"));
+          : document.body.classList.add("twocolumn-panel")));
   }
   function G() {
-    document.addEventListener("DOMContentLoaded", function () {
+    (document.addEventListener("DOMContentLoaded", function () {
       var e = document.getElementsByClassName("code-switcher");
-      Array.from(e).forEach(function (a) {
+      (Array.from(e).forEach(function (a) {
         a.addEventListener("change", function () {
           var e = a.closest(".card"),
             t = e.querySelector(".live-preview"),
@@ -425,7 +436,7 @@
             : (t.classList.remove("d-none"), e.classList.add("d-none"));
         });
       }),
-        feather.replace();
+        feather.replace());
     }),
       window.addEventListener("resize", r),
       r(),
@@ -440,34 +451,34 @@
       }),
       window.addEventListener("load", function () {
         var e;
-        ("twocolumn" == document.documentElement.getAttribute("data-layout")
+        (("twocolumn" == document.documentElement.getAttribute("data-layout")
           ? u
           : g)(),
           (e = document.getElementsByClassName("vertical-overlay")) &&
             Array.from(e).forEach(function (e) {
               e.addEventListener("click", function () {
-                document.body.classList.remove("vertical-sidebar-enable"),
+                (document.body.classList.remove("vertical-sidebar-enable"),
                   "twocolumn" == sessionStorage.getItem("data-layout")
                     ? document.body.classList.add("twocolumn-panel")
                     : document.documentElement.setAttribute(
                         "data-sidebar-size",
-                        sessionStorage.getItem("data-sidebar-size")
-                      );
+                        sessionStorage.getItem("data-sidebar-size"),
+                      ));
               });
             }),
-          E();
+          E());
       }),
       document.getElementById("topnav-hamburger-icon") &&
         document
           .getElementById("topnav-hamburger-icon")
-          .addEventListener("click", O);
+          .addEventListener("click", O));
     var e = sessionStorage.getItem("defaultAttribute"),
       e = JSON.parse(e),
       t = document.documentElement.clientWidth;
     "twocolumn" == e["data-layout"] &&
       t < 767 &&
       Array.from(
-        document.getElementById("two-column-menu").querySelectorAll("li")
+        document.getElementById("two-column-menu").querySelectorAll("li"),
       ).forEach(function (e) {
         e.addEventListener("click", function (e) {
           document.body.classList.remove("twocolumn-panel");
@@ -501,7 +512,7 @@
                   .closest(".collapse.menu-dropdown")
                   .parentElement.classList.add("twocolumn-item-show"),
                 e.parentElement.parentElement.parentElement.parentElement.closest(
-                  ".collapse.menu-dropdown"
+                  ".collapse.menu-dropdown",
                 ) &&
                   ((t =
                     e.parentElement.parentElement.parentElement.parentElement
@@ -553,20 +564,20 @@
           .closest(".collapse")
           .previousElementSibling.classList.add("active"),
       e.parentElement.parentElement.parentElement.parentElement.closest(
-        ".collapse.menu-dropdown"
+        ".collapse.menu-dropdown",
       )) &&
       (e.parentElement.parentElement.parentElement.parentElement
         .closest(".collapse")
         .classList.add("show"),
       e.parentElement.parentElement.parentElement.parentElement.closest(
-        ".collapse"
+        ".collapse",
       ).previousElementSibling) &&
       (e.parentElement.parentElement.parentElement.parentElement
         .closest(".collapse")
         .previousElementSibling.classList.add("active"),
       "horizontal" == document.documentElement.getAttribute("data-layout")) &&
       e.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.closest(
-        ".collapse"
+        ".collapse",
       ) &&
       e.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement
         .closest(".collapse")
@@ -580,7 +591,7 @@
         o = e.offsetHeight;
       if (e.offsetParent)
         for (; e.offsetParent; )
-          (t += (e = e.offsetParent).offsetTop), (a += e.offsetLeft);
+          ((t += (e = e.offsetParent).offsetTop), (a += e.offsetLeft));
       return (
         t >= window.pageYOffset &&
         a >= window.pageXOffset &&
@@ -600,27 +611,27 @@
           var t = +o.getAttribute("data-target"),
             a = +o.innerText,
             n = t / 250;
-          n < 1 && (n = 1),
+          (n < 1 && (n = 1),
             a < t
               ? ((o.innerText = (a + n).toFixed(0)), setTimeout(e, 1))
               : (o.innerText = s(t)),
-            s(o.innerText);
+            s(o.innerText));
         })();
       });
   }
   function b() {
-    (document.getElementById("two-column-menu").innerHTML = ""),
+    ((document.getElementById("two-column-menu").innerHTML = ""),
       document.querySelector(".navbar-menu") &&
         (document.querySelector(".navbar-menu").innerHTML = d),
       document.getElementById("scrollbar").removeAttribute("data-simplebar"),
       document.getElementById("navbar-nav").removeAttribute("data-simplebar"),
-      document.getElementById("scrollbar").classList.remove("h-100");
+      document.getElementById("scrollbar").classList.remove("h-100"));
     var a = M,
       n = document.querySelectorAll("ul.navbar-nav > li.nav-item"),
       o = "",
       s = "";
     Array.from(n).forEach(function (e, t) {
-      t + 1 === a && (s = e),
+      (t + 1 === a && (s = e),
         a < t + 1 && ((o += e.outerHTML), e.remove()),
         t + 1 === n.length &&
           s.insertAdjacentHTML &&
@@ -628,8 +639,8 @@
             "afterend",
             '<li class="nav-item">\t\t\t\t\t\t<a class="nav-link" href="#sidebarMore" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarMore">\t\t\t\t\t\t\t<i class="ri-briefcase-2-line"></i> <span data-key="t-more">More</span>\t\t\t\t\t\t</a>\t\t\t\t\t\t<div class="collapse menu-dropdown" id="sidebarMore"><ul class="nav nav-sm flex-column">' +
               o +
-              "</ul></div>\t\t\t\t\t</li>"
-          );
+              "</ul></div>\t\t\t\t\t</li>",
+          ));
     });
   }
   function y(e) {
@@ -652,49 +663,59 @@
         E(),
         p())
       : "horizontal" == e
-      ? (b(),
-        document.getElementById("theme-settings-offcanvas") &&
-          ((document.getElementById("sidebar-size").style.display = "none"),
-          (document.getElementById("sidebar-view").style.display = "none"),
-          (document.getElementById("sidebar-color").style.display = "none"),
-          document.getElementById("sidebar-img") &&
-            (document.getElementById("sidebar-img").style.display = "none"),
-          (document.getElementById("layout-position").style.display = "block"),
-          (document.getElementById("layout-width").style.display = "block"),
-          (document.getElementById("sidebar-visibility").style.display =
-            "none")),
-        g())
-      : "twocolumn" == e
-      ? (document.getElementById("scrollbar").removeAttribute("data-simplebar"),
-        document.getElementById("scrollbar").classList.remove("h-100"),
-        document.getElementById("theme-settings-offcanvas") &&
-          ((document.getElementById("sidebar-size").style.display = "none"),
-          (document.getElementById("sidebar-view").style.display = "none"),
-          (document.getElementById("sidebar-color").style.display = "block"),
-          document.getElementById("sidebar-img") &&
-            (document.getElementById("sidebar-img").style.display = "block"),
-          (document.getElementById("layout-position").style.display = "none"),
-          (document.getElementById("layout-width").style.display = "none"),
-          (document.getElementById("sidebar-visibility").style.display =
-            "none")))
-      : "semibox" == e &&
-        ((document.getElementById("two-column-menu").innerHTML = ""),
-        document.querySelector(".navbar-menu") &&
-          (document.querySelector(".navbar-menu").innerHTML = d),
-        document.getElementById("theme-settings-offcanvas") &&
-          ((document.getElementById("sidebar-size").style.display = "block"),
-          (document.getElementById("sidebar-view").style.display = "none"),
-          (document.getElementById("sidebar-color").style.display = "block"),
-          document.getElementById("sidebar-img") &&
-            (document.getElementById("sidebar-img").style.display = "block"),
-          (document.getElementById("layout-position").style.display = "block"),
-          (document.getElementById("layout-width").style.display = "none"),
-          (document.getElementById("sidebar-visibility").style.display =
-            "block")),
-        m(),
-        g(),
-        E(),
-        p());
+        ? (b(),
+          document.getElementById("theme-settings-offcanvas") &&
+            ((document.getElementById("sidebar-size").style.display = "none"),
+            (document.getElementById("sidebar-view").style.display = "none"),
+            (document.getElementById("sidebar-color").style.display = "none"),
+            document.getElementById("sidebar-img") &&
+              (document.getElementById("sidebar-img").style.display = "none"),
+            (document.getElementById("layout-position").style.display =
+              "block"),
+            (document.getElementById("layout-width").style.display = "block"),
+            (document.getElementById("sidebar-visibility").style.display =
+              "none")),
+          g())
+        : "twocolumn" == e
+          ? (document
+              .getElementById("scrollbar")
+              .removeAttribute("data-simplebar"),
+            document.getElementById("scrollbar").classList.remove("h-100"),
+            document.getElementById("theme-settings-offcanvas") &&
+              ((document.getElementById("sidebar-size").style.display = "none"),
+              (document.getElementById("sidebar-view").style.display = "none"),
+              (document.getElementById("sidebar-color").style.display =
+                "block"),
+              document.getElementById("sidebar-img") &&
+                (document.getElementById("sidebar-img").style.display =
+                  "block"),
+              (document.getElementById("layout-position").style.display =
+                "none"),
+              (document.getElementById("layout-width").style.display = "none"),
+              (document.getElementById("sidebar-visibility").style.display =
+                "none")))
+          : "semibox" == e &&
+            ((document.getElementById("two-column-menu").innerHTML = ""),
+            document.querySelector(".navbar-menu") &&
+              (document.querySelector(".navbar-menu").innerHTML = d),
+            document.getElementById("theme-settings-offcanvas") &&
+              ((document.getElementById("sidebar-size").style.display =
+                "block"),
+              (document.getElementById("sidebar-view").style.display = "none"),
+              (document.getElementById("sidebar-color").style.display =
+                "block"),
+              document.getElementById("sidebar-img") &&
+                (document.getElementById("sidebar-img").style.display =
+                  "block"),
+              (document.getElementById("layout-position").style.display =
+                "block"),
+              (document.getElementById("layout-width").style.display = "none"),
+              (document.getElementById("sidebar-visibility").style.display =
+                "block")),
+            m(),
+            g(),
+            E(),
+            p());
   }
   function E() {
     document
@@ -704,12 +725,12 @@
         document.documentElement.getAttribute("data-sidebar-size")
           ? document.documentElement.setAttribute(
               "data-sidebar-size",
-              "sm-hover-active"
+              "sm-hover-active",
             )
           : (document.documentElement.getAttribute("data-sidebar-size"),
             document.documentElement.setAttribute(
               "data-sidebar-size",
-              "sm-hover"
+              "sm-hover",
             ));
       });
   }
@@ -717,96 +738,96 @@
     if (e == e) {
       switch (e["data-theme"]) {
         case "default":
-          T("data-theme", "default"),
+          (T("data-theme", "default"),
             sessionStorage.setItem("data-theme", "default"),
-            document.documentElement.setAttribute("data-theme", "default");
+            document.documentElement.setAttribute("data-theme", "default"));
           break;
         case "minimal":
-          T("data-theme", "minimal"),
+          (T("data-theme", "minimal"),
             sessionStorage.setItem("data-theme", "minimal"),
-            document.documentElement.setAttribute("data-theme", "minimal");
+            document.documentElement.setAttribute("data-theme", "minimal"));
           break;
         case "saas":
-          T("data-theme", "saas"),
+          (T("data-theme", "saas"),
             sessionStorage.setItem("data-theme", "saas"),
-            document.documentElement.setAttribute("data-theme", "saas");
+            document.documentElement.setAttribute("data-theme", "saas"));
           break;
         case "corporate":
-          T("data-theme", "corporate"),
+          (T("data-theme", "corporate"),
             sessionStorage.setItem("data-theme", "corporate"),
-            document.documentElement.setAttribute("data-theme", "corporate");
+            document.documentElement.setAttribute("data-theme", "corporate"));
           break;
         case "galaxy":
-          T("data-theme", "galaxy"),
+          (T("data-theme", "galaxy"),
             sessionStorage.setItem("data-theme", "galaxy"),
             document.documentElement.setAttribute("data-theme", "galaxy"),
-            (document.getElementById("body-img").style.display = "block");
+            (document.getElementById("body-img").style.display = "block"));
           break;
         case "material":
-          T("data-theme", "material"),
+          (T("data-theme", "material"),
             sessionStorage.setItem("data-theme", "material"),
-            document.documentElement.setAttribute("data-theme", "material");
+            document.documentElement.setAttribute("data-theme", "material"));
           break;
         case "creative":
-          T("data-theme", "creative"),
+          (T("data-theme", "creative"),
             sessionStorage.setItem("data-theme", "creative"),
-            document.documentElement.setAttribute("data-theme", "creative");
+            document.documentElement.setAttribute("data-theme", "creative"));
           break;
         case "minimal":
-          T("data-theme", "minimal"),
+          (T("data-theme", "minimal"),
             sessionStorage.setItem("data-theme", "minimal"),
-            document.documentElement.setAttribute("data-theme", "minimal");
+            document.documentElement.setAttribute("data-theme", "minimal"));
           break;
         case "modern":
-          T("data-theme", "modern"),
+          (T("data-theme", "modern"),
             sessionStorage.setItem("data-theme", "modern"),
-            document.documentElement.setAttribute("data-theme", "modern");
+            document.documentElement.setAttribute("data-theme", "modern"));
           break;
         case "interactive":
-          T("data-theme", "interactive"),
+          (T("data-theme", "interactive"),
             sessionStorage.setItem("data-theme", "interactive"),
-            document.documentElement.setAttribute("data-theme", "interactive");
+            document.documentElement.setAttribute("data-theme", "interactive"));
           break;
         case "classic":
-          T("data-theme", "classic"),
+          (T("data-theme", "classic"),
             sessionStorage.setItem("data-theme", "classic"),
-            document.documentElement.setAttribute("data-theme", "classic");
+            document.documentElement.setAttribute("data-theme", "classic"));
           break;
         case "vintage":
-          T("data-theme", "vintage"),
+          (T("data-theme", "vintage"),
             sessionStorage.setItem("data-theme", "vintage"),
-            document.documentElement.setAttribute("data-theme", "vintage");
+            document.documentElement.setAttribute("data-theme", "vintage"));
           break;
         default:
-          T("data-theme", "default"),
+          (T("data-theme", "default"),
             sessionStorage.setItem("data-theme", "default"),
-            document.documentElement.setAttribute("data-theme", "default");
+            document.documentElement.setAttribute("data-theme", "default"));
       }
       switch (e["data-layout"]) {
         case "vertical":
-          T("data-layout", "vertical"),
+          (T("data-layout", "vertical"),
             sessionStorage.setItem("data-layout", "vertical"),
             document.documentElement.setAttribute("data-layout", "vertical"),
             y("vertical"),
-            s();
+            s());
           break;
         case "horizontal":
-          T("data-layout", "horizontal"),
+          (T("data-layout", "horizontal"),
             sessionStorage.setItem("data-layout", "horizontal"),
             document.documentElement.setAttribute("data-layout", "horizontal"),
-            y("horizontal");
+            y("horizontal"));
           break;
         case "twocolumn":
-          T("data-layout", "twocolumn"),
+          (T("data-layout", "twocolumn"),
             sessionStorage.setItem("data-layout", "twocolumn"),
             document.documentElement.setAttribute("data-layout", "twocolumn"),
-            y("twocolumn");
+            y("twocolumn"));
           break;
         case "semibox":
-          T("data-layout", "semibox"),
+          (T("data-layout", "semibox"),
             sessionStorage.setItem("data-layout", "semibox"),
             document.documentElement.setAttribute("data-layout", "semibox"),
-            y("semibox");
+            y("semibox"));
           break;
         default:
           "vertical" == sessionStorage.getItem("data-layout") &&
@@ -817,34 +838,40 @@
               y("vertical"),
               s())
             : "horizontal" == sessionStorage.getItem("data-layout")
-            ? (T("data-layout", "horizontal"),
-              sessionStorage.setItem("data-layout", "horizontal"),
-              document.documentElement.setAttribute(
-                "data-layout",
-                "horizontal"
-              ),
-              y("horizontal"))
-            : "twocolumn" == sessionStorage.getItem("data-layout")
-            ? (T("data-layout", "twocolumn"),
-              sessionStorage.setItem("data-layout", "twocolumn"),
-              document.documentElement.setAttribute("data-layout", "twocolumn"),
-              y("twocolumn"))
-            : "semibox" == sessionStorage.getItem("data-layout") &&
-              (T("data-layout", "semibox"),
-              sessionStorage.setItem("data-layout", "semibox"),
-              document.documentElement.setAttribute("data-layout", "semibox"),
-              y("semibox"));
+              ? (T("data-layout", "horizontal"),
+                sessionStorage.setItem("data-layout", "horizontal"),
+                document.documentElement.setAttribute(
+                  "data-layout",
+                  "horizontal",
+                ),
+                y("horizontal"))
+              : "twocolumn" == sessionStorage.getItem("data-layout")
+                ? (T("data-layout", "twocolumn"),
+                  sessionStorage.setItem("data-layout", "twocolumn"),
+                  document.documentElement.setAttribute(
+                    "data-layout",
+                    "twocolumn",
+                  ),
+                  y("twocolumn"))
+                : "semibox" == sessionStorage.getItem("data-layout") &&
+                  (T("data-layout", "semibox"),
+                  sessionStorage.setItem("data-layout", "semibox"),
+                  document.documentElement.setAttribute(
+                    "data-layout",
+                    "semibox",
+                  ),
+                  y("semibox"));
       }
       switch (e["data-topbar"]) {
         case "light":
-          T("data-topbar", "light"),
+          (T("data-topbar", "light"),
             sessionStorage.setItem("data-topbar", "light"),
-            document.documentElement.setAttribute("data-topbar", "light");
+            document.documentElement.setAttribute("data-topbar", "light"));
           break;
         case "dark":
-          T("data-topbar", "dark"),
+          (T("data-topbar", "dark"),
             sessionStorage.setItem("data-topbar", "dark"),
-            document.documentElement.setAttribute("data-topbar", "dark");
+            document.documentElement.setAttribute("data-topbar", "dark"));
           break;
         default:
           "dark" == sessionStorage.getItem("data-topbar")
@@ -861,31 +888,31 @@
             sessionStorage.setItem("data-sidebar-visibility", "hidden"),
             document.documentElement.setAttribute(
               "data-sidebar-visibility",
-              "hidden"
+              "hidden",
             ))
           : (T("data-sidebar-visibility", "show"),
             sessionStorage.setItem("data-sidebar-visibility", "show"),
             document.documentElement.setAttribute(
               "data-sidebar-visibility",
-              "show"
+              "show",
             )),
         e["data-layout-style"])
       ) {
         case "default":
-          T("data-layout-style", "default"),
+          (T("data-layout-style", "default"),
             sessionStorage.setItem("data-layout-style", "default"),
             document.documentElement.setAttribute(
               "data-layout-style",
-              "default"
-            );
+              "default",
+            ));
           break;
         case "detached":
-          T("data-layout-style", "detached"),
+          (T("data-layout-style", "detached"),
             sessionStorage.setItem("data-layout-style", "detached"),
             document.documentElement.setAttribute(
               "data-layout-style",
-              "detached"
-            );
+              "detached",
+            ));
           break;
         default:
           "detached" == sessionStorage.getItem("data-layout-style")
@@ -893,38 +920,38 @@
               sessionStorage.setItem("data-layout-style", "detached"),
               document.documentElement.setAttribute(
                 "data-layout-style",
-                "detached"
+                "detached",
               ))
             : (T("data-layout-style", "default"),
               sessionStorage.setItem("data-layout-style", "default"),
               document.documentElement.setAttribute(
                 "data-layout-style",
-                "default"
+                "default",
               ));
       }
       switch (e["data-sidebar-size"]) {
         case "lg":
-          T("data-sidebar-size", "lg"),
+          (T("data-sidebar-size", "lg"),
             document.documentElement.setAttribute("data-sidebar-size", "lg"),
-            sessionStorage.setItem("data-sidebar-size", "lg");
+            sessionStorage.setItem("data-sidebar-size", "lg"));
           break;
         case "sm":
-          T("data-sidebar-size", "sm"),
+          (T("data-sidebar-size", "sm"),
             document.documentElement.setAttribute("data-sidebar-size", "sm"),
-            sessionStorage.setItem("data-sidebar-size", "sm");
+            sessionStorage.setItem("data-sidebar-size", "sm"));
           break;
         case "md":
-          T("data-sidebar-size", "md"),
+          (T("data-sidebar-size", "md"),
             document.documentElement.setAttribute("data-sidebar-size", "md"),
-            sessionStorage.setItem("data-sidebar-size", "md");
+            sessionStorage.setItem("data-sidebar-size", "md"));
           break;
         case "sm-hover":
-          T("data-sidebar-size", "sm-hover"),
+          (T("data-sidebar-size", "sm-hover"),
             document.documentElement.setAttribute(
               "data-sidebar-size",
-              "sm-hover"
+              "sm-hover",
             ),
-            sessionStorage.setItem("data-sidebar-size", "sm-hover");
+            sessionStorage.setItem("data-sidebar-size", "sm-hover"));
           break;
         default:
           "sm" == sessionStorage.getItem("data-sidebar-size")
@@ -932,30 +959,36 @@
               T("data-sidebar-size", "sm"),
               sessionStorage.setItem("data-sidebar-size", "sm"))
             : "md" == sessionStorage.getItem("data-sidebar-size")
-            ? (document.documentElement.setAttribute("data-sidebar-size", "md"),
-              T("data-sidebar-size", "md"),
-              sessionStorage.setItem("data-sidebar-size", "md"))
-            : "sm-hover" == sessionStorage.getItem("data-sidebar-size")
-            ? (document.documentElement.setAttribute(
-                "data-sidebar-size",
-                "sm-hover"
-              ),
-              T("data-sidebar-size", "sm-hover"),
-              sessionStorage.setItem("data-sidebar-size", "sm-hover"))
-            : (document.documentElement.setAttribute("data-sidebar-size", "lg"),
-              T("data-sidebar-size", "lg"),
-              sessionStorage.setItem("data-sidebar-size", "lg"));
+              ? (document.documentElement.setAttribute(
+                  "data-sidebar-size",
+                  "md",
+                ),
+                T("data-sidebar-size", "md"),
+                sessionStorage.setItem("data-sidebar-size", "md"))
+              : "sm-hover" == sessionStorage.getItem("data-sidebar-size")
+                ? (document.documentElement.setAttribute(
+                    "data-sidebar-size",
+                    "sm-hover",
+                  ),
+                  T("data-sidebar-size", "sm-hover"),
+                  sessionStorage.setItem("data-sidebar-size", "sm-hover"))
+                : (document.documentElement.setAttribute(
+                    "data-sidebar-size",
+                    "lg",
+                  ),
+                  T("data-sidebar-size", "lg"),
+                  sessionStorage.setItem("data-sidebar-size", "lg"));
       }
       switch (e["data-bs-theme"]) {
         case "light":
-          T("data-bs-theme", "light"),
+          (T("data-bs-theme", "light"),
             document.documentElement.setAttribute("data-bs-theme", "light"),
-            sessionStorage.setItem("data-bs-theme", "light");
+            sessionStorage.setItem("data-bs-theme", "light"));
           break;
         case "dark":
-          T("data-bs-theme", "dark"),
+          (T("data-bs-theme", "dark"),
             document.documentElement.setAttribute("data-bs-theme", "dark"),
-            sessionStorage.setItem("data-bs-theme", "dark");
+            sessionStorage.setItem("data-bs-theme", "dark"));
           break;
         default:
           sessionStorage.getItem("data-bs-theme") &&
@@ -969,60 +1002,69 @@
       }
       switch (e["data-layout-width"]) {
         case "fluid":
-          T("data-layout-width", "fluid"),
+          (T("data-layout-width", "fluid"),
             document.documentElement.setAttribute("data-layout-width", "fluid"),
-            sessionStorage.setItem("data-layout-width", "fluid");
+            sessionStorage.setItem("data-layout-width", "fluid"));
           break;
         case "boxed":
-          T("data-layout-width", "boxed"),
+          (T("data-layout-width", "boxed"),
             document.documentElement.setAttribute("data-layout-width", "boxed"),
-            sessionStorage.setItem("data-layout-width", "boxed");
+            sessionStorage.setItem("data-layout-width", "boxed"));
           break;
         default:
           "boxed" == sessionStorage.getItem("data-layout-width")
             ? (sessionStorage.setItem("data-layout-width", "boxed"),
               document.documentElement.setAttribute(
                 "data-layout-width",
-                "boxed"
+                "boxed",
               ),
               T("data-layout-width", "boxed"))
             : (sessionStorage.setItem("data-layout-width", "fluid"),
               document.documentElement.setAttribute(
                 "data-layout-width",
-                "fluid"
+                "fluid",
               ),
               T("data-layout-width", "fluid"));
       }
       switch (e["data-sidebar"]) {
         case "light":
-          T("data-sidebar", "light"),
+          (T("data-sidebar", "light"),
             sessionStorage.setItem("data-sidebar", "light"),
-            document.documentElement.setAttribute("data-sidebar", "light");
+            document.documentElement.setAttribute("data-sidebar", "light"));
           break;
         case "dark":
-          T("data-sidebar", "dark"),
+          (T("data-sidebar", "dark"),
             sessionStorage.setItem("data-sidebar", "dark"),
-            document.documentElement.setAttribute("data-sidebar", "dark");
+            document.documentElement.setAttribute("data-sidebar", "dark"));
           break;
         case "gradient":
-          T("data-sidebar", "gradient"),
+          (T("data-sidebar", "gradient"),
             sessionStorage.setItem("data-sidebar", "gradient"),
-            document.documentElement.setAttribute("data-sidebar", "gradient");
+            document.documentElement.setAttribute("data-sidebar", "gradient"));
           break;
         case "gradient-2":
-          T("data-sidebar", "gradient-2"),
+          (T("data-sidebar", "gradient-2"),
             sessionStorage.setItem("data-sidebar", "gradient-2"),
-            document.documentElement.setAttribute("data-sidebar", "gradient-2");
+            document.documentElement.setAttribute(
+              "data-sidebar",
+              "gradient-2",
+            ));
           break;
         case "gradient-3":
-          T("data-sidebar", "gradient-3"),
+          (T("data-sidebar", "gradient-3"),
             sessionStorage.setItem("data-sidebar", "gradient-3"),
-            document.documentElement.setAttribute("data-sidebar", "gradient-3");
+            document.documentElement.setAttribute(
+              "data-sidebar",
+              "gradient-3",
+            ));
           break;
         case "gradient-4":
-          T("data-sidebar", "gradient-4"),
+          (T("data-sidebar", "gradient-4"),
             sessionStorage.setItem("data-sidebar", "gradient-4"),
-            document.documentElement.setAttribute("data-sidebar", "gradient-4");
+            document.documentElement.setAttribute(
+              "data-sidebar",
+              "gradient-4",
+            ));
           break;
         default:
           sessionStorage.getItem("data-sidebar") &&
@@ -1031,72 +1073,78 @@
               T("data-sidebar", "light"),
               document.documentElement.setAttribute("data-sidebar", "light"))
             : "dark" == sessionStorage.getItem("data-sidebar")
-            ? (sessionStorage.setItem("data-sidebar", "dark"),
-              T("data-sidebar", "dark"),
-              document.documentElement.setAttribute("data-sidebar", "dark"))
-            : "gradient" == sessionStorage.getItem("data-sidebar")
-            ? (sessionStorage.setItem("data-sidebar", "gradient"),
-              T("data-sidebar", "gradient"),
-              document.documentElement.setAttribute("data-sidebar", "gradient"))
-            : "gradient-2" == sessionStorage.getItem("data-sidebar")
-            ? (sessionStorage.setItem("data-sidebar", "gradient-2"),
-              T("data-sidebar", "gradient-2"),
-              document.documentElement.setAttribute(
-                "data-sidebar",
-                "gradient-2"
-              ))
-            : "gradient-3" == sessionStorage.getItem("data-sidebar")
-            ? (sessionStorage.setItem("data-sidebar", "gradient-3"),
-              T("data-sidebar", "gradient-3"),
-              document.documentElement.setAttribute(
-                "data-sidebar",
-                "gradient-3"
-              ))
-            : "gradient-4" == sessionStorage.getItem("data-sidebar") &&
-              (sessionStorage.setItem("data-sidebar", "gradient-4"),
-              T("data-sidebar", "gradient-4"),
-              document.documentElement.setAttribute(
-                "data-sidebar",
-                "gradient-4"
-              ));
+              ? (sessionStorage.setItem("data-sidebar", "dark"),
+                T("data-sidebar", "dark"),
+                document.documentElement.setAttribute("data-sidebar", "dark"))
+              : "gradient" == sessionStorage.getItem("data-sidebar")
+                ? (sessionStorage.setItem("data-sidebar", "gradient"),
+                  T("data-sidebar", "gradient"),
+                  document.documentElement.setAttribute(
+                    "data-sidebar",
+                    "gradient",
+                  ))
+                : "gradient-2" == sessionStorage.getItem("data-sidebar")
+                  ? (sessionStorage.setItem("data-sidebar", "gradient-2"),
+                    T("data-sidebar", "gradient-2"),
+                    document.documentElement.setAttribute(
+                      "data-sidebar",
+                      "gradient-2",
+                    ))
+                  : "gradient-3" == sessionStorage.getItem("data-sidebar")
+                    ? (sessionStorage.setItem("data-sidebar", "gradient-3"),
+                      T("data-sidebar", "gradient-3"),
+                      document.documentElement.setAttribute(
+                        "data-sidebar",
+                        "gradient-3",
+                      ))
+                    : "gradient-4" == sessionStorage.getItem("data-sidebar") &&
+                      (sessionStorage.setItem("data-sidebar", "gradient-4"),
+                      T("data-sidebar", "gradient-4"),
+                      document.documentElement.setAttribute(
+                        "data-sidebar",
+                        "gradient-4",
+                      ));
       }
       switch (e["data-sidebar-image"]) {
         case "none":
-          T("data-sidebar-image", "none"),
+          (T("data-sidebar-image", "none"),
             sessionStorage.setItem("data-sidebar-image", "none"),
-            document.documentElement.setAttribute("data-sidebar-image", "none");
+            document.documentElement.setAttribute(
+              "data-sidebar-image",
+              "none",
+            ));
           break;
         case "img-1":
-          T("data-sidebar-image", "img-1"),
+          (T("data-sidebar-image", "img-1"),
             sessionStorage.setItem("data-sidebar-image", "img-1"),
             document.documentElement.setAttribute(
               "data-sidebar-image",
-              "img-1"
-            );
+              "img-1",
+            ));
           break;
         case "img-2":
-          T("data-sidebar-image", "img-2"),
+          (T("data-sidebar-image", "img-2"),
             sessionStorage.setItem("data-sidebar-image", "img-2"),
             document.documentElement.setAttribute(
               "data-sidebar-image",
-              "img-2"
-            );
+              "img-2",
+            ));
           break;
         case "img-3":
-          T("data-sidebar-image", "img-3"),
+          (T("data-sidebar-image", "img-3"),
             sessionStorage.setItem("data-sidebar-image", "img-3"),
             document.documentElement.setAttribute(
               "data-sidebar-image",
-              "img-3"
-            );
+              "img-3",
+            ));
           break;
         case "img-4":
-          T("data-sidebar-image", "img-4"),
+          (T("data-sidebar-image", "img-4"),
             sessionStorage.setItem("data-sidebar-image", "img-4"),
             document.documentElement.setAttribute(
               "data-sidebar-image",
-              "img-4"
-            );
+              "img-4",
+            ));
           break;
         default:
           sessionStorage.getItem("data-sidebar-image") &&
@@ -1105,53 +1153,53 @@
               T("data-sidebar-image", "none"),
               document.documentElement.setAttribute(
                 "data-sidebar-image",
-                "none"
+                "none",
               ))
             : "img-1" == sessionStorage.getItem("data-sidebar-image")
-            ? (sessionStorage.setItem("data-sidebar-image", "img-1"),
-              T("data-sidebar-image", "img-1"),
-              document.documentElement.setAttribute(
-                "data-sidebar-image",
-                "img-2"
-              ))
-            : "img-2" == sessionStorage.getItem("data-sidebar-image")
-            ? (sessionStorage.setItem("data-sidebar-image", "img-2"),
-              T("data-sidebar-image", "img-2"),
-              document.documentElement.setAttribute(
-                "data-sidebar-image",
-                "img-2"
-              ))
-            : "img-3" == sessionStorage.getItem("data-sidebar-image")
-            ? (sessionStorage.setItem("data-sidebar-image", "img-3"),
-              T("data-sidebar-image", "img-3"),
-              document.documentElement.setAttribute(
-                "data-sidebar-image",
-                "img-3"
-              ))
-            : "img-4" == sessionStorage.getItem("data-sidebar-image") &&
-              (sessionStorage.setItem("data-sidebar-image", "img-4"),
-              T("data-sidebar-image", "img-4"),
-              document.documentElement.setAttribute(
-                "data-sidebar-image",
-                "img-4"
-              ));
+              ? (sessionStorage.setItem("data-sidebar-image", "img-1"),
+                T("data-sidebar-image", "img-1"),
+                document.documentElement.setAttribute(
+                  "data-sidebar-image",
+                  "img-2",
+                ))
+              : "img-2" == sessionStorage.getItem("data-sidebar-image")
+                ? (sessionStorage.setItem("data-sidebar-image", "img-2"),
+                  T("data-sidebar-image", "img-2"),
+                  document.documentElement.setAttribute(
+                    "data-sidebar-image",
+                    "img-2",
+                  ))
+                : "img-3" == sessionStorage.getItem("data-sidebar-image")
+                  ? (sessionStorage.setItem("data-sidebar-image", "img-3"),
+                    T("data-sidebar-image", "img-3"),
+                    document.documentElement.setAttribute(
+                      "data-sidebar-image",
+                      "img-3",
+                    ))
+                  : "img-4" == sessionStorage.getItem("data-sidebar-image") &&
+                    (sessionStorage.setItem("data-sidebar-image", "img-4"),
+                    T("data-sidebar-image", "img-4"),
+                    document.documentElement.setAttribute(
+                      "data-sidebar-image",
+                      "img-4",
+                    ));
       }
       switch (e["data-layout-position"]) {
         case "fixed":
-          T("data-layout-position", "fixed"),
+          (T("data-layout-position", "fixed"),
             sessionStorage.setItem("data-layout-position", "fixed"),
             document.documentElement.setAttribute(
               "data-layout-position",
-              "fixed"
-            );
+              "fixed",
+            ));
           break;
         case "scrollable":
-          T("data-layout-position", "scrollable"),
+          (T("data-layout-position", "scrollable"),
             sessionStorage.setItem("data-layout-position", "scrollable"),
             document.documentElement.setAttribute(
               "data-layout-position",
-              "scrollable"
-            );
+              "scrollable",
+            ));
           break;
         default:
           sessionStorage.getItem("data-layout-position") &&
@@ -1160,29 +1208,29 @@
               sessionStorage.setItem("data-layout-position", "scrollable"),
               document.documentElement.setAttribute(
                 "data-layout-position",
-                "scrollable"
+                "scrollable",
               ))
             : (T("data-layout-position", "fixed"),
               sessionStorage.setItem("data-layout-position", "fixed"),
               document.documentElement.setAttribute(
                 "data-layout-position",
-                "fixed"
+                "fixed",
               ));
       }
       switch (e["data-preloader"]) {
         case "disable":
-          T("data-preloader", "disable"),
+          (T("data-preloader", "disable"),
             sessionStorage.setItem("data-preloader", "disable"),
-            document.documentElement.setAttribute("data-preloader", "disable");
+            document.documentElement.setAttribute("data-preloader", "disable"));
           break;
         case "enable":
-          T("data-preloader", "enable"),
+          (T("data-preloader", "enable"),
             sessionStorage.setItem("data-preloader", "enable"),
             document.documentElement.setAttribute("data-preloader", "enable"),
             (t = document.getElementById("preloader")) &&
               window.addEventListener("load", function () {
-                (t.style.opacity = "0"), (t.style.visibility = "hidden");
-              });
+                ((t.style.opacity = "0"), (t.style.visibility = "hidden"));
+              }));
           break;
         default:
           var t;
@@ -1192,78 +1240,84 @@
               sessionStorage.setItem("data-preloader", "disable"),
               document.documentElement.setAttribute(
                 "data-preloader",
-                "disable"
+                "disable",
               ))
             : "enable" == sessionStorage.getItem("data-preloader")
-            ? (T("data-preloader", "enable"),
-              sessionStorage.setItem("data-preloader", "enable"),
-              document.documentElement.setAttribute("data-preloader", "enable"),
-              (t = document.getElementById("preloader")) &&
-                window.addEventListener("load", function () {
-                  (t.style.opacity = "0"), (t.style.visibility = "hidden");
-                }))
-            : document.documentElement.setAttribute(
-                "data-preloader",
-                "disable"
-              );
+              ? (T("data-preloader", "enable"),
+                sessionStorage.setItem("data-preloader", "enable"),
+                document.documentElement.setAttribute(
+                  "data-preloader",
+                  "enable",
+                ),
+                (t = document.getElementById("preloader")) &&
+                  window.addEventListener("load", function () {
+                    ((t.style.opacity = "0"), (t.style.visibility = "hidden"));
+                  }))
+              : document.documentElement.setAttribute(
+                  "data-preloader",
+                  "disable",
+                );
       }
       switch (e["data-theme-colors"]) {
         case "default":
-          T("data-theme-colors", "default"),
+          (T("data-theme-colors", "default"),
             sessionStorage.setItem("data-theme-colors", "default"),
             document.documentElement.setAttribute(
               "data-theme-colors",
-              "default"
-            );
+              "default",
+            ));
           break;
         case "green":
-          T("data-theme-colors", "green"),
+          (T("data-theme-colors", "green"),
             sessionStorage.setItem("data-theme-colors", "green"),
-            document.documentElement.setAttribute("data-theme-colors", "green");
+            document.documentElement.setAttribute(
+              "data-theme-colors",
+              "green",
+            ));
           break;
         case "purple":
-          T("data-theme-colors", "purple"),
+          (T("data-theme-colors", "purple"),
             sessionStorage.setItem("data-theme-colors", "purple"),
             document.documentElement.setAttribute(
               "data-theme-colors",
-              "purple"
-            );
+              "purple",
+            ));
           break;
         case "blue":
-          T("data-theme-colors", "blue"),
+          (T("data-theme-colors", "blue"),
             sessionStorage.setItem("data-theme-colors", "blue"),
-            document.documentElement.setAttribute("data-theme-colors", "blue");
+            document.documentElement.setAttribute("data-theme-colors", "blue"));
           break;
         default:
-          T("data-theme-colors", "default"),
+          (T("data-theme-colors", "default"),
             sessionStorage.setItem("data-theme-colors", "default"),
             document.documentElement.setAttribute(
               "data-theme-colors",
-              "default"
-            );
+              "default",
+            ));
       }
       switch (e["data-body-image"]) {
         case "img-1":
-          T("data-body-image", "img-1"),
+          (T("data-body-image", "img-1"),
             sessionStorage.setItem("data-body-image", "img-1"),
             document.documentElement.setAttribute("data-body-image", "img-1"),
             document.getElementById("theme-settings-offcanvas") &&
-              document.documentElement.removeAttribute("data-sidebar-image");
+              document.documentElement.removeAttribute("data-sidebar-image"));
           break;
         case "img-2":
-          T("data-body-image", "img-2"),
+          (T("data-body-image", "img-2"),
             sessionStorage.setItem("data-body-image", "img-2"),
-            document.documentElement.setAttribute("data-body-image", "img-2");
+            document.documentElement.setAttribute("data-body-image", "img-2"));
           break;
         case "img-3":
-          T("data-body-image", "img-3"),
+          (T("data-body-image", "img-3"),
             sessionStorage.setItem("data-body-image", "img-3"),
-            document.documentElement.setAttribute("data-body-image", "img-3");
+            document.documentElement.setAttribute("data-body-image", "img-3"));
           break;
         case "none":
-          T("data-body-image", "none"),
+          (T("data-body-image", "none"),
             sessionStorage.setItem("data-body-image", "none"),
-            document.documentElement.setAttribute("data-body-image", "none");
+            document.documentElement.setAttribute("data-body-image", "none"));
           break;
         default:
           sessionStorage.getItem("data-body-image") &&
@@ -1277,16 +1331,25 @@
                   "none"),
                 document.documentElement.removeAttribute("data-sidebar-image")))
             : "img-2" == sessionStorage.getItem("data-body-image")
-            ? (sessionStorage.setItem("data-body-image", "img-2"),
-              T("data-body-image", "img-2"),
-              document.documentElement.setAttribute("data-body-image", "img-2"))
-            : "img-3" == sessionStorage.getItem("data-body-image")
-            ? (sessionStorage.setItem("data-body-image", "img-3"),
-              T("data-body-image", "img-3"),
-              document.documentElement.setAttribute("data-body-image", "img-3"))
-            : (sessionStorage.setItem("data-body-image", "none"),
-              T("data-body-image", "none"),
-              document.documentElement.setAttribute("data-body-image", "none"));
+              ? (sessionStorage.setItem("data-body-image", "img-2"),
+                T("data-body-image", "img-2"),
+                document.documentElement.setAttribute(
+                  "data-body-image",
+                  "img-2",
+                ))
+              : "img-3" == sessionStorage.getItem("data-body-image")
+                ? (sessionStorage.setItem("data-body-image", "img-3"),
+                  T("data-body-image", "img-3"),
+                  document.documentElement.setAttribute(
+                    "data-body-image",
+                    "img-3",
+                  ))
+                : (sessionStorage.setItem("data-body-image", "none"),
+                  T("data-body-image", "none"),
+                  document.documentElement.setAttribute(
+                    "data-body-image",
+                    "none",
+                  ));
       }
     }
   }
@@ -1322,17 +1385,17 @@
     q,
     x = new Event("resize");
   function T(n, e) {
-    Array.from(document.querySelectorAll("input[name=" + n + "]")).forEach(
+    (Array.from(document.querySelectorAll("input[name=" + n + "]")).forEach(
       function (a) {
-        e == a.value ? (a.checked = !0) : (a.checked = !1),
+        (e == a.value ? (a.checked = !0) : (a.checked = !1),
           a.addEventListener("change", function () {
-            document.documentElement.setAttribute(n, a.value),
+            (document.documentElement.setAttribute(n, a.value),
               sessionStorage.setItem(n, a.value),
               o(),
               "data-layout-width" == n && "boxed" == a.value
                 ? (document.documentElement.setAttribute(
                     "data-sidebar-size",
-                    "sm-hover"
+                    "sm-hover",
                   ),
                   sessionStorage.setItem("data-sidebar-size", "sm-hover"),
                   (document.getElementById("sidebar-size-small-hover").checked =
@@ -1341,7 +1404,7 @@
                   "fluid" == a.value &&
                   (document.documentElement.setAttribute(
                     "data-sidebar-size",
-                    "lg"
+                    "lg",
                   ),
                   sessionStorage.setItem("data-sidebar-size", "lg"),
                   (document.getElementById("sidebar-size-default").checked =
@@ -1350,57 +1413,58 @@
                 ("vertical" == a.value
                   ? (y("vertical"), s(), feather.replace())
                   : "horizontal" == a.value
-                  ? (document.getElementById("sidebarimg-none") &&
-                      document.getElementById("sidebarimg-none").click(),
-                    y("horizontal"),
-                    feather.replace())
-                  : "twocolumn" == a.value
-                  ? (y("twocolumn"),
-                    document.documentElement.setAttribute(
-                      "data-layout-width",
-                      "fluid"
-                    ),
-                    document.getElementById("layout-width-fluid").click(),
-                    i(),
-                    u(),
-                    s(),
-                    feather.replace())
-                  : "semibox" == a.value &&
-                    (y("semibox"),
-                    document.documentElement.setAttribute(
-                      "data-layout-width",
-                      "fluid"
-                    ),
-                    document.getElementById("layout-width-fluid").click(),
-                    document.documentElement.setAttribute(
-                      "data-layout-style",
-                      "default"
-                    ),
-                    document.getElementById("sidebar-view-default").click(),
-                    s(),
-                    feather.replace()));
+                    ? (document.getElementById("sidebarimg-none") &&
+                        document.getElementById("sidebarimg-none").click(),
+                      y("horizontal"),
+                      feather.replace())
+                    : "twocolumn" == a.value
+                      ? (y("twocolumn"),
+                        document.documentElement.setAttribute(
+                          "data-layout-width",
+                          "fluid",
+                        ),
+                        document.getElementById("layout-width-fluid").click(),
+                        i(),
+                        u(),
+                        s(),
+                        feather.replace())
+                      : "semibox" == a.value &&
+                        (y("semibox"),
+                        document.documentElement.setAttribute(
+                          "data-layout-width",
+                          "fluid",
+                        ),
+                        document.getElementById("layout-width-fluid").click(),
+                        document.documentElement.setAttribute(
+                          "data-layout-style",
+                          "default",
+                        ),
+                        document.getElementById("sidebar-view-default").click(),
+                        s(),
+                        feather.replace())));
             var e,
               t = "block";
-            "semibox" == document.documentElement.getAttribute("data-layout") &&
+            ("semibox" ==
+              document.documentElement.getAttribute("data-layout") &&
               ("hidden" ==
               document.documentElement.getAttribute("data-sidebar-visibility")
                 ? (document.documentElement.removeAttribute("data-sidebar"),
                   document.documentElement.removeAttribute(
-                    "data-sidebar-image"
+                    "data-sidebar-image",
                   ),
                   document.documentElement.removeAttribute("data-sidebar-size"),
                   (t = "none"))
                 : (document.documentElement.setAttribute(
                     "data-sidebar",
-                    sessionStorage.getItem("data-sidebar")
+                    sessionStorage.getItem("data-sidebar"),
                   ),
                   document.documentElement.setAttribute(
                     "data-sidebar-image",
-                    sessionStorage.getItem("data-sidebar-image")
+                    sessionStorage.getItem("data-sidebar-image"),
                   ),
                   document.documentElement.setAttribute(
                     "data-sidebar-size",
-                    sessionStorage.getItem("data-sidebar-size")
+                    sessionStorage.getItem("data-sidebar-size"),
                   ))),
               (document.getElementById("sidebar-size").style.display = t),
               (document.getElementById("sidebar-color").style.display = t),
@@ -1409,18 +1473,19 @@
               "data-preloader" == n && "enable" == a.value
                 ? (document.documentElement.setAttribute(
                     "data-preloader",
-                    "enable"
+                    "enable",
                   ),
                   (e = document.getElementById("preloader")) &&
                     setTimeout(function () {
-                      (e.style.opacity = "0"), (e.style.visibility = "hidden");
+                      ((e.style.opacity = "0"),
+                        (e.style.visibility = "hidden"));
                     }, 1e3),
                   document.getElementById("customizerclose-btn").click())
                 : "data-preloader" == n &&
                   "disable" == a.value &&
                   (document.documentElement.setAttribute(
                     "data-preloader",
-                    "disable"
+                    "disable",
                   ),
                   document.getElementById("customizerclose-btn").click()),
               ("data-bs-theme" != n &&
@@ -1434,47 +1499,47 @@
                 "galaxy" === a.value
                   ? (document.documentElement.setAttribute(
                       "data-sidebar",
-                      "dark"
+                      "dark",
                     ),
                     document.documentElement.setAttribute(
                       "data-bs-theme",
-                      "dark"
+                      "dark",
                     ))
                   : (document.documentElement.setAttribute(
                       "data-sidebar",
-                      sessionStorage.getItem("data-sidebar")
+                      sessionStorage.getItem("data-sidebar"),
                     ),
                     document.documentElement.setAttribute(
                       "data-bs-theme",
-                      sessionStorage.getItem("data-bs-theme")
+                      sessionStorage.getItem("data-bs-theme"),
                     ))),
               ("data-theme-colors" != n && "data-theme" != n) ||
                 setTimeout(() => {
                   window.dispatchEvent(x);
-                }, 200);
-          });
-      }
+                }, 200));
+          }));
+      },
     ),
       document.getElementById("collapseBgGradient") &&
         Array.from(
-          document.querySelectorAll("#collapseBgGradient .form-check input")
+          document.querySelectorAll("#collapseBgGradient .form-check input"),
         ).forEach(function (e) {
           var t = document.getElementById("collapseBgGradient");
-          1 == e.checked && new bootstrap.Collapse(t, { toggle: !1 }).show(),
+          (1 == e.checked && new bootstrap.Collapse(t, { toggle: !1 }).show(),
             document.querySelector("[data-bs-target='#collapseBgGradient']") &&
               document
                 .querySelector("[data-bs-target='#collapseBgGradient']")
                 .addEventListener("click", function (e) {
                   document.getElementById("sidebar-color-gradient").click();
-                });
+                }));
         }),
       document.querySelectorAll(
-        "[data-bs-target='#collapseBgGradient.show']"
+        "[data-bs-target='#collapseBgGradient.show']",
       ) &&
         Array.from(
           document.querySelectorAll(
-            "[data-bs-target='#collapseBgGradient.show']"
-          )
+            "[data-bs-target='#collapseBgGradient.show']",
+          ),
         ).forEach(function (e) {
           e.addEventListener("click", function () {
             var e = document.getElementById("collapseBgGradient");
@@ -1485,7 +1550,7 @@
         function (e) {
           document.querySelector("[data-bs-target='#collapseBgGradient']") &&
             (document.querySelector(
-              "#collapseBgGradient .form-check input:checked"
+              "#collapseBgGradient .form-check input:checked",
             )
               ? document
                   .querySelector("[data-bs-target='#collapseBgGradient']")
@@ -1495,7 +1560,7 @@
                   .classList.remove("active"),
             e.addEventListener("change", function () {
               document.querySelector(
-                "#collapseBgGradient .form-check input:checked"
+                "#collapseBgGradient .form-check input:checked",
               )
                 ? document
                     .querySelector("[data-bs-target='#collapseBgGradient']")
@@ -1504,12 +1569,12 @@
                     .querySelector("[data-bs-target='#collapseBgGradient']")
                     .classList.remove("active");
             }));
-        }
-      );
+        },
+      ));
   }
   function C(e, t, a, n) {
     var o = document.getElementById(a);
-    n.setAttribute(e, t), o && document.getElementById(a).click();
+    (n.setAttribute(e, t), o && document.getElementById(a).click());
   }
   function N() {
     document.webkitIsFullScreen ||
@@ -1519,18 +1584,18 @@
   }
   function F() {
     var t = 0;
-    Array.from(document.getElementsByClassName("cart-item-price")).forEach(
+    (Array.from(document.getElementsByClassName("cart-item-price")).forEach(
       function (e) {
         t += parseFloat(e.innerHTML);
-      }
+      },
     ),
       document.getElementById("cart-item-total") &&
         (document.getElementById("cart-item-total").innerHTML =
-          "$" + t.toFixed(2));
+          "$" + t.toFixed(2)));
   }
   function H() {
     Array.from(
-      document.querySelectorAll("#notificationItemsTabContent .tab-pane")
+      document.querySelectorAll("#notificationItemsTabContent .tab-pane"),
     ).forEach(function (e) {
       0 < e.querySelectorAll(".notification-item").length
         ? e.querySelector(".view-all") &&
@@ -1555,7 +1620,7 @@
   //       e.getContentElement(),
   //     clearTimeout(q));
   // }
-  sessionStorage.getItem("defaultAttribute")
+  (sessionStorage.getItem("defaultAttribute")
     ? (((h = {})["data-layout"] = sessionStorage.getItem("data-layout")),
       (h["data-sidebar-size"] = sessionStorage.getItem("data-sidebar-size")),
       (h["data-bs-theme"] = sessionStorage.getItem("data-bs-theme")),
@@ -1563,7 +1628,7 @@
       (h["data-sidebar"] = sessionStorage.getItem("data-sidebar")),
       (h["data-sidebar-image"] = sessionStorage.getItem("data-sidebar-image")),
       (h["data-layout-position"] = sessionStorage.getItem(
-        "data-layout-position"
+        "data-layout-position",
       )),
       (h["data-layout-style"] = sessionStorage.getItem("data-layout-style")),
       (h["data-topbar"] = sessionStorage.getItem("data-topbar")),
@@ -1586,7 +1651,7 @@
       sessionStorage.setItem("defaultAttribute", JSON.stringify(h)),
       e(h),
       (L = document.querySelector(
-        '.btn[data-bs-target="#theme-settings-offcanvas"]'
+        '.btn[data-bs-target="#theme-settings-offcanvas"]',
       )) && L.click()),
     document
       .getElementById("sidebarUserProfile")
@@ -1615,7 +1680,7 @@
               var t,
                 a,
                 n = "";
-              e.querySelector("h6")
+              (e.querySelector("h6")
                 ? ((t = e
                     .getElementsByTagName("span")[0]
                     .innerText.toLowerCase()),
@@ -1628,12 +1693,12 @@
                   (n = e
                     .getElementsByTagName("span")[0]
                     .innerText.toLowerCase()),
-                n && (e.style.display = n.includes(o) ? "block" : "none");
+                n && (e.style.display = n.includes(o) ? "block" : "none"));
             }))
           : (v.classList.remove("show"), f.classList.add("d-none"));
       }),
       f.addEventListener("click", function () {
-        (I.value = ""), v.classList.remove("show"), f.classList.add("d-none");
+        ((I.value = ""), v.classList.remove("show"), f.classList.add("d-none"));
       }),
       document.body.addEventListener("click", function (e) {
         "search-options" !== e.target.getAttribute("id") &&
@@ -1656,7 +1721,7 @@
           : (w.classList.remove("show"), S.classList.add("d-none"));
       }),
       S.addEventListener("click", function () {
-        (A.value = ""), w.classList.remove("show"), S.classList.add("d-none");
+        ((A.value = ""), w.classList.remove("show"), S.classList.add("d-none"));
       }),
       document.body.addEventListener("click", function (e) {
         "search-options" !== e.target.getAttribute("id") &&
@@ -1664,7 +1729,7 @@
       })),
     (L = document.querySelector('[data-toggle="fullscreen"]')) &&
       L.addEventListener("click", function (e) {
-        e.preventDefault(),
+        (e.preventDefault(),
           document.body.classList.toggle("fullscreen-enable"),
           document.fullscreenElement ||
           document.mozFullScreenElement ||
@@ -1672,17 +1737,17 @@
             ? document.cancelFullScreen
               ? document.cancelFullScreen()
               : document.mozCancelFullScreen
-              ? document.mozCancelFullScreen()
-              : document.webkitCancelFullScreen &&
-                document.webkitCancelFullScreen()
+                ? document.mozCancelFullScreen()
+                : document.webkitCancelFullScreen &&
+                  document.webkitCancelFullScreen()
             : document.documentElement.requestFullscreen
-            ? document.documentElement.requestFullscreen()
-            : document.documentElement.mozRequestFullScreen
-            ? document.documentElement.mozRequestFullScreen()
-            : document.documentElement.webkitRequestFullscreen &&
-              document.documentElement.webkitRequestFullscreen(
-                Element.ALLOW_KEYBOARD_INPUT
-              );
+              ? document.documentElement.requestFullscreen()
+              : document.documentElement.mozRequestFullScreen
+                ? document.documentElement.mozRequestFullScreen()
+                : document.documentElement.webkitRequestFullscreen &&
+                  document.documentElement.webkitRequestFullscreen(
+                    Element.ALLOW_KEYBOARD_INPUT,
+                  ));
       }),
     document.addEventListener("fullscreenchange", N),
     document.addEventListener("webkitfullscreenchange", N),
@@ -1691,11 +1756,11 @@
     (z = document.querySelectorAll(".light-dark-mode")) &&
       z.length &&
       z[0].addEventListener("click", function (e) {
-        k.hasAttribute("data-bs-theme") &&
+        (k.hasAttribute("data-bs-theme") &&
         "dark" == k.getAttribute("data-bs-theme")
           ? C("data-bs-theme", "light", "layout-mode-light", k)
           : C("data-bs-theme", "dark", "layout-mode-dark", k),
-          window.dispatchEvent(x);
+          window.dispatchEvent(x));
       }),
     G(),
     D(),
@@ -1704,14 +1769,14 @@
       ((B = document.querySelectorAll(".dropdown-item-cart").length),
       Array.from(
         document.querySelectorAll(
-          "#page-topbar .dropdown-menu-cart .remove-item-btn"
-        )
+          "#page-topbar .dropdown-menu-cart .remove-item-btn",
+        ),
       ).forEach(function (e) {
         e.addEventListener("click", function (e) {
-          B--,
+          (B--,
             this.closest(".dropdown-item-cart").remove(),
             Array.from(
-              document.getElementsByClassName("cartitem-badge")
+              document.getElementsByClassName("cartitem-badge"),
             ).forEach(function (e) {
               e.innerHTML = B;
             }),
@@ -1721,13 +1786,13 @@
                 0 == B ? "block" : "none"),
             document.getElementById("checkout-elem") &&
               (document.getElementById("checkout-elem").style.display =
-                0 == B ? "none" : "block");
+                0 == B ? "none" : "block"));
         });
       }),
       Array.from(document.getElementsByClassName("cartitem-badge")).forEach(
         function (e) {
           e.innerHTML = B;
-        }
+        },
       ),
       document.getElementById("empty-cart") &&
         (document.getElementById("empty-cart").style.display = "none"),
@@ -1737,30 +1802,30 @@
     document.getElementsByClassName("notification-check") &&
       (H(),
       Array.from(
-        document.querySelectorAll(".notification-check input")
+        document.querySelectorAll(".notification-check input"),
       ).forEach(function (t) {
-        t.addEventListener("change", function (e) {
+        (t.addEventListener("change", function (e) {
           e.target.closest(".notification-item").classList.toggle("active");
           var t = document.querySelectorAll(
-            ".notification-check input:checked"
+            ".notification-check input:checked",
           ).length;
-          e.target.closest(".notification-item").classList.contains("active"),
+          (e.target.closest(".notification-item").classList.contains("active"),
             (document.getElementById("notification-actions").style.display =
               0 < t ? "block" : "none"),
-            (document.getElementById("select-content").innerHTML = t);
+            (document.getElementById("select-content").innerHTML = t));
         }),
           document
             .getElementById("notificationDropdown")
             .addEventListener("hide.bs.dropdown", function (e) {
-              (t.checked = !1),
+              ((t.checked = !1),
                 document
                   .querySelectorAll(".notification-item")
                   .forEach(function (e) {
                     e.classList.remove("active");
                   }),
                 (document.getElementById("notification-actions").style.display =
-                  "");
-            });
+                  ""));
+            }));
       }),
       document.addEventListener("show.bs.modal", function (e) {
         // document.getElementById("delete-notification");
@@ -1788,14 +1853,14 @@
       document
         .getElementById("reset-layout")
         .addEventListener("click", function () {
-          sessionStorage.clear(), window.location.reload();
+          (sessionStorage.clear(), window.location.reload());
         }),
     (z = document.querySelectorAll("[data-toast]")),
     Array.from(z).forEach(function (a) {
       a.addEventListener("click", function () {
         var e = {},
           t = a.attributes;
-        t["data-toast-text"] &&
+        (t["data-toast-text"] &&
           (e.text = t["data-toast-text"].value.toString()),
           t["data-toast-gravity"] &&
             (e.gravity = t["data-toast-gravity"].value.toString()),
@@ -1827,14 +1892,14 @@
                       "linear-gradient(to right, var(--vz-success), var(--vz-primary))",
                   }
                 : "",
-          }).showToast();
+          }).showToast());
       });
     }),
     (z = document.querySelectorAll("[data-choices]")),
     Array.from(z).forEach(function (e) {
       var t = {},
         a = e.attributes;
-      a["data-choices-groups"] &&
+      (a["data-choices-groups"] &&
         (t.placeholderValue = "This is a placeholder set in the config"),
         a["data-choices-search-false"] && (t.searchEnabled = !1),
         a["data-choices-search-true"] && (t.searchEnabled = !0),
@@ -1852,7 +1917,7 @@
         a["data-choices-text-disabled-true"] && (t.addItems = !1),
         a["data-choices-text-disabled-true"]
           ? new Choices(e, t).disable()
-          : new Choices(e, t);
+          : new Choices(e, t));
     }),
     (z = document.querySelectorAll("[data-provider]")),
     Array.from(z).forEach(function (e) {
@@ -1925,10 +1990,10 @@
           flatpickr(e, a));
     }),
     Array.from(
-      document.querySelectorAll('.dropdown-menu a[data-bs-toggle="tab"]')
+      document.querySelectorAll('.dropdown-menu a[data-bs-toggle="tab"]'),
     ).forEach(function (e) {
       e.addEventListener("click", function (e) {
-        e.stopPropagation(), bootstrap.Tab.getInstance(e.target).show();
+        (e.stopPropagation(), bootstrap.Tab.getInstance(e.target).show());
       });
     }),
     o(),
@@ -1936,7 +2001,7 @@
     p(),
     window.addEventListener("resize", function () {
       // q && clearTimeout(q), (q = setTimeout(P, 2e3));
-    });
+    }));
 })();
 var mybutton = document.getElementById("back-to-top");
 function scrollFunction() {
@@ -1945,10 +2010,36 @@ function scrollFunction() {
     : (mybutton.style.display = "none");
 }
 function topFunction() {
-  (document.body.scrollTop = 0), (document.documentElement.scrollTop = 0);
+  ((document.body.scrollTop = 0), (document.documentElement.scrollTop = 0));
 }
 mybutton &&
   (window.onscroll = function () {
     scrollFunction();
   });
 // eye password
+
+// inspect disable --> f5 disable code start here
+
+// document.addEventListener("keydown", function (e) {
+//   if (e.key === "F5") {
+//     e.preventDefault();
+//   }
+//   if (e.ctrlKey && e.key === "r") {
+//     e.preventDefault();
+//   }
+//   if (e.key === "F12") {
+//     e.preventDefault();
+//   }
+//   if (e.ctrlKey && e.shiftKey && e.key === "I") {
+//     e.preventDefault();
+//   }
+//   if (e.ctrlKey && e.key === "u") {
+//     e.preventDefault();
+//   }
+// });
+
+// document.addEventListener("contextmenu", function (e) {
+//   e.preventDefault();
+// });
+
+// inspect disable --> f5 disable code End here

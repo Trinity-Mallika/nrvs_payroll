@@ -210,7 +210,7 @@ if (isset($_POST['month'], $_POST['year'])) {
 
             if ($is_esic == 1) {
                 if ($basicRate <= 21000) {
-                    $esic_emp = round($basicDA *  $slab['esic_per'] / 100);
+                    $esic_emp = ceil($basicDA *  $slab['esic_per'] / 100);
                     $esic_employer = round($basicDA * $slab['esic_emp_per']  / 100);
                 }
             }
