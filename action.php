@@ -1148,187 +1148,7 @@ class DataOperation extends Database
 		return $available_leave;
 	}
 
-	// function generateSalaryStructure(
-	// 	float $total_salary,
-	// 	int   $total_days_in_month,
-	// 	int   $working_days,
-	// 	float $loan_amount = 0,
-	// 	float $tds = 0,
-	// 	float $lpg_ded = 0,
-	// 	float $shoes_ded = 0,
-	// 	float $other_ded = 0
-	// ) {
 
-	// 	/* ---------------- BASIC & INCREMENT ---------------- */
-	// 	if ($total_salary > 100000) {
-	// 		$basic_salary = 100000;
-	// 		$increment    = $total_salary - 100000;
-	// 	} else {
-	// 		$basic_salary = $total_salary;
-	// 		$increment    = 0;
-	// 	}
-
-	// 	/* ---------------- PER DAY BASIC SALARY ---------------- */
-	// 	$per_day_salary = $basic_salary / $total_days_in_month;
-
-	// 	/* ---------------- PER DAY INCREMENT ---------------- */
-	// 	$per_day_increment = $increment / $total_days_in_month;
-	// 	$increment_balance = $per_day_increment * $working_days;
-
-	// 	/* ---------------- OVERTIME ---------------- */
-	// 	$extra_days = max(0, $working_days - $total_days_in_month);
-	// 	$extra_salary_balance = $extra_days * $per_day_salary;
-
-	// 	/* ---------------- LOAN TO DAYS ---------------- */
-	// 	$loan_days = 0;
-	// 	if ($loan_amount > 0) {
-	// 		$loan_days = ceil($loan_amount / $per_day_salary);
-	// 	}
-
-	// 	/* ---------------- DEDUCTION DAYS ---------------- */
-	// 	$deduction_days = max(0, $working_days - $loan_days);
-
-	// 	/* ---------------- NET SALARY (BASIC) ---------------- */
-	// 	$net_salary = round($deduction_days * $per_day_salary);
-
-	// 	/* ---------------- LOAN ADJUSTMENT ---------------- */
-	// 	$loan_adjusted_amount = $loan_days * $per_day_salary;
-	// 	$loan_balance = max(0, $loan_adjusted_amount - $loan_amount);
-
-	// 	/* ---------------- TOTAL DEDUCTION ---------------- */
-	// 	$total_deduction = $loan_amount + $tds + $lpg_ded + $shoes_ded + $other_ded;
-
-	// 	/* ---------------- FINAL BALANCE ---------------- */
-	// 	$balance = round(
-	// 		$increment_balance +
-	// 			$extra_salary_balance +
-	// 			$loan_balance,
-	// 		2
-	// 	);
-
-	// 	return [
-	// 		'basic_salary'        => round($basic_salary),
-	// 		'increment'           => round($increment),
-
-	// 		'per_day_salary'      => round($per_day_salary, 2),
-	// 		'per_day_increment'   => round($per_day_increment, 2),
-
-	// 		'total_days_month'    => $total_days_in_month,
-	// 		'working_days'        => $working_days,
-	// 		'extra_days'          => $extra_days,
-
-	// 		'loan_days'           => $loan_days,
-	// 		'deduction_days'      => $deduction_days,
-
-	// 		'net_salary'          => $net_salary,
-	// 		'bank_salary'         => $net_salary,
-
-	// 		'increment_balance'   => round($increment_balance, 2),
-	// 		'loan_balance'        => round($loan_balance, 2),
-	// 		'lpg_ded'             => $lpg_ded,
-	// 		'shoes_ded'             => $shoes_ded,
-	// 		'other_ded'             => $other_ded,
-
-	// 		'total_deduction'     => round($total_deduction),
-	// 		'balance'             => $balance,
-	// 		'adu'                 => $balance - ($lpg_ded + $shoes_ded + $other_ded)
-	// 	];
-	// }
-
-	// function generateSalaryStructure(
-	// 	float $total_salary,
-	// 	int   $total_days_in_month,
-	// 	int   $working_days,
-	// 	float $loan_amount = 0,
-	// 	float $pf = 0,
-	// 	float $esi = 0,
-	// 	float $tds = 0,
-	// 	float $lpg_ded = 0,
-	// 	float $shoes_ded = 0,
-	// 	float $other_ded = 0
-	// ) {
-
-	// 	/* ---------------- BASIC & INCREMENT ---------------- */
-	// 	if ($total_salary > 100000) {
-	// 		$basic_salary = 100000;
-	// 		$increment    = $total_salary - 100000;
-	// 	} else {
-	// 		$basic_salary = $total_salary;
-	// 		$increment    = 0;
-	// 	}
-
-	// 	/* ---------------- PER DAY BASIC ---------------- */
-	// 	$per_day_salary = $basic_salary / $total_days_in_month;
-
-	// 	/* ---------------- EARNED BASIC ---------------- */
-	// 	$earned_basic = $per_day_salary * $working_days;
-
-	// 	/* ---------------- LOAN DEDUCTION (CAPPED) ---------------- */
-	// 	$actual_loan_deduction = min($loan_amount, $earned_basic);
-	// 	$remaining_loan = max(0, $loan_amount - $actual_loan_deduction);
-
-	// 	/* ---------------- LOAN DAYS ---------------- */
-	// 	$loan_days = 0;
-	// 	if ($loan_amount > 0) {
-	// 		$loan_days = ceil($loan_amount / $per_day_salary);
-	// 	}
-
-	// 	// $loan_days = ($actual_loan_deduction > 0)
-	// 	// 	? floor($actual_loan_deduction / $per_day_salary)
-	// 	// 	: 0;
-
-	// 	/* ---------------- NET BASIC AFTER LOAN ---------------- */
-	// 	$net_basic = round($earned_basic - $actual_loan_deduction);
-
-	// 	/* ---------------- INCREMENT (PROPORTIONAL) ---------------- */
-	// 	$per_day_increment = $increment / $total_days_in_month;
-	// 	$increment_balance = $per_day_increment * $working_days;
-
-	// 	/* ---------------- TOTAL DEDUCTION ---------------- */
-	// 	$total_deduction = $actual_loan_deduction
-	// 		+ $pf + $esi + $tds
-	// 		+ $lpg_ded + $shoes_ded + $other_ded;
-
-	// 	/* ---------------- BANK SALARY ---------------- */
-	// 	$bank_salary = $net_basic
-	// 		- ($pf + $esi + $tds + $lpg_ded + $shoes_ded + $other_ded);
-
-	// 	if ($bank_salary < 0) {
-	// 		$bank_salary = 0;
-	// 	}
-
-	// 	return [
-	// 		'basic_salary'        => round($basic_salary),
-	// 		'increment'           => round($increment),
-
-	// 		'per_day_salary'      => round($per_day_salary, 2),
-	// 		'earned_basic'        => round($earned_basic, 2),
-
-	// 		'working_days'        => $working_days,
-
-	// 		'loan_amount'         => round($loan_amount),
-	// 		'loan_deducted'       => round($actual_loan_deduction, 2),
-	// 		'remaining_loan'      => round($remaining_loan, 2),
-	// 		'loan_days'           => $loan_days,
-
-	// 		'pf'                  => round($pf, 2),
-	// 		'esi'                 => round($esi, 2),
-	// 		'tds'                 => round($tds, 2),
-
-	// 		'lpg_ded'             => round($lpg_ded, 2),
-	// 		'shoes_ded'           => round($shoes_ded, 2),
-	// 		'other_ded'           => round($other_ded, 2),
-
-	// 		'net_basic_salary'    => $net_basic,
-	// 		'bank_salary'         => round($bank_salary),
-
-	// 		'increment_balance'   => round($increment_balance, 2),
-	// 		'total_deduction'     => round($total_deduction),
-
-	// 		// ADU = remaining loan carry forward
-	// 		'adu'                 => round($remaining_loan)
-	// 	];
-	// }
 
 	function generateSalaryStructure(
 		float $total_salary = 0,
@@ -1431,6 +1251,23 @@ class DataOperation extends Database
 			$year++;
 		}
 		return [$month, $year];
+	}
+
+	// function hoursToTime($hours)
+	// {
+	// 	$h = floor($hours);
+	// 	$m = ($hours - $h) * 60;
+	// 	return sprintf('%02d:%02d:00', $h, $m);
+	// }
+	function timeToHours($time)
+	{
+		list($h, $m, $s) = array_map('intval', explode(':', $time));
+		return $h + ($m / 60) + ($s / 3600);
+	}
+
+	function hoursToTime($hours)
+	{
+		return gmdate("H:i:s", $hours * 3600);
 	}
 }
 
