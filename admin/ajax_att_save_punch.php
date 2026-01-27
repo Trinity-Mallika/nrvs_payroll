@@ -15,11 +15,13 @@ $total_days = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
 $emp_salary =  $obj->getvalfield("employee_master", "basic_salary", "emp_id='$emp_id'");
 $department_id =  $obj->getvalfield("employee_master", "department_id", "emp_id='$emp_id'");
 
-$office_in_time = $obj->getvalfield("shift_master", "in_time", "shift_id='$punch_shift_id'");
-$office_out_time = $obj->getvalfield("shift_master", "out_time", "shift_id='$punch_shift_id'");
-$in_margin = $obj->getvalfield("shift_master", "grace_time_in", "shift_id='$punch_shift_id'");
-$out_margin = $obj->getvalfield("shift_master", "grace_time_out", "shift_id='$punch_shift_id'");
-$is_cross_day = $obj->getvalfield("shift_master", "is_cross_day", "shift_id='$punch_shift_id'");
+$shift_data = $obj->select_record("shift_master", ['shift_id' => $punch_shift_id]);
+$office_in_time = $shift_data['in_time'];
+$office_out_time = $shift_data['out_time'];
+$in_margin = $shift_data['grace_time_in'];
+$out_margin = $shift_data['grace_time_out'];
+$is_cross_day = $shift_data['is_cross_day'];
+
 
 //$Office_working_hour = $obj->getvalfield("unit_master", "working_hours", "unit_id='$unit_id'");
 

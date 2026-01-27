@@ -206,8 +206,8 @@ if (isset($_POST['submit'])) {
                 $filename = $obj->uploadImage($imgpath1, $_FILES["profile_image"]);
                 $form_data['profile_image'] = $filename;
             }
-            // print_r($form_data);
-            // die;
+            //print_r($form_data);
+
             $form_data["lastupdated"] = $createdate;
             $where = array($tblpkey => $keyvalue);
             $obj->update_record($tblname, $where, $form_data);
@@ -216,7 +216,7 @@ if (isset($_POST['submit'])) {
             $process = "updated";
         }
     }
-
+    // die;
     echo "<script>location='$pagename?action=$action'</script>";
 }
 
@@ -2190,7 +2190,7 @@ if (isset($_GET[$tblpkey])) {
                 },
                 {
                     tab: 'Job',
-                    fields: ['basic_salary', 'opening_date', 'department_id', 'designation_id', 'grade_id', 'date_of_joining', 'job_location', 'shift_id']
+                    fields: ['basic_salary', 'department_id', 'designation_id', 'grade_id', 'date_of_joining', 'job_location', 'shift_id']
                 }
             ];
 

@@ -301,6 +301,13 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                 <option value="Leave">Leave</option>
                             </select>
                         </div>
+                        <div class="col-lg-12 col-12 mb-2">
+                            <label for="">Attandance Type</label>
+                            <select name="punch_all_type" id="punch_all_type" class="form-select form-select-sm">
+                                <option value="1">With Weekly Off</option>
+                                <option value="0">Without Weekly Off</option>
+                            </select>
+                        </div>
                         <div class="col-lg-12 " id="punchShiftBox">
                             <label for="all_att_shift_id" class="form-label ">Shift<span
                                     class="text-danger fw-bold"> </span></label>
@@ -589,6 +596,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
             var punch_remark = document.getElementById('punching_all_remark').value;
             var punch_all_status = document.getElementById('punch_all_status').value;
             var punch_shift_id = document.getElementById('all_att_shift_id').value;
+            var punch_all_type = document.getElementById('punch_all_type').value;
             var punchtime = ' <?= date("H:i:s"); ?>';
 
             if (punch_shift_id == "") {
@@ -612,9 +620,10 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
             jQuery.ajax({
                 type: 'POST',
                 url: 'ajax_att_save_all_punch.php',
-                data: 'emp_id=' + emp_id + '&currentYear=' + currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark + '&punch_status=' + punch_all_status + '&punch_shift_id=' + punch_shift_id + '&punchtime=' + punchtime,
+                data: 'emp_id=' + emp_id + '&currentYear=' + currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark + '&punch_status=' + punch_all_status + '&punch_shift_id=' + punch_shift_id + '&punchtime=' + punchtime + '&punch_all_type=' + punch_all_type,
                 dataType: 'html',
                 success: function(data) {
+                    // alert(data);
                     Swal.close();
                     Swal.fire({
                         icon: 'success',

@@ -18,7 +18,10 @@ if (isset($_GET['from_date']) && isset($_GET['to_date'])) {
     $to_date = date("Y-m-d");
 }
 
+
+
 $crit .= " and ss.createdate between '$from_date' and '$to_date'";
+
 
 
 if (isset($_GET['unit_id'])) {
@@ -133,8 +136,11 @@ if (isset($_REQUEST['payment_statuss'])) {
                                             </script>
                                         </div>
 
+
+
+
                                         <div class="col-lg-3 mb-3">
-                                            <label for="emp_id" class="form-label">From Date<span class="text-danger fw-bold">*</span></label>
+                                            <label for="month" class="form-label">From Date<span class="text-danger fw-bold">*</span></label>
                                             <input type="date" name="from_date" id="from_date" class="form-control form-control-sm" value="<?= $from_date ?>">
                                         </div>
                                         <div class="col-lg-3 mb-3">
@@ -172,6 +178,8 @@ if (isset($_REQUEST['payment_statuss'])) {
                                                 <th>Code</th>
                                                 <th>Name</th>
                                                 <th>Department</th>
+                                                <th>Month</th>
+                                                <th>Year</th>
                                                 <th>Generated Date</th>
                                                 <th class="text-end">Basic Salary</th>
                                                 <th>Gross Salary</th>
@@ -215,6 +223,8 @@ if (isset($_REQUEST['payment_statuss'])) {
                                                     <td><?= $row['emp_code']; ?></td>
                                                     <td><?= $row['first_name'] . " " . $row['last_name']; ?></td>
                                                     <td><?= $department; ?></td>
+                                                    <td><?= $row['month']; ?></td>
+                                                    <td><?= $row['year']; ?></td>
                                                     <td><?= $obj->dateformatindia($row['createdate']); ?></td>
                                                     <td class="text-end"><?= $row['basic_salary']; ?></td>
                                                     <td class="text-end"><?= $row['revised_salary']; ?></td>

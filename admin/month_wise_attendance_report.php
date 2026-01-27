@@ -101,7 +101,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                         <div class="row">
 
                                             <div class="col-lg-3 mb-3">
-                                                <label for="department_id" class="form-label">Department Name<span class="text-danger fw-bold"></span></label>
+                                                <label for="department_id" class="form-label">Department Name<span class="text-danger fw-bold">*</span></label>
                                                 <select class="form-select chosen-select" name="department_id" id="department_id">
                                                     <option value="">All</option>
                                                     <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_name asc");
@@ -145,7 +145,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                             </div>
 
                                             <div class="col-md-3 mt-4 ">
-                                                <input type="submit" class="btn btn-primary add-btn" onclick="return checkinputmaster('branch_id,year,month')" name="search" value="Search">
+                                                <input type="submit" class="btn btn-primary add-btn" onclick="return checkinputmaster('department_id,year,month')" name="search" value="Search">
                                                 <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset" id="reset">Reset</a>
 
                                             </div>
@@ -156,171 +156,188 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                         </fieldset>
                     </div>
                 </div>
+                <?php
 
-                <div class="row mt-4 mb-4">
-                    <div class="col-lg-12">
-                        <div class="card">
-                            <div class="card-header border-bottom-dashed">
-                                <div class="row g-4 align-items-center">
-                                    <div class="col-sm">
-                                        <div class="d-flex justify-content-between">
-                                            <h5 class="card-title mb-0"> <?= $submodule; ?></h5>
-                                            <a onclick="exportTableToExcel('example')" class="btn btn-primary btn-sm">Export Excel File</a>
+                if (isset($_GET['search'])) {
+
+
+
+                ?>
+
+
+
+                    <div class="row mt-4 mb-4">
+                        <div class="col-lg-12">
+                            <div class="card">
+                                <div class="card-header border-bottom-dashed">
+                                    <div class="row g-4 align-items-center">
+                                        <div class="col-sm">
+                                            <div class="d-flex justify-content-between">
+                                                <h5 class="card-title mb-0"> <?= $submodule; ?></h5>
+                                                <a onclick="exportTableToExcel('example')" class="btn btn-primary btn-sm">Export Excel File</a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="card-body">
-                                <?php
-                                $employees = $obj->executequery("SELECT emp_id,emp_code , first_name , last_name FROM employee_master where unit_id='$unitid' $crit2");
-                                if (!$employees) {
-                                    echo "<p class='text-danger'>No employees found for this Deaprtment.</p>";
-                                    return;
-                                }
-                                $empIds = array_column($employees, 'emp_id');
-                                $empIdsStr = implode(",", $empIds);
+                                <div class="card-body">
+                                    <?php
+                                    $employees = $obj->executequery("SELECT emp_id,emp_code , first_name , last_name FROM employee_master where unit_id='$unitid' $crit2");
+                                    // if (!$employees) {
+                                    //     echo "<p class='text-danger'>No employees found for this Deaprtment.</p>";
+                                    //     return;
+                                    // }
 
-                                $attendances = $obj->executequery("SELECT emp_id, attendance_date, in_status,attendance_status FROM $tblname WHERE emp_id IN ($empIdsStr) AND MONTH(attendance_date) = '$month' AND YEAR(attendance_date) = '$year'");
-                                $attendanceMap = [];
-                                foreach ($attendances as $att) {
-                                    $attendanceMap[$att['emp_id']][$att['attendance_date']] = $att['attendance_status'];
-                                }
-                                $currentDate = date("Y-m-d");
+                                    if (empty($employees)) {
+                                        // No employees → no attendance
+                                        $attendances = [];
+                                    } else {
+                                        $empIds = array_column($employees, 'emp_id');
+                                        $empIdsStr = implode(",", $empIds);
+
+                                        $attendances = $obj->executequery("SELECT emp_id, attendance_date, in_status,attendance_status FROM $tblname WHERE emp_id IN ($empIdsStr) AND MONTH(attendance_date) = '$month' AND YEAR(attendance_date) = '$year'");
+                                    }
+
+                                    $attendanceMap = [];
+                                    foreach ($attendances as $att) {
+                                        $attendanceMap[$att['emp_id']][$att['attendance_date']] = $att['attendance_status'];
+                                    }
+                                    $currentDate = date("Y-m-d");
+                                    ?>
+
+                                    <div class="table-responsive" id="example1">
+                                        <table id="example" class="table table-bordered table-hover align-middle">
+                                            <thead class="table-light text-center">
+                                                <tr>
+                                                    <th style="width: 50px;">S.No.</th>
+                                                    <th style="min-width: 180px;">Employee Name</th>
+                                                    <th>Present Days</th>
+                                                    <th>Punch All</th>
+                                                    <?php for ($i = 1; $i <= $length; $i++) { ?>
+                                                        <th style="width: 35px;"><?php echo $i; ?></th>
+                                                    <?php } ?>
+
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php
+                                                $slno = 1;
+                                                foreach ($employees as $emp) {
+
+                                                    $salary_generate_count = $obj->getvalfield("salary_structure", "count(*)", "emp_id='$emp[emp_id]' and month='$month' and year='$year'");
+                                                    $emp_shift_hrs =  $obj->getvalfield("employee_master", "shift_id", "emp_id='$emp[emp_id]'");
+                                                    $emp_shift_ids = $obj->getvalfield("attendance_entry", "shift_id", "emp_id='$emp[emp_id]' and month='$month' and year='$year' order by attendance_id desc limit 1") ?? '';
+                                                    $total_present = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp[emp_id]' and month='$month' and year='$year' and attendance_status='Present'");
+
+                                                    $total_half = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp[emp_id]' and month='$month' and year='$year' and attendance_status='Half Day'");
+
+                                                    $total_att_leave = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp[emp_id]' and month='$month' and year='$year' and attendance_status='Leave'");
+
+                                                    $total_attandence = $total_present + ($total_half / 2) + $total_att_leave;
+                                                    echo "<tr>";
+                                                    echo "<td>" . $slno++ . "</td>";
+                                                    echo "<td> {$emp['emp_code']} - {$emp['first_name']} {$emp['last_name']}</td>";
+                                                    echo "<td style='font-weight:bold; color:#6f42c1; background:#f3e8ff; text-align:center;'>";
+                                                    echo number_format($total_attandence, 1);
+                                                    echo "</td>";
+                                                    echo "<td style='font-weight:bold; color:#28a745;text-align:center;'>";
+                                                    echo "<span  style='display:block;width:100%;height:100%; padding:8px; cursor:pointer;' onclick=\"add_all_att('$emp_shift_hrs','$emp_shift_ids','$month','$year','$emp[emp_id]',' $salary_generate_count')\"><i class='ri-add-line align-bottom text-primary' style='font-size:20px;'></i></span>";
+                                                    echo "</td>";
 
 
-                                ?>
+                                                    for ($i = 1; $i <= $length; $i++) {
+                                                        $date = sprintf('%02d', $i);
+                                                        $crit = "$year-$month-$date";
 
-                                <div class="table-responsive" id="example1">
-                                    <table id="example" class="table table-bordered table-hover align-middle">
-                                        <thead class="table-light text-center">
-                                            <tr>
-                                                <th style="width: 50px;">S.No.</th>
-                                                <th style="min-width: 180px;">Employee Name</th>
-                                                <th>Present Days</th>
-                                                <th>Punch All</th>
-                                                <?php for ($i = 1; $i <= $length; $i++) { ?>
-                                                    <th style="width: 35px;"><?php echo $i; ?></th>
-                                                <?php } ?>
+                                                        $is_holiday = false;
+                                                        $holiday_data  = $obj->getvalfield("holiday_entry", "holiday_tittle", "FIND_IN_SET('$unitid', unit_id) and date='$crit'");
 
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php
-                                            $slno = 1;
-                                            foreach ($employees as $emp) {
+                                                        if (!empty($holiday_data)) {
+                                                            $is_holiday = true;
+                                                        }
+                                                        // Future date → "-"
+                                                        // Future date
+                                                        if ($crit > $currentDate) {
+                                                            $attendance = "-";
+                                                            $bg = "rgb(220,220,220)";
+                                                        } else {
+                                                            $status = $attendanceMap[$emp['emp_id']][$crit] ?? '';
+                                                            // Holiday AND employee is present
+                                                            if ($is_holiday && in_array($status, ['Present', 'Half Day'])) {
 
-                                                $salary_generate_count = $obj->getvalfield("salary_structure", "count(*)", "emp_id='$emp[emp_id]' and month='$month' and year='$year'");
-                                                $emp_shift_hrs =  $obj->getvalfield("employee_master", "shift_id", "emp_id='$emp[emp_id]'");
-                                                $emp_shift_ids = $obj->getvalfield("attendance_entry", "shift_id", "emp_id='$emp[emp_id]' and month='$month' and year='$year' order by attendance_id desc limit 1") ?? '';
-                                                $total_present = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp[emp_id]' and month='$month' and year='$year' and attendance_status='Present'");
+                                                                if ($status === "Present") {
+                                                                    $attendance = "<b>P</b>";
+                                                                    $bg = "rgb(173,233,179)";
+                                                                } else {
+                                                                    $attendance = "<b>HD</b>";
+                                                                    $bg = "rgb(255,246,163)";
+                                                                }
+                                                            }
+                                                            // Holiday but NO attendance
+                                                            elseif ($is_holiday && $status == '') {
+                                                                $attendance = "<b>PL</b>";
+                                                                $bg = "rgb(180,210,255)";
+                                                            }
+                                                            // Normal day attendance
+                                                            else {
+                                                                $status = $status ?: 'A';
 
-                                                $total_half = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp[emp_id]' and month='$month' and year='$year' and attendance_status='Half Day'");
-
-                                                $total_att_leave = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp[emp_id]' and month='$month' and year='$year' and attendance_status='Leave'");
-
-                                                $total_attandence = $total_present + ($total_half / 2) + $total_att_leave;
-                                                echo "<tr>";
-                                                echo "<td>" . $slno++ . "</td>";
-                                                echo "<td> {$emp['emp_code']} - {$emp['first_name']} {$emp['last_name']}</td>";
-                                                echo "<td style='font-weight:bold; color:#6f42c1; background:#f3e8ff; text-align:center;'>";
-                                                echo number_format($total_attandence, 1);
-                                                echo "</td>";
-                                                echo "<td style='font-weight:bold; color:#28a745;text-align:center;'>";
-                                                echo "<span  style='display:block;width:100%;height:100%; padding:8px; cursor:pointer;' onclick=\"add_all_att('$emp_shift_hrs','$emp_shift_ids','$month','$year','$emp[emp_id]',' $salary_generate_count')\"><i class='ri-add-line align-bottom text-primary' style='font-size:20px;'></i></span>";
-                                                echo "</td>";
-
-
-                                                for ($i = 1; $i <= $length; $i++) {
-                                                    $date = sprintf('%02d', $i);
-                                                    $crit = "$year-$month-$date";
-
-                                                    $is_holiday = false;
-                                                    $holiday_data  = $obj->getvalfield("holiday_entry", "holiday_tittle", "FIND_IN_SET('$unitid', unit_id) and date='$crit'");
-
-                                                    if (!empty($holiday_data)) {
-                                                        $is_holiday = true;
-                                                    }
-                                                    // Future date → "-"
-                                                    // Future date
-                                                    if ($crit > $currentDate) {
-                                                        $attendance = "-";
-                                                        $bg = "rgb(220,220,220)";
-                                                    } else {
-                                                        $status = $attendanceMap[$emp['emp_id']][$crit] ?? '';
-                                                        // Holiday AND employee is present
-                                                        if ($is_holiday && in_array($status, ['Present', 'Half Day'])) {
-
-                                                            if ($status === "Present") {
-                                                                $attendance = "<b>P</b>";
-                                                                $bg = "rgb(173,233,179)";
-                                                            } else {
-                                                                $attendance = "<b>HD</b>";
-                                                                $bg = "rgb(255,246,163)";
+                                                                if ($status === "Present") {
+                                                                    $attendance = "<b>P</b>";
+                                                                    $bg = "rgb(173,233,179)";
+                                                                } elseif ($status === "Half Day") {
+                                                                    $attendance = "<b>HD</b>";
+                                                                    $bg = "rgb(255,246,163)";
+                                                                } elseif ($status === "Incomplete") {
+                                                                    $attendance = "<b>I</b>";
+                                                                    $bg = "rgb(233,61,61)";
+                                                                } elseif ($status === "Leave") {
+                                                                    $attendance = "<b>L</b>";
+                                                                    $bg = "rgb(229,204,255)";
+                                                                } else {
+                                                                    $attendance = "<b>A</b>";
+                                                                    $bg = "rgb(251,175,175)";
+                                                                }
                                                             }
                                                         }
-                                                        // Holiday but NO attendance
-                                                        elseif ($is_holiday && $status == '') {
-                                                            $attendance = "<b>PL</b>";
-                                                            $bg = "rgb(180,210,255)";
-                                                        }
-                                                        // Normal day attendance
-                                                        else {
-                                                            $status = $status ?: 'A';
+                                                        $intime = $obj->getvalfield("attendance_entry", "intime", "emp_id='$emp[emp_id]' and attendance_date='$crit' and month='$month' and year='$year'") ?? date('H:i');
+                                                        $att_in_remark = $obj->getvalfield("attendance_entry", "in_remark", "emp_id='$emp[emp_id]' and attendance_date='$crit' and month='$month' and year='$year'") ?? '';
 
-                                                            if ($status === "Present") {
-                                                                $attendance = "<b>P</b>";
-                                                                $bg = "rgb(173,233,179)";
-                                                            } elseif ($status === "Half Day") {
-                                                                $attendance = "<b>HD</b>";
-                                                                $bg = "rgb(255,246,163)";
-                                                            } elseif ($status === "Incomplete") {
-                                                                $attendance = "<b>I</b>";
-                                                                $bg = "rgb(233,61,61)";
-                                                            } elseif ($status === "Leave") {
-                                                                $attendance = "<b>L</b>";
-                                                                $bg = "rgb(229,204,255)";
-                                                            } else {
-                                                                $attendance = "<b>A</b>";
-                                                                $bg = "rgb(251,175,175)";
-                                                            }
+
+                                                        $emp_shift_id = $obj->getvalfield("attendance_entry", "shift_id", "emp_id='$emp[emp_id]' and attendance_date='$crit' and month='$month' and year='$year'") ?? $emp_shift_ids;
+
+                                                        // echo "<td style='background:$bg; text-align:center;'>";
+
+                                                        if ($crit <= $currentDate) {
+                                                            echo "<td style='background:$bg; text-align:center; padding:0;'>";
+
+                                                            // echo "<a href='employee_wise_attendance.php?emp_id={$emp['emp_id']}&currentYear=$year&currentMonth=$month&date=$crit'target='_blank' style='display:block;width:100%;height:100%; padding:8px; text-decoration:none; color:inherit;' >";
+                                                            echo "<span  style='display:block;width:100%;height:100%; padding:8px; cursor:pointer;' onclick=\"openPunchModal('$crit','$intime','$att_in_remark','$emp_shift_hrs','$emp_shift_id','$month','$year','$emp[emp_id]',' $salary_generate_count')\"> $attendance </span>";
+                                                            // echo $intime;
+                                                            echo "</a>";
+                                                            echo "</td>";
+                                                        } else {
+                                                            echo "<td style='background:$bg; text-align:center;'>";
+                                                            echo $attendance;
+                                                            echo "</td>";
                                                         }
                                                     }
-                                                    $intime = $obj->getvalfield("attendance_entry", "intime", "emp_id='$emp[emp_id]' and attendance_date='$crit' and month='$month' and year='$year'") ?? date('H:i');
-                                                    $att_in_remark = $obj->getvalfield("attendance_entry", "in_remark", "emp_id='$emp[emp_id]' and attendance_date='$crit' and month='$month' and year='$year'") ?? '';
 
-
-                                                    $emp_shift_id = $obj->getvalfield("attendance_entry", "shift_id", "emp_id='$emp[emp_id]' and attendance_date='$crit' and month='$month' and year='$year'") ?? $emp_shift_ids;
-
-                                                    // echo "<td style='background:$bg; text-align:center;'>";
-
-                                                    if ($crit <= $currentDate) {
-                                                        echo "<td style='background:$bg; text-align:center; padding:0;'>";
-
-                                                        // echo "<a href='employee_wise_attendance.php?emp_id={$emp['emp_id']}&currentYear=$year&currentMonth=$month&date=$crit'target='_blank' style='display:block;width:100%;height:100%; padding:8px; text-decoration:none; color:inherit;' >";
-                                                        echo "<span  style='display:block;width:100%;height:100%; padding:8px; cursor:pointer;' onclick=\"openPunchModal('$crit','$intime','$att_in_remark','$emp_shift_hrs','$emp_shift_id','$month','$year','$emp[emp_id]',' $salary_generate_count')\"> $attendance </span>";
-                                                        // echo $intime;
-                                                        echo "</a>";
-                                                        echo "</td>";
-                                                    } else {
-                                                        echo "<td style='background:$bg; text-align:center;'>";
-                                                        echo $attendance;
-                                                        echo "</td>";
-                                                    }
+                                                    echo "</tr>";
                                                 }
+                                                ?>
+                                            </tbody>
+                                        </table>
 
-                                                echo "</tr>";
-                                            }
-                                            ?>
-                                        </tbody>
-                                    </table>
+                                    </div>
 
                                 </div>
-
                             </div>
                         </div>
                     </div>
-                </div>
+                <?php
+                }
 
+                ?>
             </div>
             <!-- Content close-->
         </div>
@@ -443,6 +460,13 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                 <option value="first_half">Half Day (1st Half)</option>
                                 <option value="second_half">Half Day (2nd Half)</option>
                                 <option value="Leave">Leave</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-12 col-12 mb-2">
+                            <label for="">Attandance Type</label>
+                            <select name="punch_all_type" id="punch_all_type" class="form-select form-select-sm">
+                                <option value="1">With Weekly Off</option>
+                                <option value="0">Without Weekly Off</option>
                             </select>
                         </div>
                         <div class="col-lg-12 " id="punchShiftBox">
@@ -642,6 +666,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
             var currentMonth = document.getElementById('punch_all_month').value;
             var currentYear = document.getElementById('punch_all_year').value;
             var emp_id = document.getElementById('punch_all_employee_id').value;
+            var punch_all_type = document.getElementById('punch_all_type').value;
 
             if (punch_shift_id == "") {
                 alert("Please Select Shift Name");
@@ -662,7 +687,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
             jQuery.ajax({
                 type: 'POST',
                 url: 'ajax_att_save_all_punch.php',
-                data: 'emp_id=' + emp_id + '&currentYear=' + currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark + '&punch_status=' + punch_all_status + '&punch_shift_id=' + punch_shift_id + '&punchtime=' + punchtime,
+                data: 'emp_id=' + emp_id + '&currentYear=' + currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark + '&punch_status=' + punch_all_status + '&punch_shift_id=' + punch_shift_id + '&punchtime=' + punchtime + '&punch_all_type=' + punch_all_type,
                 dataType: 'html',
                 success: function(data) {
                     Swal.close();

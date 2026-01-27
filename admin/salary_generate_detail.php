@@ -583,10 +583,9 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                             <input type="text" class="form-control form-control-sm" value="<?= $week_leave ?>" name="weekly_off" id="weekly_off" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
-                                            <label for="">Monthly Leave</label>
+                                            <label for="">Earn Leave</label>
                                             <input type="text" class="form-control form-control-sm" value="<?= $monthly_leave ?>" name="leave_days" id="leave_days" readonly>
                                         </div>
-
 
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">Used C - Off</label>
@@ -851,7 +850,7 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
             if (is_all_leave_add == '1') {
                 baseTotal = presentDays + holidays + weeklyOff + leaveDays + advance_leave + overtime_days;
             } else {
-                baseTotal = presentDays + holidays + weeklyOff + leaveDays + overtime_days;
+                baseTotal = presentDays + holidays + weeklyOff + advance_leave + overtime_days;
             }
 
             let shortage = daysInMonth - baseTotal;
