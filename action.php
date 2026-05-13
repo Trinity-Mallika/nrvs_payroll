@@ -1,4 +1,5 @@
 <?php session_start();
+
 include("config.php");
 
 class DataOperation extends Database
@@ -8,6 +9,19 @@ class DataOperation extends Database
 		echo "<pre>";
 		print_r($val);
 		echo "</pre>";
+	}
+
+	function getSundays($year_month)
+	{
+		$date = $year_month . "-01";
+		$first_day = date('N', strtotime($date));
+		$first_day = 7 - $first_day + 1;
+		$last_day = date('t', strtotime($date));
+		$days = array();
+		for ($i = $first_day; $i <= $last_day; $i = $i + 7) {
+			$days[] = $i;
+		}
+		return $days;
 	}
 
 
@@ -125,24 +139,68 @@ class DataOperation extends Database
 		return $nodes;
 	}
 
-
-	public function login_method_app($table, $username, $password)
+	public function session_method_app($table, $username, $password)
 	{
-		$sql = "SELECT * from $table WHERE username='$username' AND password='$password' AND status='1'";
+		$sql = "SELECT * from $table WHERE emp_code='$username' AND password='$password'";
+		$query = mysqli_query($this->con, $sql);
+		$row = mysqli_fetch_array($query);
+		return $row;
+	}
+
+	public function login_method_app2($table, $username, $password)
+	{
+		$sql = "SELECT * from $table WHERE emp_code='$username' AND password='$password'";
+		// print_r($sql);
+		// die;
 
 		$query = mysqli_query($this->con, $sql);
 		$count = mysqli_num_rows($query);
 		if ($count > 0) {
 
 			$row = mysqli_fetch_array($query);
-			$_SESSION['userid'] = $row['userid'];
-			$_SESSION['usertype'] = $row['usertype'];
-
-			setcookie("rusername", $username, time() + (86400 * 30 * 30), "/"); // 30 days
-			setcookie("rpassword", $password, time() + (86400 * 30 * 30), "/"); // 30 days
+			$_SESSION['emp_id'] = $row['emp_id'];
+			// $_SESSION['usertype'] = $row['usertype'];
+			// setcookie("rusername", $username, time() + (86400 * 30 * 30), "/"); // 30 days
+			// setcookie("rpassword", $password, time() + (86400 * 30 * 30), "/"); // 30 days
 			return $count;
 		}
 	}
+
+	public function login_method_app($table, $mobile_no, $password)
+	{
+
+		$count = 0;
+
+		$sql = "SELECT * from $table WHERE (emp_code='$mobile_no') AND password='$password'";
+
+		$query = mysqli_query($this->con, $sql);
+
+		$count = mysqli_num_rows($query);
+		//print_r($count);die;
+
+		if ($count > 0) {
+
+			$row = mysqli_fetch_array($query);
+
+			$_SESSION['emp_id'] = $row['emp_id'];
+
+			//$_SESSION['emp_type'] = $row['emp_type'];
+
+			setcookie("TA_id", $row['emp_id'], time() + 3600 * 365, "/", "", 0);
+
+			setcookie("TA_mobile_no", $mobile_no, time() + 3600 * 365, "/", "", 0);
+
+			setcookie("TA_password", $password, time() + 3600 * 365, "/", "", 0);
+
+			return $count;
+
+			// echo $sql;
+
+			// die;
+
+		}
+	}
+
 
 
 	function software_expire()
@@ -337,14 +395,23 @@ class DataOperation extends Database
 	}
 
 
-	public function session_method($table, $username, $password)
+	public function session_method($table, $username, $password, $unit_id)
+	{
+		$sql = "SELECT * from $table WHERE username='$username' AND password='$password' AND FIND_IN_SET('$unit_id', unit_id)";
+		$query = mysqli_query($this->con, $sql);
+		$row = mysqli_fetch_array($query);
+		return $row;
+	}
+
+	 
+
+	public function session_method_management($table, $username, $password)
 	{
 		$sql = "SELECT * from $table WHERE username='$username' AND password='$password'";
 		$query = mysqli_query($this->con, $sql);
 		$row = mysqli_fetch_array($query);
 		return $row;
 	}
-
 
 	public function executequery($sql)
 	{
@@ -394,6 +461,77 @@ class DataOperation extends Database
 		}
 	}
 
+	public function bulk_insert($table, array $rows, $print = 0)
+	{
+		if (empty($rows)) {
+			return false;
+		}
+
+		// Columns from first row
+		$columns = array_keys($rows[0]);
+
+		$valuesArr = [];
+		foreach ($rows as $row) {
+			$escaped = [];
+			foreach ($columns as $col) {
+				$escaped[] = "'" . mysqli_real_escape_string($this->con, $row[$col] ?? '') . "'";
+			}
+			$valuesArr[] = "(" . implode(",", $escaped) . ")";
+		}
+
+		$sql = "INSERT INTO {$table} (" . implode(",", $columns) . ") VALUES " . implode(",", $valuesArr);
+
+		if ($print == 1) {
+			echo $sql;
+			die;
+		}
+
+		$query = mysqli_query($this->con, $sql);
+		$keyvalue = mysqli_insert_id($this->con);
+		if (!$query) {
+			echo mysqli_error($this->con);
+			die;
+		}
+
+		return $keyvalue;
+		//return true;
+	}
+
+
+	public function bulk_delete($table, array $conditions)
+	{
+		if (empty($conditions)) {
+			return false;
+		}
+
+		$where = [];
+
+		foreach ($conditions as $col => $val) {
+
+			if (is_array($val)) {
+				$escaped = array_map(fn($v) => "'" . mysqli_real_escape_string($this->con, $v) . "'", $val);
+				$where[] = "$col IN (" . implode(",", $escaped) . ")";
+			} else {
+				$where[] = "$col = '" . mysqli_real_escape_string($this->con, $val) . "'";
+			}
+		}
+
+		$sql = "DELETE FROM {$table} WHERE " . implode(" AND ", $where);
+
+		$query = mysqli_query($this->con, $sql);
+
+		if (!$query) {
+			echo mysqli_error($this->con);
+			die;
+		}
+
+
+		return true;
+	}
+
+
+
+
 
 	public function getcode($tablename, $tablepkey, $cond)
 	{
@@ -402,7 +540,7 @@ class DataOperation extends Database
 			$num = 0;
 		++$num; // add 1;
 		$len = strlen($num);
-		for ($i = $len; $i < 5; ++$i) {
+		for ($i = $len; $i < 4; ++$i) {
 			$num = '0' . $num;
 		}
 		return $num;
@@ -523,6 +661,129 @@ class DataOperation extends Database
 				$getval[] = $row[0];
 		}
 		return $getval;
+	}
+
+	function countHolidays($fromDate, $toDate, $weeklyHolidays = [], $specificHolidayDates = [])
+	{
+		// Convert the dates to DateTime objects
+		$start = new DateTime($fromDate);
+		$end = new DateTime($toDate);
+		$end->modify('+1 day'); // Include the end date in the range
+		// Map weekday abbreviations to integers (e.g., 'Sun' => 0, 'Mon' => 1)
+		$weekDayMap = [
+			'Sun' => 0,
+			'Mon' => 1,
+			'Tue' => 2,
+			'Wed' => 3,
+			'Thu' => 4,
+			'Fri' => 5,
+			'Sat' => 6
+		];
+		// Normalize weekly holidays to proper format and convert to integers
+		$holidayDays = array_map(function ($day) use ($weekDayMap) {
+			$day = ucfirst(strtolower($day)); // Normalize input (e.g., 'sun' to 'Sun')
+			return isset($weekDayMap[$day]) ? $weekDayMap[$day] : null;
+		}, $weeklyHolidays);
+
+		// Remove invalid days (if any)
+		$holidayDays = array_filter($holidayDays, function ($day) {
+			return $day !== null;
+		});
+
+		// Validate and normalize specific holiday dates to 'Y-m-d' format
+		$specificHolidayDates = array_filter($specificHolidayDates, function ($date) {
+			return is_string($date); // Ensure only strings are processed
+		});
+
+		$specificHolidayDates = array_map(function ($date) {
+			return (new DateTime($date))->format('Y-m-d');
+		}, $specificHolidayDates);
+
+		$holidayCount = 0;
+		$seenDates = []; // To avoid counting duplicate dates
+
+		// Iterate through each day in the range
+		while ($start < $end) {
+			$currentDate = $start->format('Y-m-d');
+			$currentDayOfWeek = $start->format('w'); // Numeric representation of the day (0 = Sunday)
+
+			// Check if the date is a weekly holiday or a specific holiday
+			if (in_array($currentDayOfWeek, $holidayDays) || in_array($currentDate, $specificHolidayDates)) {
+				if (!in_array($currentDate, $seenDates)) {
+					$holidayCount++;
+					$seenDates[] = $currentDate;
+				}
+			}
+
+			$start->modify('+1 day');
+		}
+
+		return $holidayCount;
+	}
+
+	function calculateSandwichLeaveWithHolidays($presentDates, $startDate, $endDate, $weeklyHolidays = ['Sun'])
+	{
+		// Convert start and end dates to DateTime objects
+		$start = new DateTime($startDate);
+		$end = new DateTime($endDate);
+
+		// Ensure end date is greater than or equal to start date
+		if ($end < $start) {
+			throw new Exception("End date must be greater than or equal to the start date.");
+		}
+
+		// Sort the present dates
+		sort($presentDates);
+
+		$absentDates = []; // To store absent dates
+		$sandwichDates = []; // To store sandwich leave dates
+
+		// Iterate through each date in the range
+		while ($start <= $end) {
+			$currentDate = $start->format('Y-m-d');
+			$dayOfWeek = $start->format('D'); // Get the abbreviated day name (e.g., Sun, Mon)
+
+			// Check if the current date is present
+			if (in_array($currentDate, $presentDates)) {
+				$start->modify('+1 day');
+				continue; // Skip present days
+			}
+
+			// Check if the day is sandwiched between absent days or holidays
+			$prevDay = (clone $start)->modify('-1 day')->format('Y-m-d');
+			$nextDay = (clone $start)->modify('+1 day')->format('Y-m-d');
+
+			// Sandwich leave: Current day is a weekly holiday and flanked by non-present days
+			if (in_array($dayOfWeek, $weeklyHolidays)) {
+				if (!in_array($prevDay, $presentDates) && !in_array($nextDay, $presentDates)) {
+					$sandwichDates[] = $currentDate; // Mark as sandwich leave
+				}
+			} else {
+				// Regular absent day: Not present and not sandwiched
+				$absentDates[] = $currentDate;
+			}
+
+			$start->modify('+1 day');
+		}
+
+		// Total days in the range
+		$totalDays = (new DateTime($startDate))->diff(new DateTime($endDate))->days + 1;
+
+		// Calculate total present days
+		$totalPresent = count($presentDates);
+
+		// Calculate total absent days (regular absent + sandwich leave)
+		$totalAbsent = count(array_diff($absentDates, $sandwichDates)) + count($sandwichDates);
+
+		// Return the results
+		return [
+			'totalDays' => $totalDays,
+			'totalPresent' => $totalPresent,
+			'totalAbsent' => $totalAbsent,
+			'sandwichLeave' => count($sandwichDates),
+			'absentDates' => $absentDates,
+			'sandwichDates' => $sandwichDates,
+		];
 	}
 
 
@@ -727,6 +988,7 @@ class DataOperation extends Database
 	{
 		if ($date != "") {
 			$ndate = explode("-", $date);
+
 			$year = $ndate[0];
 			$day = $ndate[2];
 			$month = $ndate[1];
@@ -737,6 +999,20 @@ class DataOperation extends Database
 				return $day . "-" . $month . "-" . $year;
 		} else
 			return "";
+	}
+
+	function dateformatindia1($date)
+	{
+		if (empty($date) || $date == '0000-00-00' || $date == '-') {
+			return '';
+		}
+
+		$timestamp = strtotime($date);
+		if (!$timestamp) {
+			return ''; // invalid date
+		}
+
+		return date('d-m-Y', $timestamp);
 	}
 
 	function dateformatusa($date)
@@ -957,6 +1233,42 @@ class DataOperation extends Database
 		return $data;
 	}
 
+	function check_addBtn($location, $loginid)
+	{
+
+		$sql = mysqli_query($this->con, "select * from privilage_setting as A left join m_userprivilege as B on A.page_id = B.page_id  where A.userid='$loginid' && B.pagelink='$location'");
+		$rowedit = mysqli_fetch_array($sql);
+		if ($rowedit != '')
+			return $rowedit['page_add'];
+	}
+	function check_printBtn($location, $loginid)
+	{
+
+		$sql = mysqli_query($this->con, "select * from privilage_setting as A left join m_userprivilege as B on A.page_id = B.page_id  where A.userid='$loginid' && B.pagelink='$location'");
+		$rowedit = mysqli_fetch_array($sql);
+		if ($rowedit != '')
+			return $rowedit['page_print'];
+	}
+
+	function check_aprBtn($location, $loginid)
+	{
+
+		$sql = mysqli_query($this->con, "select * from privilage_setting as A left join m_userprivilege as B on A.page_id = B.page_id  where A.userid='$loginid' && B.pagelink='$location'");
+		$rowedit = mysqli_fetch_array($sql);
+		if ($rowedit != '')
+			return $rowedit['page_approve'];
+	}
+
+	function check_spclBtn($location, $loginid)
+	{
+
+		$sql = mysqli_query($this->con, "select * from privilage_setting as A left join m_userprivilege as B on A.page_id = B.page_id  where A.userid='$loginid' && B.pagelink='$location'");
+		$rowedit = mysqli_fetch_array($sql);
+		if ($rowedit != '')
+			return $rowedit['page_special'];
+	}
+
+
 	function check_editBtn($location, $loginid)
 	{
 
@@ -1054,9 +1366,8 @@ class DataOperation extends Database
 	}
 
 
-	function totalWeeklyLeave($unitid, $total_working_days)
+	function totalWeeklyLeave($unitid, $total_working_days, $allow_weekly_off)
 	{
-
 		$row = $this->select_record(
 			"weekly_off_setting",
 			[
@@ -1094,18 +1405,96 @@ class DataOperation extends Database
 				break;
 			}
 		}
-
-		return $leave;
+		$total_leave = $allow_weekly_off == 1 ? $leave : 0;
+		return $total_leave;
 	}
+	// function getLeave($emp_id, $month, $year)
+	// {
+	// 	$baseDate = date('Y-m-01', strtotime("$year-$month-01"));
+	// 	$baseMonth = (int)$month;
+	// 	$baseYear  = (int)$year;
+
+	// 	$opening_balance = $this->getvalfield(
+	// 		"employee_master",
+	// 		"opening_balance",
+	// 		"emp_id='$emp_id'"
+	// 	);
+
+	// 	$opening_date = $this->getvalfield(
+	// 		"employee_master",
+	// 		"opening_date",
+	// 		"emp_id='$emp_id'"
+	// 	);
+
+	// 	// last 3 months list
+	// 	$prevMonths = [];
+	// 	for ($i = 1; $i <= 3; $i++) {
+	// 		$prevMonths[] = [
+	// 			'month' => date('n', strtotime("-$i month", strtotime($baseDate))),
+	// 			'year'  => date('Y', strtotime("-$i month", strtotime($baseDate)))
+	// 		];
+	// 	}
+
+	// 	$used_coff   = $this->getvalfield(
+	// 		"salary_structure",
+	// 		"IFNULL(SUM(c_off_leave),0)",
+	// 		"emp_id='$emp_id'
+	//      AND (
+	//         (month='{$prevMonths[0]['month']}' AND year='{$prevMonths[0]['year']}')
+	//      OR (month='{$prevMonths[1]['month']}' AND year='{$prevMonths[1]['year']}')
+	//      OR (month='{$prevMonths[2]['month']}' AND year='{$prevMonths[2]['year']}')
+	//      )"
+	// 	);
+
+	// 	// ONLY remaining_leave is truth
+	// 	$available_leave = $this->getvalfield(
+	// 		"emp_monthly_leave",
+	// 		"IFNULL(SUM(total_leave),0)",
+	// 		"emp_id='$emp_id' AND leave_type='weekly'
+	//      AND (
+	//         (month='{$prevMonths[0]['month']}' AND year='{$prevMonths[0]['year']}')
+	//      OR (month='{$prevMonths[1]['month']}' AND year='{$prevMonths[1]['year']}')
+	//      OR (month='{$prevMonths[2]['month']}' AND year='{$prevMonths[2]['year']}')
+	//      )"
+	// 	);
+
+	// 	// if (!empty($opening_date) && $opening_balance > 0) {
+	// 	// 	$openingMonth = (int)date('n', strtotime($opening_date));
+	// 	// 	$openingYear  = (int)date('Y', strtotime($opening_date));
+	// 	// 	$diff = ($baseYear - $openingYear) * 12 + ($baseMonth - $openingMonth);
+	// 	// 	if ($diff >= 0 && $diff <= 3) {
+	// 	// 		$available_leave = $available_leave + $opening_balance;
+	// 	// 	}
+	// 	// }
+	// 	return $available_leave + $opening_balance - $used_coff;
+	// 	//return $used_coff;
+	// }
+
+	public function executenonquery($sql)
+	{
+		$result = mysqli_query($this->con, $sql);
+
+		if ($result === false) {
+			throw new Exception("SQL Error: " . mysqli_error($this->con));
+		}
+
+		return true;
+	}
+
+
 	function getLeave($emp_id, $month, $year)
 	{
 		$baseDate = date('Y-m-01', strtotime("$year-$month-01"));
-		$baseMonth = (int)$month;
-		$baseYear  = (int)$year;
-
+		$prevMonths = [];
+		for ($i = 0; $i < 3; $i++) {
+			$prevMonths[] = [
+				'month' => date('n', strtotime("-$i month", strtotime($baseDate))),
+				'year'  => date('Y', strtotime("-$i month", strtotime($baseDate)))
+			];
+		}
 		$opening_balance = $this->getvalfield(
 			"employee_master",
-			"opening_balance",
+			"used_opening_balance",
 			"emp_id='$emp_id'"
 		);
 
@@ -1115,6 +1504,15 @@ class DataOperation extends Database
 			"emp_id='$emp_id'"
 		);
 
+		$opening_allowed = 0;
+		if (!empty($opening_date) && $opening_balance > 0) {
+			$startDate = date('Y-m-01', strtotime("-2 months", strtotime($baseDate)));
+			$endDate   = date('Y-m-t', strtotime($baseDate));
+
+			if ($opening_date >= $startDate && $opening_date <= $endDate) {
+				$opening_allowed = $opening_balance;
+			}
+		}
 		// last 3 months list
 		$prevMonths = [];
 		for ($i = 1; $i <= 3; $i++) {
@@ -1123,32 +1521,52 @@ class DataOperation extends Database
 				'year'  => date('Y', strtotime("-$i month", strtotime($baseDate)))
 			];
 		}
-
 		// ONLY remaining_leave is truth
 		$available_leave = $this->getvalfield(
 			"emp_monthly_leave",
 			"IFNULL(SUM(remining_leave),0)",
-			"emp_id='$emp_id'
+			"emp_id='$emp_id' AND leave_type='weekly'
 	     AND (
 	        (month='{$prevMonths[0]['month']}' AND year='{$prevMonths[0]['year']}')
 	     OR (month='{$prevMonths[1]['month']}' AND year='{$prevMonths[1]['year']}')
 	     OR (month='{$prevMonths[2]['month']}' AND year='{$prevMonths[2]['year']}')
 	     )"
 		);
-
-		if (!empty($opening_date) && $opening_balance > 0) {
-			$openingMonth = (int)date('n', strtotime($opening_date));
-			$openingYear  = (int)date('Y', strtotime($opening_date));
-			$diff = ($baseYear - $openingYear) * 12 + ($baseMonth - $openingMonth);
-			if ($diff >= 0 && $diff <= 3) {
-				$available_leave += $opening_balance;
-			}
-		}
-
-		return $available_leave;
+		return $available_leave + $opening_allowed;
 	}
 
 
+
+
+	function getEarningLeave($emp_id, $sessionid)
+	{
+		//$year = (int)$year;
+		$earning_leave = $this->getvalfield(
+			"emp_monthly_leave",
+			"IFNULL(SUM(remining_leave),0)",
+			"emp_id='$emp_id'
+         AND leave_type='earning'
+         AND sessionid='$sessionid'"
+		);
+
+		return $earning_leave;
+	}
+
+
+	function getCurrentWeekLeave($emp_id, $month, $year)
+	{
+		$year = (int)$year;
+		$month = (int)$month;
+		$weekly_leave = $this->getvalfield(
+			"emp_monthly_leave",
+			"IFNULL(SUM(remining_leave),0)",
+			"emp_id='$emp_id'
+         AND leave_type='weekly'
+         AND year='$year' AND month='$month'"
+		);
+
+		return $weekly_leave;
+	}
 
 	function generateSalaryStructure(
 		float $total_salary = 0,
@@ -1268,6 +1686,563 @@ class DataOperation extends Database
 	function hoursToTime($hours)
 	{
 		return gmdate("H:i:s", $hours * 3600);
+	}
+
+	function calculateWorkingDays($data)
+	{
+		$daysInMonth = $data['daysInMonth'];
+		$presentDays = $data['present'];
+		$holidays    = $data['holiday'];
+		$advance     = $data['advance'];
+		$weeklyBal   = $data['weekly'];
+		$monthlyBal  = $data['monthly'];
+		$cOffBal     = $data['c_off'];
+		$overtime    = $data['overtime'];
+		$is_allow_c_off   = $data['allow_c_off'];
+		$addAllLeave = $data['add_all_leave'];
+
+		//$baseTotal = $presentDays + $holidays + $advance;
+		//$baseTotal = $presentDays + $holidays;
+		$baseTotal = $presentDays;
+
+		$used = [
+			'weekly'   => 0,
+			'monthly'  => 0,
+			'c_off'    => 0,
+			'overtime' => 0
+		];
+
+		if ($is_allow_c_off == 1) {
+
+			$shortage = max(0, $daysInMonth - $baseTotal);
+
+			$used['overtime'] = min($shortage, $overtime);
+			$shortage -= $used['overtime'];
+
+			$used['c_off'] = min($shortage, $cOffBal);
+			$shortage -= $used['c_off'];
+
+			$used['weekly'] = min($shortage, $weeklyBal);
+			$shortage -= $used['weekly'];
+
+			if ($addAllLeave == 1) {
+				$used['monthly'] = min($shortage, $monthlyBal);
+				$shortage -= $used['monthly'];
+			}
+
+			$totalWorking =
+				$baseTotal +
+				$used['weekly'] +
+				$used['monthly'] +
+				$used['c_off'] +
+				$used['overtime'];
+		} else {
+
+			$used['overtime'] = $overtime;
+			$used['weekly']  = $weeklyBal;
+
+			if ($addAllLeave == 1) {
+				$used['monthly'] = $monthlyBal;
+			}
+
+			$totalWorking =
+				$baseTotal +
+				$used['weekly'] +
+				$used['monthly'] +
+				$used['overtime'];
+		}
+
+		//$totalWorking = min($totalWorking, $daysInMonth);
+
+		return [
+			'total_working_days' => $totalWorking,
+			'used_weekly'        => $used['weekly'],
+			'used_monthly'       => $used['monthly'],
+			'used_c_off'         => $used['c_off'],
+			'used_overtime'      => $used['overtime'],
+			'remaining_c_off'    => max(0, $cOffBal - $used['c_off'])
+		];
+	}
+
+	// function getHolidayCountWithSandwichRule($emp_id, $unitid, $month, $year)
+	// {
+	// 	// Step 1: Get all holidays of that month for unit
+	// 	$holidays = $this->executequery("
+	//     SELECT `date`,holiday_type
+	//     FROM holiday_entry
+	//     WHERE FIND_IN_SET('$unitid', unit_id)
+	//       AND MONTH(`date`) = '$month'
+	//       AND YEAR(`date`) = '$year'
+	//       AND is_deleted = 0
+	// ");
+	// 	$result = [
+	// 		'total'     => 0,
+	// 		'national'  => 0,
+	// 		'religious' => 0,
+	// 		'seasonal'  => 0
+	// 	];
+	// 	$holidayCount = 0;
+
+	// 	foreach ($holidays as $row) {
+
+	// 		$holidayDate = $row['date'];
+
+	// 		$prevDate = date('Y-m-d', strtotime($holidayDate . ' -1 day'));
+	// 		$nextDate = date('Y-m-d', strtotime($holidayDate . ' +1 day'));
+
+	// 		// Step 2: Check attendance on previous day
+	// 		$prevStatus = $this->getvalfield(
+	// 			"attendance_entry",
+	// 			"attendance_status",
+	// 			"emp_id='$emp_id' AND attendance_date='$prevDate'"
+	// 		);
+
+	// 		// Step 3: Check attendance on next day
+	// 		$nextStatus = $this->getvalfield(
+	// 			"attendance_entry",
+	// 			"attendance_status",
+	// 			"emp_id='$emp_id' AND attendance_date='$nextDate'"
+	// 		);
+
+	// 		$presentStatuses = ['Present', 'Weekly Leave', 'Earning Leave', 'Half Day'];
+
+	// 		// Step 4: Sandwich Rule
+	// 		if (
+	// 			in_array($prevStatus, $presentStatuses) ||
+	// 			in_array($nextStatus, $presentStatuses)
+	// 		) {
+	// 			$holidayCount++;
+	// 		}
+	// 	}
+	// 	return $holidayCount;
+	// }
+
+
+	function getHolidayCountWithSandwichRule($emp_id, $unitid, $month, $year)
+	{
+		// Fetch holidays with type
+		$holidays = $this->executequery("
+        SELECT `date`, holiday_type
+        FROM holiday_entry
+        WHERE FIND_IN_SET('$unitid', unit_id)
+          AND MONTH(`date`) = '$month'
+          AND YEAR(`date`) = '$year'
+          AND is_deleted = 0
+    ");
+
+		$result = [
+			'total'     => 0,
+			'national'  => 0,
+			'religious' => 0,
+			'seasonal'  => 0
+		];
+
+		$presentStatuses = ['Present', 'Weekly Leave', 'Earning Leave', 'Half Day'];
+
+		foreach ($holidays as $row) {
+
+			$holidayDate = $row['date'];
+			$holidayType = strtolower(trim($row['holiday_type']));
+			// expected: national / religious / seasonal
+
+			$prevDate = date('Y-m-d', strtotime($holidayDate . ' -1 day'));
+			$nextDate = date('Y-m-d', strtotime($holidayDate . ' +1 day'));
+
+			$prevStatus = $this->getvalfield(
+				"attendance_entry",
+				"attendance_status",
+				"emp_id='$emp_id' AND attendance_date='$prevDate'"
+			);
+
+			$nextStatus = $this->getvalfield(
+				"attendance_entry",
+				"attendance_status",
+				"emp_id='$emp_id' AND attendance_date='$nextDate'"
+			);
+
+			// Sandwich Rule
+			if (
+				in_array($prevStatus, $presentStatuses) ||
+				in_array($nextStatus, $presentStatuses)
+			) {
+				$result['total']++;
+
+				if (isset($result[$holidayType])) {
+					$result[$holidayType]++;
+				}
+			}
+		}
+
+		return $result;
+	}
+
+	function calculateLeaveUsage($daysInMonth, $presentDays, $weeklyBalance, $monthlyBalance, $coffBalance, $is_allow_c_off, $is_all_leave_add, $overtimeDays = 0)
+	{
+		$baseTotal = $presentDays;
+
+		$usedWeeklyLeave = 0;
+		$usedMonthlyLeave = 0;
+		$usedCOff = 0;
+		$usedOvertime = 0;
+
+		if ($is_allow_c_off == 1) {
+
+			$shortage = $daysInMonth - $baseTotal;
+			if ($shortage < 0) $shortage = 0;
+
+			$usedOvertime = min($shortage, $overtimeDays);
+			$shortage -= $usedOvertime;
+
+			$usedCOff = min($shortage, $coffBalance);
+			$shortage -= $usedCOff;
+
+			$usedWeeklyLeave = min($shortage, $weeklyBalance);
+			$shortage -= $usedWeeklyLeave;
+
+			if ($is_all_leave_add == 1) {
+				$usedMonthlyLeave = min($shortage, $monthlyBalance);
+				$shortage -= $usedMonthlyLeave;
+			}
+		} else {
+
+			$usedOvertime = $overtimeDays;
+			$usedWeeklyLeave = $weeklyBalance;
+
+			if ($is_all_leave_add == 1) {
+				$usedMonthlyLeave = $monthlyBalance;
+			}
+
+			$usedCOff = 0;
+		}
+
+		$totalWorkingDays = $baseTotal + $usedWeeklyLeave + $usedMonthlyLeave + $usedCOff + $usedOvertime;
+
+		if ($totalWorkingDays > $daysInMonth) {
+			$totalWorkingDays = $daysInMonth;
+		}
+
+		return [
+			'used_weekly' => $usedWeeklyLeave,
+			'used_monthly' => $usedMonthlyLeave,
+			'used_coff' => $usedCOff,
+			'used_overtime' => $usedOvertime,
+			'total_working_days' => $totalWorkingDays
+		];
+	}
+
+	function calculateLateIn($office_in_time, $actual_in_time, $in_margin)
+	{
+		$shiftStart = strtotime($office_in_time);
+		$actualIn   = strtotime($actual_in_time);
+
+		// allowed time with margin
+		$allowedTime = $shiftStart + ($in_margin * 60);
+
+		if ($actualIn > $allowedTime) {
+			$lateSeconds = $actualIn - $allowedTime;
+			return gmdate("H:i:s", $lateSeconds);
+		}
+
+		return "00:00:00";
+	}
+	function calculateEarlyOut($office_out_time, $actual_out_time, $out_margin)
+	{
+		$shiftEnd  = strtotime($office_out_time);
+		$actualOut = strtotime($actual_out_time);
+
+		// allowed early leave time
+		$allowedOut = $shiftEnd - ($out_margin * 60);
+
+		if ($actualOut < $allowedOut) {
+			$earlySeconds = $allowedOut - $actualOut;
+			return gmdate("H:i:s", $earlySeconds);
+		}
+
+		return "00:00:00";
+	}
+
+	function calculateMonthlyTDS($monthlySalary)
+	{
+		$annualSalary = $monthlySalary * 12;
+
+		// fetch slabs from DB
+		$slabs = $this->executequery("
+        SELECT min_income, max_income, tax_rate 
+        FROM tds_slabs 
+        ORDER BY min_income ASC
+    ");
+
+		$tax = 0;
+
+		foreach ($slabs as $slab) {
+
+			$min = (float)$slab['min_income'];
+			$max = (float)$slab['max_income'];
+			$rate = (float)$slab['tax_rate'];
+
+			if ($annualSalary > $min) {
+
+				// if no upper limit OR salary inside slab
+				if ($max == 0 || $annualSalary <= $max) {
+					$tax += ($annualSalary - $min) * ($rate / 100);
+					break;
+				} else {
+					$tax += ($max - $min) * ($rate / 100);
+				}
+			}
+		}
+
+		// rebate rule (important)
+		if ($annualSalary <= 1200000) {
+			$tax = 0;
+		}
+
+		// return monthly TDS
+		return round($tax / 12);
+	}
+
+	function calculateWorkingHoursAndStatus(
+		$attendance_date,
+		$intime,
+		$outtime,
+		$shift_working_hrs,
+		$shift_working_half_hrs,
+		$in_margin,
+		$out_margin
+	) {
+
+		// Convert shift working hours to minutes
+		list($wh, $wm, $ws) = explode(':', $shift_working_hrs);
+		$officeWorkingMinutes = ($wh * 60) + $wm;
+
+		// Convert half day working hours to minutes
+		list($hh, $hm, $hs) = explode(':', $shift_working_half_hrs);
+		$halfWorkingMinutes = ($hh * 60) + $hm;
+
+		// Create DateTime
+		$start = new DateTime($attendance_date . ' ' . $intime);
+		$end   = new DateTime($outtime);
+
+		// Handle cross-day
+		if ($end < $start) {
+			$end->modify('+1 day');
+		}
+
+		// Difference
+		$interval = $start->diff($end);
+
+		// ✅ TOTAL SECONDS (CORRECT)
+		$totalSeconds =
+			($interval->days * 24 * 60 * 60) +
+			($interval->h * 60 * 60) +
+			($interval->i * 60) +
+			$interval->s;
+
+		$hours = floor($totalSeconds / 3600);
+		$minutes = floor(($totalSeconds % 3600) / 60);
+		$seconds = $totalSeconds % 60;
+
+		$working_hours = sprintf('%02d:%02d:%02d', $hours, $minutes, $seconds);
+
+		// ✅ TOTAL MINUTES (FIXED)
+		$workedMinutes =
+			($interval->days * 24 * 60) +
+			($interval->h * 60) +
+			$interval->i;
+
+		// Apply margin
+		$totalMarginMinutes = $in_margin + $out_margin;
+		$minimumRequiredMinutes = $officeWorkingMinutes - $totalMarginMinutes;
+
+		// Attendance logic
+		if ($workedMinutes < $halfWorkingMinutes) {
+			$attendance_status = "Absent";
+			$attheadid = 2;
+		} elseif ($workedMinutes >= $halfWorkingMinutes && $workedMinutes < $minimumRequiredMinutes) {
+			$attendance_status = "Half Day";
+			$attheadid = 3;
+		} else {
+			$attendance_status = "Present";
+			$attheadid = 1;
+		}
+
+		return [
+			'working_hours' => $working_hours,   // ✅ 24:15:00
+			'worked_minutes' => $workedMinutes,  // ✅ 1455 minutes
+			'attendance_status' => $attendance_status,
+			'attheadid' => $attheadid
+		];
+	}
+
+	// function calculateWorkingHoursAndStatus(
+	// 	$attendance_date,
+	// 	$intime,
+	// 	$outtime,
+	// 	$shift_working_hrs,
+	// 	$shift_working_half_hrs,
+	// 	$in_margin,
+	// 	$out_margin
+	// ) {
+
+	// 	/* ================= SHIFT MINUTES ================= */
+
+	// 	list($wh, $wm, $ws) = explode(':', $shift_working_hrs);
+	// 	$officeWorkingMinutes = ($wh * 60) + $wm;
+
+	// 	list($hh, $hm, $hs) = explode(':', $shift_working_half_hrs);
+	// 	$halfWorkingMinutes = ($hh * 60) + $hm;
+
+
+	// 	/* ================= DATETIME BUILD ================= */
+
+	// 	// If intime is only time → attach attendance date
+	// 	if (strlen($intime) <= 8) {
+	// 		$start = new DateTime($attendance_date . ' ' . $intime);
+	// 	} else {
+	// 		$start = new DateTime($intime);
+	// 	}
+
+	// 	// Outtime is usually full datetime
+	// 	$end = new DateTime($outtime);
+
+
+	// 	/* ================= CROSS DAY FIX ================= */
+
+	// 	if ($end < $start) {
+	// 		$end->modify('+1 day');
+	// 	}
+
+
+	// 	/* ================= CALCULATE INTERVAL ================= */
+
+	// 	$interval = $start->diff($end);
+
+	// 	// TOTAL HOURS (INCLUDING DAYS)
+	// 	$totalHours = ($interval->days * 24) + $interval->h;
+
+	// 	// TOTAL MINUTES (CORRECT WAY)
+	// 	$workedMinutes = ($interval->days * 24 * 60) + ($interval->h * 60) + $interval->i;
+
+	// 	// TOTAL SECONDS
+	// 	$totalSeconds =
+	// 		($interval->days * 24 * 60 * 60) +
+	// 		($interval->h * 60 * 60) +
+	// 		($interval->i * 60) +
+	// 		$interval->s;
+
+	// 	$working_hours = gmdate('H:i:s', $totalSeconds);
+
+
+	// 	/* ================= SAFETY CHECK ================= */
+
+	// 	// ❌ Prevent wrong mapping (more than 18 hrs)
+	// 	if ($totalHours > 18) {
+
+	// 		// Try correcting end date using attendance_date
+	// 		$end = new DateTime($attendance_date . ' ' . $end->format('H:i:s'));
+
+	// 		if ($end < $start) {
+	// 			$end->modify('+1 day');
+	// 		}
+
+	// 		$interval = $start->diff($end);
+
+	// 		$totalHours = ($interval->days * 24) + $interval->h;
+	// 		$workedMinutes = ($interval->days * 24 * 60) + ($interval->h * 60) + $interval->i;
+
+	// 		$totalSeconds =
+	// 			($interval->days * 24 * 60 * 60) +
+	// 			($interval->h * 60 * 60) +
+	// 			($interval->i * 60) +
+	// 			$interval->s;
+
+	// 		$working_hours = gmdate('H:i:s', $totalSeconds);
+
+	// 		// ❌ Still invalid → reject
+	// 		if ($totalHours > 18) {
+	// 			return [
+	// 				'working_hours' => '00:00:00',
+	// 				'worked_minutes' => 0,
+	// 				'attendance_status' => 'Invalid Punch',
+	// 				'attheadid' => 0
+	// 			];
+	// 		}
+	// 	}
+
+
+	// 	/* ================= MARGIN ================= */
+
+	// 	$totalMarginMinutes = $in_margin + $out_margin;
+	// 	$minimumRequiredMinutes = $officeWorkingMinutes - $totalMarginMinutes;
+
+
+	// 	/* ================= ATTENDANCE LOGIC ================= */
+
+	// 	if ($workedMinutes < $halfWorkingMinutes) {
+	// 		$attendance_status = "Absent";
+	// 		$attheadid = 2;
+	// 	} elseif ($workedMinutes >= $halfWorkingMinutes && $workedMinutes < $minimumRequiredMinutes) {
+	// 		$attendance_status = "Half Day";
+	// 		$attheadid = 3;
+	// 	} else {
+	// 		$attendance_status = "Present";
+	// 		$attheadid = 1;
+	// 	}
+
+
+	// 	/* ================= RETURN ================= */
+
+	// 	return [
+	// 		'working_hours' => $working_hours,
+	// 		'worked_minutes' => $workedMinutes,
+	// 		'attendance_status' => $attendance_status,
+	// 		'attheadid' => $attheadid
+	// 	];
+	// }
+	function getWorkingDuration($start_date, $end_date)
+	{
+		if (empty($start_date) || empty($end_date)) return '';
+
+		$start = new DateTime($start_date);
+		$end = new DateTime($end_date);
+
+		$diff = $start->diff($end);
+
+		$result = '';
+
+		if ($diff->y > 0) {
+			$result .= $diff->y . ' year ';
+		}
+		if ($diff->m > 0) {
+			$result .= $diff->m . ' month ';
+		}
+		if ($diff->d > 0) {
+			$result .= $diff->d . ' day';
+		}
+
+		return trim($result);
+	}
+
+	function getCustomCode($time)
+	{
+
+		// agar full time string aaye (08:30:00)
+		if (strpos($time, ':') !== false) {
+			$hours = (int) explode(':', $time)[0];
+		} else {
+			$hours = (int)$time;
+		}
+
+		// 0–9 → Single Letter
+		if ($hours < 10) {
+			return chr(64 + $hours);
+		}
+
+		// 10+ → Double Letter
+		$first = intdiv($hours, 10);
+		$second = $hours % 10;
+
+		return chr(64 + $first) . chr(64 + $second);
 	}
 }
 
