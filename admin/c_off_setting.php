@@ -163,15 +163,17 @@ $w5 = $sqledit['w5'] ?? '';
                                             </tbody>
 
                                         </table>
-
-
                                     </div>
-                                    <div class="col-lg-12">
-                                        <div class="hstack gap-2 justify-content-center">
-                                            <button type="submit" name="submit" class="btn btn-sm btn-primary" onclick="return checkinputmaster('');">Update</button>
+                                    <?php
+                                    $chkedit = $obj->check_editBtn($pagename, $loginid);
+                                    if ($chkedit == 1) {
+                                    ?>
+                                        <div class="col-lg-12">
+                                            <div class="hstack gap-2 justify-content-center">
+                                                <button type="submit" name="submit" class="btn btn-sm btn-primary" onclick="return checkinputmaster('');">Update</button>
+                                            </div>
                                         </div>
-                                    </div>
-
+                                    <?php } ?>
                                 </div>
                             </div>
                         </div>

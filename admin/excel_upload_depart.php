@@ -1,5 +1,5 @@
 <?php include("../adminsession.php");
-$pagename = "emp_overtime.php";
+$pagename = "excel_upload_depart.php";
 $title = "Employee Overtime";
 $tblname = "emp_overtime";
 $tblpkey = "overtime_id";
@@ -34,7 +34,6 @@ if (isset($_POST['upload_excel'])) {
     $insertedCount = 0;
     $skippedCount = 0;
     $skippedEpicNumbers = array();
-
 
     if (isset($_FILES['file_upload']['tmp_name']) && $_FILES['file_upload']['error'] == UPLOAD_ERR_OK) {
         $fileType = pathinfo($_FILES['file_upload']['name'], PATHINFO_EXTENSION);

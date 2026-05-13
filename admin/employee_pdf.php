@@ -1,6 +1,7 @@
 <?php
 include("../adminsession.php");
 
+
 require_once __DIR__ . '/mpdf/vendor/autoload.php';
 
 $mpdf = new \Mpdf\Mpdf([
@@ -14,7 +15,9 @@ $pageHeight = 297;
 $headerHeight = 40;
 $footerHeight = 40;
 $imgpath1 = 'uploaded/emp_documents/';
-$unit_imgpath = 'uploaded/unit_logo/';
+//$unit_imgpath = 'uploaded/unit_logo/';
+$unit_imgpath = '../management/uploaded/emp_documents/';
+
 
 $tblname = "employee_master";
 $tblpkey = "emp_id";
@@ -22,6 +25,7 @@ $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $fields = [
     'emp_code',
     'first_name',
+    'emp_sign',
     'last_name',
     'father_name',
     'gender',
@@ -84,6 +88,7 @@ $fields = [
     'status',
     'document_checked_ids',
     'last_salary',
+    'anniversary_date',
     'createdby',
     'ipaddress',
     'createdate',
@@ -107,11 +112,44 @@ if (isset($_GET[$tblpkey])) {
     $bank_name = $obj->getvalfield("bank_master", "bank_name", "bank_id='$bank_id'");
     $shift_name = $obj->getvalfield("shift_master", "shift_name", "shift_id='$shift_id'");
     $unit_logo = $obj->getvalfield("unit_master", "logo_image", "unit_id='$unit_id'");
+    $unit_name    = $obj->getvalfield("unit_master", "unit_name", "unit_id='$unit_id'");
+    $head_name    = $obj->getvalfield("unit_master", "unithead", "unit_id='$unit_id'");
+    $unit_mobile  = $obj->getvalfield("unit_master", "mobile", "unit_id='$unit_id'");
+    $unit_email   = $obj->getvalfield("unit_master", "email_id", "unit_id='$unit_id'");
+    $unit_address = $obj->getvalfield("unit_master", "address", "unit_id='$unit_id'");
+
 
     $checkedDocs = [];
     if (!empty($document_checked_ids)) {
         $checkedDocs = explode(',', $document_checked_ids);
     }
+
+    $emp_family = $obj->executequery("SELECT * FROM emp_family_details WHERE emp_id = '$keyvalue'");
+    $mother_name = '';
+
+    if (!empty($emp_family)) {
+        foreach ($emp_family as $family) {
+
+            if (strtolower($family['relation']) == 'mother') {
+                $mother_name = $family['member_name'];
+            }
+        }
+    }
+
+
+    $emp_documents = $obj->executequery("SELECT ed.*, dm.document_name FROM emp_document ed LEFT JOIN document_master dm ON dm.doc_id = ed.doc_id WHERE ed.emp_id = '$keyvalue'");
+
+    $emp_education = $obj->executequery("SELECT * FROM emp_education WHERE emp_id = '$keyvalue' ORDER BY education_id ASC");
+
+    // Branch Transfer Records
+    $emp_branch_transfer = $obj->executequery("SELECT bt.*, um.unit_name, dm.department_name, des.designation FROM emp_branch_transfer bt LEFT JOIN unit_master um ON um.unit_id = bt.unit_id LEFT JOIN department_master dm ON dm.department_id = bt.department_id LEFT JOIN designation_master des ON des.designation_id = bt.designation_id WHERE bt.emp_id = '$keyvalue' ORDER BY bt.branch_transfer_id ASC");
+
+    $loan_advance = $obj->executequery("
+        SELECT *
+        FROM loan_advance
+        WHERE emp_id = '$keyvalue'
+        ORDER BY loan_advance_id ASC
+    ");
 }
 
 ob_start();
@@ -125,8 +163,13 @@ ob_start();
 
     <style>
         body {
-            font-family: Arial;
-            font-size: 12px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            color: #000;
+        }
+
+        .container {
+            width: 100%;
         }
 
         table {
@@ -134,567 +177,600 @@ ob_start();
             border-collapse: collapse;
         }
 
-        td,
-        th {
-            border: 1px solid #000;
-            padding: 10px;
+        td {
+            padding: 4px 6px;
             vertical-align: top;
+        }
+
+        .heading {
+            font-size: 16px;
+            font-weight: bold;
+            padding-top: 15px;
+            padding-bottom: 5px;
+        }
+
+        .label {
+            width: 180px;
+        }
+
+        .colon {
+            width: 10px;
+        }
+
+        .value {
+            width: 250px;
+        }
+
+        .header-table td {
+            vertical-align: top;
+        }
+
+        .logo {
+            width: 120px;
+        }
+
+        .photo {
+            width: 95px;
+            height: 115px;
+        }
+
+        .sign {
+            width: 95px;
+            height: 40px;
+        }
+
+
+        .company-info {
+            text-align: left;
+            font-size: 13px;
         }
     </style>
 
 </head>
 
 <body>
-    <!-- page 2 -->
 
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="20%" style="border: 0px;" align="left">
-                <img src="<?= $unit_imgpath . '/' . $unit_logo ?>" alt="" width="50px">
-            </td>
-            <td width="80%" style="border: 0px;" align="right">
-                <b>Candidate Joining Form</b>
-            </td>
-        </tr>
-    </table>
+    <div class="container">
 
-    <br>
+        <!-- Header Section -->
 
-    <b>To be Filled in by own handwriting of the applicant in Block Letters</b>
+        <table class="header-table">
 
-    <br><br>
-
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="70%">
-                <b>Employee Code Allotted</b> : <?= $emp_code ?>
-
-            </td>
-            <td width="30%" rowspan="6" align="center" valign="middle" border="1">
-                <?php if ($profile_image != "") {
-                ?>
-                    <img src="<?php echo $imgpath1 . $profile_image;  ?>" style="height:20%; width:20%;" alt="">
-                <?php
-                } else { ?> <br><br>
-                    Paste recent<br>
-                    passport size<br>
-                    Photograph
-                    <br><br><br> <?php
-                                } ?>
-
-            </td>
-        </tr>
-
-        <tr>
-            <td>1. Position Applied For : <?= $designation; ?></td>
-        </tr>
-
-        <tr>
-            <td>2. Full Name of Candidate (As per Aadhaar Card)</td>
-        </tr>
-
-        <tr>
-            <td><?= htmlspecialchars(ucfirst(trim($first_name)) . ' ' . ucfirst(trim($last_name))); ?></td>
-
-        </tr>
-
-        <tr>
-            <td>3. Father’s Name : <?= htmlspecialchars(ucfirst(trim($father_name))) ?></td>
-
-        </tr>
-    </table>
-
-    <br>
-
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="50%"><b>4. Present Address</b></td>
-            <td width="50%"><b>Permanent Address</b></td>
-        </tr>
-
-        <tr>
-            <td><?= ucfirst($present_address ?? ''); ?></td>
-            <td><?= ucfirst($permanent_address ?? '');  ?></td>
-        </tr>
-
-    </table>
-
-    <br>
-
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="50%">
-                5. Contact Number : +91 <?= $mobile_no; ?>
-            </td>
-            <td width="50%">
-                +91 <?= $alt_mobile_no; ?>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="2">
-                Email ID :
-                <?= $email_id; ?>
-            </td>
-        </tr>
-    </table>
-
-    <br>
-
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td>
-                6. Gender : <?= $gender; ?>
-            </td>
-        </tr>
-    </table>
-
-    <br>
-
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="33%">7. Date of Birth : <?= $obj->dateformatindia($dob);  ?></td>
-            <td width="33%">8. Age (in Years) : <?= $age; ?></td>
-            <td width="34%">9. Blood Group : <?= $blood_group; ?></td>
-        </tr>
-
-        <tr>
-            <td>10. Identification Marks : <?= $identification_masks ?></td>
-
-        </tr>
-
-
-
-
-
-        <tr>
-            <td>11. Marital Status : <?= $marital_status; ?></td>
-            <td>12. Nationality : <?= ucfirst($nationality ?? '');  ?></td>
-            <td></td>
-        </tr>
-
-        <tr>
-            <td>13. Religion : <?= ucfirst($religion ?? ''); ?></td>
-            <td colspan="2">20. Caste : <?= $caste; ?></td>
-        </tr>
-
-        <tr>
-            <td>14. Driving License No. : <?= $driving_license; ?></td>
-            <td>15. Passport No. : <?= $passport_no; ?></td>
-            <td></td>
-        </tr>
-
-        <tr>
-            <td>16. PAN Card No. : <?= $pan_no; ?></td>
-            <td colspan="2">17. Aadhar Number : <?= $aadhar_no; ?></td>
-        </tr>
-    </table>
-
-    <br>
-
-    <b>18. Language Known :</b>
-
-    <table width="100%" cellpadding="8" cellspacing="0" border="1">
-        <tr align="center">
-            <td>Languages</td>
-            <td>Speak</td>
-            <td>Read</td>
-            <td>Write</td>
-        </tr>
-
-        <?php
-        $details = $obj->executequery("Select * from emp_language where emp_id='$keyvalue' and unit_id='$unitid' order by emp_language_id desc");
-
-        foreach ($details as $row) {
-        ?> <tr height="30">
-                <td><?= $row['language_name']; ?> </td>
-                <td><?= $row['is_speak'] == '1' ? 'Yes' : 'No'; ?> </td>
-                <td><?= $row['is_read'] == '1' ? 'Yes' : 'No'; ?> </td>
-                <td><?= $row['is_write'] == '1' ? 'Yes' : 'No'; ?> </td>
-            </tr>
-        <?php }
-        ?>
-
-
-    </table>
-
-
-    <!-- <pagebreak /> -->
-
-    <!-- Page 3 -->
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="70%" style="border: 0px;"></td>
-            <td width="30%" align="right" style="border: 0px;"><b>Candidate Joining Form</b></td>
-        </tr>
-    </table>
-
-    <br>
-
-    <b>19. Family Details (Details required for ESIC Registration and Insurances)</b>
-
-    <br><br>
-
-    <table width="100%" cellpadding="6" cellspacing="0" border="1">
-        <tr align="center">
-            <td width="5%"><b>Sl.</b></td>
-            <td width="30%"><b>Family Member Name<br>(As per Aadhaar Card)</b></td>
-            <td width="8%"><b>Sex</b></td>
-            <td width="15%"><b>Date of Birth</b></td>
-            <td width="12%"><b>Relationship</b></td>
-            <td width="30%"><b>Address</b></td>
-        </tr>
-        <?php
-        $sno = 1;
-        $details = $obj->executequery("Select * from emp_family_details where emp_id='$keyvalue' and unit_id='$unitid' order by family_detail_id desc");
-        foreach ($details as $row) {
-
-        ?>
-            <tr height="35">
-                <td><?= $sno++; ?> </td>
-                <td><?= ucfirst($row['member_name'] ?? '');   ?> </td>
-                <td><?= ucfirst($row['gender'] ?? ''); ?> </td>
-                <td><?= $obj->dateformatindia($row['dob']); ?> </td>
-                <td><?= ucfirst($row['relation'] ?? ''); ?> </td>
-                <td><?= ucfirst($row['address'] ?? '');  ?> </td>
-            </tr> <?php } ?>
-    </table>
-
-    <br><br>
-
-    <b>
-        20. Education Details : Please note that with any proper witness any mentioned qualification details are invalid
-        in our record so submit your mark sheet with this form.
-    </b>
-
-    <br><br>
-
-    <table width="100%" cellpadding="6" cellspacing="0" border="1">
-        <tr align="center">
-            <td width="14%"><b>Examination<br>Passed</b></td>
-            <td width="18%"><b>Name of<br>College or<br>School</b></td>
-            <td width="18%"><b>University or<br>Board Name</b></td>
-            <td width="16%"><b>Date / Year</b></td>
-            <td width="18%"><b>Subject /<br>Specialization</b></td>
-            <td width="16%"><b>Percentage /<br>Grade</b></td>
-        </tr>
-        <?php
-        $edu_details = $obj->executequery("Select * from emp_education where emp_id='$keyvalue' and unit_id='$unitid' order by education_id desc");
-
-        foreach ($edu_details as $row) {
-        ?>
-            <tr align="center">
-                <td><?= ucfirst($row['examination'] ?? '');   ?> </td>
-                <td><?= ucfirst($row['college'] ?? '');  ?> </td>
-                <td><?= ucfirst($row['university'] ?? '');  ?> </td>
-                <td><?= $row['pass_year']; ?> </td>
-                <td><?= $row['percentage']; ?> </td>
-                <td><?= ucfirst($row['subject'] ?? '');   ?> </td>
-
-            </tr>
-        <?php } ?>
-
-    </table>
-
-
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="70%" style="border: 0px;"></td>
-            <td width="30%" align="right" style="border: 0px;"><b>Candidate Joining Form</b></td>
-        </tr>
-    </table>
-
-    <br>
-
-    <b>
-        21. Previous Experience : Please note that, this record will be verified from employers so give it true.
-    </b>
-
-    <br><br>
-
-    <table width="100%" cellpadding="6" cellspacing="0" border="1">
-        <tr align="center">
-            <td rowspan="2" width="5%"><b>Sl.</b></td>
-            <td colspan="2" width="30%"><b>Service Period</b></td>
-            <td rowspan="2" width="28%"><b>Name of Employer<br>with Address</b></td>
-            <td rowspan="2" width="15%"><b>Designation</b></td>
-            <td rowspan="2" width="15%"><b>Last Drawn<br>Salary</b></td>
-            <td rowspan="2" width="17%"><b>Reason for<br>Change</b></td>
-        </tr>
-        <tr align="center">
-            <td width="15%"><b>From</b></td>
-            <td width="15%"><b>To</b></td>
-        </tr>
-
-        <tr height="35">
-            <td>1.</td>
-            <td><?= $obj->dateformatindia($service_from); ?> </td>
-            <td><?= $obj->dateformatindia($service_to); ?> </td>
-            <td><?= ucfirst($employer_name ?? ''); ?></td>
-            <td><?= ucfirst($employer_designation ?? ''); ?></td>
-            <td><?= $last_salary; ?></td>
-            <td><?= ucfirst($reason ?? ''); ?></td>
-        </tr>
-
-    </table>
-
-    <br>
-
-    <table width="100%" cellpadding="8" cellspacing="0" border="1">
-        <tr>
-            <td height="120" valign="top">
-                <b>22. Brief your Job responsibilities in Previous Employer</b>
-                <br><br>
-                <?= ucfirst($job_responsibility ?? ''); ?>
-            </td>
-
-        </tr>
-
-    </table>
-
-    <br>
-
-
-    <br><br>
-
-    <center><b>DECLARATION</b></center>
-
-    <br>
-
-    I hereby declare that, the above mentioned details are true and complete in my knowledge.
-    I also authorize that, if you are your management found any mistake in my information
-    then you can terminate my services immediately.
-
-    <br><br><br>
-
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="50%">
-                <b>Date :</b> ....../....../..............
-            </td>
-            <td width="50%" align="right">
-                <b>Signature of Candidate</b>
-            </td>
-        </tr>
-    </table>
-
-    <!-- page 5 -->
-    <pagebreak />
-
-
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="70%" style="border: 0px;"></td>
-            <td width="30%" align="right" style="border: 0px;"><b>Document Checklist for Joining</b></td>
-        </tr>
-    </table>
-
-    <br>
-
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="50%">
-                <b>Name</b> : <?= htmlspecialchars(ucfirst(trim($first_name)) . ' ' . ucfirst(trim($last_name))); ?>
-            </td>
-            <td width="50%">
-                <b>Date of Joining</b> : <?= $obj->dateformatindia($date_of_joining); ?>
-            </td>
-        </tr>
-
-        <tr>
-            <td>
-                <b>Designation</b> : <?= $designation ?>
-            </td>
-            <td>
-                <b>Grade</b> : <?= $grade_name ?>
-            </td>
-        </tr>
-
-        <tr>
-            <td>
-                <b>Department</b> : <?= $department_name ?>
-            </td>
-            <td>
-                <b>Employee Code</b> : <?= $emp_code ?>
-            </td>
-        </tr>
-    </table>
-
-    <br>
-
-    <table width="100%" cellpadding="6" cellspacing="0" border="1">
-        <tr align="center">
-            <td width="6%"><b>Sl.</b></td>
-            <td width="74%"><b>Description</b></td>
-            <td width="20%"><b>Status</b></td>
-        </tr>
-
-        <tr>
-            <td align="center">1</td>
-            <td><b>Academic Qualification Certificate</b></td>
-            <td></td>
-        </tr>
-        <?php
-        $sn = 1;
-        $doc_res = $obj->executequery("SELECT * FROM document_master ORDER BY doc_id ASC");
-        foreach ($doc_res as $row) {
-            if (isset($checkedDocs)) {
-                $isChecked = in_array($row['doc_id'], $checkedDocs) ? 'Checked' : '';
-            } else {
-                $isChecked = '';
-            }
-
-        ?>
             <tr>
-                <td><?= $sn++; ?></td>
-                <td><?= $row['document_name']; ?> : </td>
-                <td><?= $isChecked ?></td>
+
+                <td width="25%">
+                    <?php if (!empty($unit_logo) && file_exists($unit_imgpath . $unit_logo)) { ?>
+                        <img src="<?php echo $unit_imgpath . $unit_logo; ?>" class="logo">
+                    <?php } ?>
+
+                </td>
+
+                <td width="50%" class="company-info">
+
+                    <span class="fe-semibold"> Unit Name :</span>
+                    <small><?= $unit_name ?></small> <br>
+
+                    <span class="fe-semibold"> Head Name :</span>
+                    <small><?= $head_name ?></small> <br>
+
+                    <span class="fe-semibold"> Contact No :</span>
+                    <small><?= $unit_mobile ?></small> <br>
+
+                    <span class="fe-semibold"> Email :</span>
+                    <small><?= $unit_email ?></small> <br>
+
+                    <span class="fe-semibold"> Unit Address :</span>
+                    <small><?= $unit_address ?></small>
+
+                </td>
+
+
             </tr>
-        <?php } ?>
 
-    </table>
+        </table>
 
-    <br>
+        <hr>
+        <!-- Employee Basic Info -->
 
-    <b>Undertaking :</b><br>
-    I hereby declare that the above submitted documents are self verified by me and pending
-    documents will be submit with .......... days in HR department. The HR department has full
-    right to hold/keep pending my monthly salary till I comply with the same.
+        <table>
 
-    <br><br><br>
+            <tr>
 
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="50%">
-                <b>HR Name &amp; Signature</b>
-            </td>
-            <td width="50%" align="right">
-                <b>Candidate Signature</b>
-            </td>
-        </tr>
-    </table>
+                <td class="label">Employee Name</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo strtoupper($first_name . ' ' . $last_name); ?></td>
 
+                <td rowspan="6" align="right" width="200">
 
-    <pagebreak />
-    <!-- page 6 -->
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td align="center">
+                                <?php if (!empty($profile_image) && file_exists($imgpath1 . $profile_image)) { ?>
+                                    <img src="<?php echo $imgpath1 . $profile_image; ?>" class="photo">
+                                <?php } ?>
+                            </td>
 
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="70%" style="border: 0px;"></td>
-            <td width="30%" align="right" style="border: 0px;"> <b>Reporting and Emergency Reporting Sheet</b><br>
-                (After Joining of Candidate)</td>
-        </tr>
-    </table>
+                            <td align="center">
+                                <?php if (!empty($emp_sign) && file_exists($imgpath1 . $emp_sign)) { ?>
+                                    <img src="<?php echo $imgpath1 . $emp_sign; ?>" class="sign">
+                                <?php } ?>
+                            </td>
+                        </tr>
+                    </table>
+
+                </td>
 
 
-    <br><br>
+            </tr>
 
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="50%">
-                <b>Name</b> : <?= htmlspecialchars(ucfirst(trim($first_name)) . ' ' . ucfirst(trim($last_name))); ?>
-            </td>
-            <td width="50%">
-                <b>Date of Joining</b> : <?= $obj->dateformatindia($date_of_joining); ?>
-            </td>
-        </tr>
+            <tr>
+                <td class="label">Employee Code</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $emp_code; ?></td>
+            </tr>
 
-        <tr>
-            <td>
-                <b>Designation</b> : <?= $designation ?>
+            <tr>
+                <td class="label">Company Name</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $unit_name; ?></td>
+                <!-- <td class="value">AGRAWAL INFRABUILD PRIVATE LIMITED</td> -->
+            </tr>
 
-            </td>
-            <td>
-                <b>Department</b> : <?= $department_name ?>
+            <tr>
+                <td class="label">Branch Name</td>
+                <td class="colon">:</td>
+                <td class="value">HEAD OFFICE</td>
+            </tr>
 
-            </td>
-        </tr>
-    </table>
+            <tr>
+                <td class="label">Department</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $department_name; ?></td>
 
-    <br><br>
+            </tr>
 
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="70%">
-                <b>1. Department Head</b> :
-                ..............................................................
-            </td>
-            <td width="30%">
-                <b>Signature</b> :
-                ....................................
-            </td>
-        </tr>
+            <tr>
+                <td class="label">Designation</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $designation ?></td>
+            </tr>
 
-        <tr>
-            <td>
-                <b>2. Department 2</b> :
-                ..............................................................
-            </td>
-            <td>
-                <b>Signature</b> :
-                ....................................
-            </td>
-        </tr>
-
-        <tr>
-            <td>
-                <b>3. Department 3</b> :
-                ..............................................................
-            </td>
-            <td>
-                <b>Signature</b> :
-                ....................................
-            </td>
-        </tr>
-
-        <tr>
-            <td>
-                <b>4. Department 4</b> :
-                ..............................................................
-            </td>
-            <td>
-                <b>Signature</b> :
-                ....................................
-            </td>
-        </tr>
-    </table>
-
-    <br><br><br><br>
-
-    <b>In case of Emergency, Contact Details like accidents and other:</b>
-
-    <br><br>
-
-    <table width="100%" cellpadding="5" cellspacing="0">
-        <tr>
-            <td width="50%">
-                <b>Name</b> : <?= $emer_contact_name ?>
-            </td>
-
-        </tr>
-
-        <tr>
-            <td>
-                <b>Address</b> : <?= $present_address ?>
-            </td>
-
-        </tr>
+        </table>
 
 
-        <tr>
-            <td>
-                <b>Contact Number</b> : <?= $emer_contact_no ?>
-            </td>
+        <!-- Personal Details -->
 
-        </tr>
+        <div class="heading">Personal Details</div>
 
-        <tr>
-            <td>
-                <b>Relation with You</b> : <?= $emer_contact_relation ?>
-            </td>
+        <table>
 
-        </tr>
-    </table>
+            <tr>
+                <td class="label">Father/Husband</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $father_name; ?></td>
 
+                <td class="label">Mother Name</td>
+                <td class="colon">:</td>
+                <td class="value"><?= $mother_name ?></td>
+
+            </tr>
+
+            <tr>
+                <td class="label">Date Of Birth</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $obj->dateformatindia($dob); ?></td>
+
+                <td class="label">Email ID</td>
+                <td class="colon">:</td>
+                <td class="value"><?= $email_id ?></td>
+
+            </tr>
+
+            <tr>
+                <td class="label">Gender</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $gender; ?></td>
+
+                <td class="label">Blood Group</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $blood_group; ?></td>
+            </tr>
+
+            <tr>
+                <td class="label">Marriage Status</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $marital_status; ?></td>
+
+                <td class="label">Anniversary</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $obj->dateformatindia($anniversary_date); ?></td>
+            </tr>
+
+            <tr>
+                <td class="label">Present Address</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $present_address; ?></td>
+
+                <td class="label">Permanent Address</td>
+                <td class="colon">:</td>
+                <td class="value"><?= $permanent_address ?></td>
+            </tr>
+
+            <tr>
+                <td class="label">Mobile No</td>
+                <td class="colon">:</td>
+                <td class="value"><?= $mobile_no ?></td>
+
+                <td class="label">Alternate Mobile No</td>
+                <td class="colon">:</td>
+                <td class="value"><?= $alt_mobile_no ?></td>
+            </tr>
+
+            <tr>
+
+                <td class="label">Employee Religion</td>
+                <td class="colon">:</td>
+                <td class="value"><?= $religion ?></td>
+            </tr>
+
+
+
+
+        </table>
+
+
+        <!-- HR Details -->
+
+        <div class="heading">HR Details</div>
+
+        <table class="hr-table">
+
+            <tr>
+                <td class="label">Work ID</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $emp_code; ?></td>
+
+                <td class="label">Shift</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $shift_id; ?></td>
+            </tr>
+
+            <tr>
+                <td class="label">Reporting Emp</td>
+                <td class="colon">:</td>
+                <td class="value"><?= $reporting_manager ?></td>
+
+                <td class="label">Date of Joining</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $obj->dateformatindia($date_of_joining); ?></td>
+            </tr>
+
+            <tr>
+                <td class="label">Driving License No</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $driving_license; ?></td>
+
+                <td class="label">Passport No</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $passport_no; ?></td>
+            </tr>
+
+            <tr>
+                <td class="label">Bank Account No</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $account_no; ?></td>
+
+                <td class="label">Bank Name</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $bank_name; ?></td>
+            </tr>
+
+            <tr>
+                <td class="label">IFSC Code</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $ifsc_code; ?></td>
+
+                <td class="label">Aadhaar No</td>
+                <td class="colon">:</td>
+                <td class="value"><?= $aadhar_no ?></td>
+            </tr>
+
+            <tr>
+                <td class="label">PF Number</td>
+                <td class="colon">:</td>
+                <td class="value"><?php echo $pf_uan; ?></td>
+
+                <td class="label">PF Date</td>
+                <td class="colon">:</td>
+                <td class="value"><?= $obj->dateformatindia($pf_joining_date) ?></td>
+            </tr>
+
+            <tr>
+                <td class="label">Pan No</td>
+                <td class="colon">:</td>
+                <td class="value"><?= $pan_no ?></td>
+
+                <td class="label">ESIC No</td>
+                <td class="colon">:</td>
+                <td class="value"><?= $esic_no ?></td>
+            </tr>
+
+            <tr>
+                <td class="label">Remark</td>
+                <td class="colon">:</td>
+                <td class="value"><?= $identification_masks ?></td>
+
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+
+        </table>
+
+        <!-- Document Details -->
+        <h3>Document Details</h3>
+
+        <table border="1" width="100%" cellpadding="5" cellspacing="0">
+            <tr>
+                <th style="text-align:left;"><small>SNo</small></th>
+                <th style="text-align:left;"><small>Document Type</small></th>
+                <th style="text-align:left;"><small>Expiry Date</small></th>
+                <th style="text-align:left;"><small>Remark</small></th>
+                <th style="text-align:left;"><small>File Attached</small></th>
+            </tr>
+
+            <?php
+            if (!empty($emp_documents)) {
+                $i = 1;
+                foreach ($emp_documents as $doc) {
+            ?>
+                    <tr>
+                        <td><small><?= $i++; ?></small></td>
+
+                        <td><small><?= $doc['document_name']; ?></small></td>
+
+                        <td>
+                            <small>
+                                <?= (!empty($doc['doc_expiry_date']) && $doc['doc_expiry_date'] != '0000-00-00')
+                                    ? $obj->dateformatindia($doc['doc_expiry_date'])
+                                    : '' ?>
+                            </small>
+                        </td>
+
+                        <td><small><?= $doc['doc_remark']; ?></small></td>
+
+                        <td>
+                            <small>
+                                <?= (!empty($doc['doc_file']) && file_exists($imgpath1 . $doc['doc_file']))
+                                    ? $doc['doc_file']
+                                    : 'No File'; ?>
+                            </small>
+                        </td>
+                    </tr>
+            <?php
+                }
+            } else {
+                echo '<tr><td colspan="5" align="center">No Documents Found</td></tr>';
+            }
+            ?>
+        </table>
+
+
+        <pagebreak />
+        <!-- Educations Details -->
+
+        <h3>Education Details</h3>
+
+        <table border="1" width="100%" cellpadding="5" cellspacing="0">
+
+            <tr>
+                <th style="text-align:left;"> <small> SNo</small> </th>
+                <th style="text-align:left;"> <small> Degree Of Exam</small> </th>
+                <th style="text-align:left;"> <small> University/College/School</small> </th>
+                <!-- <th> <small> Division</small> </th> -->
+                <th style="text-align:left;"> <small> Percentage Of Marks</small> </th>
+                <th style="text-align:left;"> <small> Passing Year</small> </th>
+                <th style="text-align:left;"> <small> Subject</small> </th>
+                <!--<th> <small> Remark</small> </th> -->
+            </tr>
+
+            <?php
+            if (!empty($emp_education)) {
+                $i = 1;
+                foreach ($emp_education as $edu) {
+            ?>
+                    <tr>
+                        <td><small><?= $i++; ?></small></td>
+                        <td><small><?= $edu['examination']; ?></small></td>
+                        <td><small><?= $edu['university']; ?><br><?= $edu['college']; ?></small></td>
+                        <td><small><?= $edu['percentage']; ?>%</small></td>
+                        <td><small><?= $edu['pass_year']; ?></small></td>
+                        <td><small><?= $edu['subject']; ?></small></td>
+                        <!-- <td><small>-</small></td> -->
+                    </tr>
+            <?php
+                }
+            } else {
+                echo '<tr><td colspan="6" align="center">No Education Records Found</td></tr>';
+            }
+            ?>
+
+        </table>
+        <br>
+        <!-- Prevous Orgination Details -->
+        <h3>Previous Organization Details</h3>
+
+        <table border="1" width="100%" cellpadding="5" cellspacing="0">
+            <tr>
+                <th style="text-align:left;"><small>SNo</small></th>
+                <th style="text-align:left;"><small>Organization Name</small></th>
+                <th style="text-align:left;"><small>Joining From</small></th>
+                <th style="text-align:left;"><small>Joining To</small></th>
+                <th style="text-align:left;"><small>Designation</small></th>
+                <th style="text-align:left;"><small>Last Salary</small></th>
+                <th style="text-align:left;"><small>Reason For Leaving</small></th>
+            </tr>
+
+            <?php if (!empty($employer_name)) {
+            ?>
+                <tr>
+                    <td><small>1</small></td>
+                    <td><small><?= $employer_name ?></small></td>
+
+                    <td>
+                        <small>
+                            <?= (!empty($service_from) && $service_from != '0000-00-00')
+                                ? $obj->dateformatindia($service_from)
+                                : '' ?>
+                        </small>
+                    </td>
+
+                    <td>
+                        <small>
+                            <?= (!empty($service_to) && $service_to != '0000-00-00')
+                                ? $obj->dateformatindia($service_to)
+                                : '' ?>
+                        </small>
+                    </td>
+
+                    <td><small><?= $employer_designation ?></small></td>
+
+                    <td><small><?= $last_salary ?></small></td>
+
+                    <td><small><?= $reason ?></small></td>
+                </tr>
+            <?php } else { ?>
+                <tr>
+                    <td colspan="7" align="center">No Previous Organization Found</td>
+                </tr>
+            <?php } ?>
+        </table>
+
+
+        <!-- Branch Details -->
+        <br>
+        <h3>Branch Details</h3>
+
+        <table border="1" width="100%" cellpadding="5" cellspacing="0">
+
+            <tr>
+                <th style="text-align:left;"> <small> SNo</small> </th>
+                <th style="text-align:left;"> <small> Date From-To</small> </th>
+                <th style="text-align:left;"> <small> Unit Name</small> </th>
+                <th style="text-align:left;"> <small> Department</small> </th>
+                <th style="text-align:left;"> <small> Designation</small> </th>
+            </tr>
+
+            <?php
+            if (!empty($emp_branch_transfer)) {
+                $i = 1;
+                foreach ($emp_branch_transfer as $bt) {
+            ?>
+                    <tr>
+                        <td><small><?= $i++; ?></small></td>
+
+                        <td>
+                            <small>
+                                <?= (!empty($bt['joining_date']) && $bt['joining_date'] != '0000-00-00')
+                                    ? $obj->dateformatindia($bt['joining_date'])
+                                    : '' ?>
+                                -
+                                <?= (!empty($bt['last_work_date']) && $bt['last_work_date'] != '0000-00-00')
+                                    ? $obj->dateformatindia($bt['last_work_date'])
+                                    : 'Till Date' ?>
+                            </small>
+                        </td>
+
+                        <td><small><?= $bt['unit_name']; ?></small></td>
+                        <td><small><?= $bt['department_name']; ?></small></td>
+                        <td><small><?= $bt['designation']; ?></small></td>
+                    </tr>
+
+            <?php
+                }
+            } else {
+                echo '<tr><td colspan="5" align="center">No Branch Transfer Found</td></tr>';
+            }
+            ?>
+
+
+        </table>
+
+
+        <!-- Loan Advance -->
+        <br>
+        <h3>Loan Advance</h3>
+
+        <table border="1" width="100%" cellpadding="5" cellspacing="0">
+
+            <tr>
+                <th style="text-align:left;"> <small> SNo</small> </th>
+                <th style="text-align:left;"> <small> Loan/Adv. Date</small> </th>
+                <th style="text-align:left;"> <small> From Date</small> </th>
+                <th style="text-align:left;"> <small> To Date</small> </th>
+                <th style="text-align:left;"> <small> Loan/Adv Amt</small> </th>
+                <th style="text-align:left;"> <small> Inst</small> </th>
+                <th style="text-align:left;"> <small> Paid + Setoff Amt</small> </th>
+                <th style="text-align:left;"> <small> Balance Amount</small> </th>
+            </tr>
+
+            <?php
+            if (!empty($loan_advance)) {
+                $i = 1;
+                foreach ($loan_advance as $bt) {
+            ?>
+                    <tr>
+                        <td><small><?= $i++; ?></small></td>
+
+                        <td>
+                            <small>
+                            <?= (!empty($bt['loan_date']) && $bt['loan_date'] != '0000-00-00')
+                                ? $obj->dateformatindia($bt['loan_date'])
+                                : '' ?>
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                <?= date("M", mktime(0, 0, 0, $bt['start_month'], 1)) . '-' . $bt['start_year']; ?>
+                            </small>
+                        </td>
+
+                        <td>
+                            <small>
+                                <?= date("M", mktime(0, 0, 0, $bt['last_month'], 1)) . '-' . $bt['last_year']; ?>
+                            </small>
+                        </td>
+                        
+                        <td><small><?= $bt['loan_adv_amt']. ' + '. $bt['interest_amount']; ?><br><?= ' ( '. $bt['type'] .' ) '; ?></small></td>
+                        <td><small><?= $bt['no_of_inst']; ?></small></td>
+                        <?php
+                            $paid_amount = $obj->getvalfield(
+                                "loan_advance_details",
+                                "SUM(amount)",
+                                "loan_advance_id='" . $bt['loan_advance_id'] . "' AND is_paid='1'"
+                            );
+
+                            $paid_amount = ($paid_amount != "") ? $paid_amount : 0;
+
+                            $balance_amount = $bt['total_amount'] - $paid_amount;
+                        ?>
+
+                        <td><small><?= number_format($paid_amount, 2); ?></small></td>
+                        <td><small><?= number_format($balance_amount, 2); ?></small></td>
+                    </tr>
+
+            <?php
+                }
+            } else {
+                echo '<tr><td colspan="8" align="center">No Branch Transfer Found</td></tr>';
+            }
+            ?>
+
+
+        </table>
+
+
+    </div>
 
 </body>
 
@@ -703,6 +779,5 @@ ob_start();
 
 <?php
 $html = ob_get_clean();
-
 $mpdf->WriteHTML($html);
 $mpdf->Output(); ?>

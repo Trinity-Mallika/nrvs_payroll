@@ -1,6 +1,9 @@
 <?php include_once("../adminsession.php");
 $header_unit_name = $obj->getvalfield("unit_master", "unit_name", "unit_id='$unitid'");
 
+// echo $unitid;
+// die;
+
 ?>
 <header id="page-topbar">
     <div class="layout-width">
@@ -61,7 +64,7 @@ $header_unit_name = $obj->getvalfield("unit_master", "unit_name", "unit_id='$uni
                             <img class="rounded-circle header-profile-user" src="assets/images/users/avatar-1.jpg" alt="Header Avatar">
                             <span class="text-start ms-xl-2">
                                 <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text"><?php echo ucfirst($obj->getvalfield("user", "username", "userid='$loginid'")); ?></span>
-                                <span class="d-none d-xl-block ms-1 fs-12 user-name-sub-text"><?php echo ($obj->getvalfield("user", "usertype", "userid='$loginid'") == "admin") ? "Owner" : "Staff"; ?></span>
+                                <span class="d-none d-xl-block ms-1 fs-12 user-name-sub-text"><?php echo ($obj->getvalfield("user", "usertype", "userid='$loginid'") == "admin") ? "Admin" : "Staff"; ?></span>
                             </span>
                         </span>
                     </button>

@@ -1,5 +1,5 @@
 function initializeTables() {
-  new DataTable("#example"),
+  (new DataTable("#example"),
     new DataTable("#scroll-vertical", {
       scrollY: "210px",
       scrollCollapse: !0,
@@ -23,15 +23,56 @@ function initializeTables() {
         },
       },
     }),
+    // new DataTable("#buttons-datatables1", {
+    //   dom: "Bfrtip",
+    //   buttons: ["copy", "csv", "excel", "print", "pdf"],
+    // }),
     new DataTable("#buttons-datatables", {
-      dom: "Bfrtip",
+      orderCellsTop: true,
+
+      // ✅ Buttons ON, Global search OFF
+      dom: "Blrtip",
+
       buttons: ["copy", "csv", "excel", "print", "pdf"],
+
+      initComplete: function () {
+        let api = this.api();
+        let table = api.table().node();
+        let thead = table.querySelector("thead");
+
+        let filterRow = thead.rows[0].cloneNode(true);
+        filterRow.classList.add("filters");
+
+        [...filterRow.cells].forEach((cell) => (cell.innerHTML = ""));
+
+        thead.appendChild(filterRow);
+
+        api.columns().every(function (colIdx) {
+          let column = this;
+          let cell = filterRow.cells[colIdx];
+
+          let title = column.header().textContent;
+
+          let input = document.createElement("input");
+          input.placeholder = "Search " + title;
+          input.className = "form-control form-control-sm";
+          input.style.width = "100%";
+
+          cell.appendChild(input);
+
+          input.addEventListener("keyup", function () {
+            if (column.search() !== this.value) {
+              column.search(this.value).draw();
+            }
+          });
+        });
+      },
     }),
-    new DataTable("#ajax-datatables", { ajax: "assets/json/datatable.json" });
+    new DataTable("#ajax-datatables", { ajax: "assets/json/datatable.json" }));
   var a = $("#add-rows").DataTable(),
     e = 1;
-  $("#addRow").on("click", function () {
-    a.row
+  ($("#addRow").on("click", function () {
+    (a.row
       .add([
         e + ".1",
         e + ".2",
@@ -47,9 +88,9 @@ function initializeTables() {
         e + ".12",
       ])
       .draw(!1),
-      e++;
+      e++);
   }),
-    $("#addRow").trigger("click");
+    $("#addRow").trigger("click"));
 }
 document.addEventListener("DOMContentLoaded", function () {
   initializeTables();

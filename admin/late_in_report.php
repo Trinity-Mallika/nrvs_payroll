@@ -126,6 +126,8 @@ if (isset($_GET['attendance_date'])) {
                                                     <th style="text-align: center;">Date</th>
                                                     <th style="text-align: center;">In Time</th>
                                                     <th style="text-align: center;">Out Time</th>
+                                                    <th style="text-align: center;">Late In Time</th>
+                                                    <th style="text-align: center;">Early Out Time</th>
                                                     <th style="text-align: center;">Action</th>
                                                     <th style="text-align: center;">Working Hours</th>
                                                 </tr>
@@ -133,7 +135,21 @@ if (isset($_GET['attendance_date'])) {
                                             <tbody>
                                                 <?php
                                                 $slno = 1;
-                                                $res = $obj->executequery("SELECT ae.*, em.first_name, em.last_name FROM $tblname ae LEFT JOIN employee_master em ON ae.emp_id = em.emp_id WHERE ae.unit_id = '$unitid' and ae.attendance_status='Half Day' $crit ORDER BY ae.$tblpkey DESC");
+                                                //$res = $obj->executequery("SELECT ae.*, em.first_name, em.last_name FROM $tblname ae LEFT JOIN employee_master em ON ae.emp_id = em.emp_id WHERE ae.unit_id = '$unitid' and ae.attendance_status='Half Day' $crit ORDER BY ae.$tblpkey DESC");
+
+                                                $res = $obj->executequery(" SELECT ae.*, em.first_name, em.last_name 
+    FROM $tblname ae 
+    LEFT JOIN employee_master em ON ae.emp_id = em.emp_id 
+    WHERE ae.unit_id = '$unitid' 
+   
+    AND (
+        (ae.late_in IS NOT NULL AND ae.late_in != '00:00:00')
+        OR 
+        (ae.early_out IS NOT NULL AND ae.early_out != '00:00:00')
+    )
+    $crit 
+    ORDER BY ae.$tblpkey DESC
+");
                                                 foreach ($res as $row) {
 
                                                     $last_name = $obj->getvalfield("employee_master", "last_name", "emp_id='$row[emp_id]'");
@@ -149,6 +165,8 @@ if (isset($_GET['attendance_date'])) {
                                                         <td>
                                                             <?= !empty($row["outtime"]) ? date("h:i A", strtotime($row["outtime"])) : "-" ?>
                                                         </td>
+                                                        <td><?= $row["late_in"]; ?></td>
+                                                        <td><?= $row["early_out"]; ?></td>
                                                         <td>
                                                             <a href="employee_wise_attendance.php?emp_id=<?php echo $row['emp_id'] ?>&currentYear=<?php echo $year ?>&currentMonth=<?php echo $month ?>&date=<?php echo $row['attendance_date']; ?>" target="_blank"> <?php echo $row['attendance_status']; ?>
                                                         </td>

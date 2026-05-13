@@ -11,33 +11,47 @@ if (isset($_GET['header_session_id'])) {
 };
 
 $datecurrent = date('Y-m-d');
-$total_emp = $obj->getvalfield("employee_master", "count(*)", "unit_id='$unitid'");
+
+$total_emp = $obj->getvalfield("employee_master", "count(*)", "unit_id='$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE()))");
+
 $today_dob = $obj->getvalfield(
     "employee_master",
     "COUNT(*)",
-    "DAY(dob) = DAY(CURDATE()) AND MONTH(dob) = MONTH(CURDATE())"
+    "DAY(dob) = DAY(CURDATE()) AND MONTH(dob) = MONTH(CURDATE()) AND unit_id='$unitid'"
 );
 
 $today_anny = $obj->getvalfield(
     "employee_master",
     "COUNT(*)",
-    "DAY(anniversary_date) = DAY(CURDATE()) AND MONTH(anniversary_date) = MONTH(CURDATE())"
+    "DAY(anniversary_date) = DAY(CURDATE()) AND MONTH(anniversary_date) = MONTH(CURDATE()) AND unit_id='$unitid'"
 );
 
 $work_anny = $obj->getvalfield(
     "employee_master",
     "COUNT(*)",
-    "DAY(date_of_joining) = DAY(CURDATE()) AND MONTH(date_of_joining) = MONTH(CURDATE())"
+    "DAY(date_of_joining) = DAY(CURDATE()) AND MONTH(date_of_joining) = MONTH(CURDATE()) AND unit_id='$unitid'"
 );
 
 $sixty_plus_emp = $obj->getvalfield(
     "employee_master",
     "count(*)",
     "unit_id='$unitid' 
-     AND TIMESTAMPDIFF(YEAR, dob, CURDATE()) >= 60"
+     AND TIMESTAMPDIFF(YEAR, dob, CURDATE()) >= 60 AND unit_id='$unitid'"
 );
-$todayin = $obj->getvalfield("attendance_entry", "count(*)", "attendance_status IN ('Present','Half Day') and attendance_date='$datecurrent' and sessionid='$header_session_id'");
-$today_leave = $obj->getvalfield("attendance_entry", "count(*)", "attendance_status ='Leave' and attendance_date='$datecurrent' and sessionid='$header_session_id'");
+
+$today_incomplete = $obj->getvalfield("attendance_entry", "count(*)", "attendance_status='Incomplete' and attendance_date='$datecurrent' and sessionid='$header_session_id' AND unit_id='$unitid'");
+
+$today_present = $obj->getvalfield("attendance_entry", "count(*)", "attendance_status='Present' and attendance_date='$datecurrent' and sessionid='$header_session_id' AND unit_id='$unitid'");
+
+$today_half_day = $obj->getvalfield("attendance_entry", "count(*)", "attendance_status='Half Day' and attendance_date='$datecurrent' and sessionid='$header_session_id' AND unit_id='$unitid'");
+
+$todayin = $obj->getvalfield("attendance_entry", "count(*)", "attendance_status IN ('Present','Half Day','Incomplete','Absent') and attendance_date='$datecurrent' and sessionid='$header_session_id' AND unit_id='$unitid'");
+
+$today_leave = $obj->getvalfield("attendance_entry", "count(*)", "attendance_status IN ('Weekly Leave','Earning Leave','C Off','Leave') and attendance_date='$datecurrent' and sessionid='$header_session_id' AND unit_id='$unitid'");
+
+// $today_ab = $obj->getvalfield("attendance_entry", "count(*)", "attendance_status IN ('Absent') and attendance_date='$datecurrent' and sessionid='$header_session_id' AND unit_id='$unitid'");
+
+
 $currentMonth = (int) date('m');
 if ($currentMonth == 1) {
     $lastMonth = 12;
@@ -45,7 +59,7 @@ if ($currentMonth == 1) {
     $lastMonth = $currentMonth - 1;
 }
 $currentYear = date('Y');
-$total_absent = $total_emp - ($todayin + $today_leave);
+$total_absent = $total_emp - ($today_incomplete + $today_present + $today_half_day + $today_leave);
 
 $department = $obj->executequery("SELECT * FROM department_master WHERE unit_id='$unitid' ");
 
@@ -76,7 +90,7 @@ $total_pf = $obj->getvalfield("salary_structure", "SUM(pf_emp)", "unit_id='$unit
 $total_esic = $obj->getvalfield("salary_structure", "SUM(esic_emp)", "unit_id='$unitid' AND sessionid='$header_session_id'");
 $total_pf_emp = $obj->getvalfield("salary_structure", "SUM(pf_employer)", "unit_id='$unitid' AND sessionid='$header_session_id'");
 $total_esic_emp = $obj->getvalfield("salary_structure", "SUM(esic_employer)", "unit_id='$unitid' AND sessionid='$header_session_id'");
-$last_month_salary = $obj->getvalfield("salary_structure", "SUM(total_salary)", "unit_id='$unitid' AND month='$lastMonth' AND year='$currentYear' and sessionid='$header_session_id'") ?? 0;
+$last_month_salary = $obj->getvalfield("salary_structure", "SUM(total_pay_sal_after_ded)", "unit_id='$unitid' AND month='$lastMonth' AND year='$currentYear' and sessionid='$header_session_id'") ?? 0;
 
 $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
 
@@ -84,7 +98,8 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
 ?>
 
 <!doctype html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
+    data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
 
 <head>
 
@@ -100,76 +115,76 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
 
 </head>
 <style>
-    body {
-        font-family: 'Inter', sans-serif;
-        background: #f4f6fb;
-        color: #2b2f38;
-    }
+body {
+    font-family: 'Inter', sans-serif;
+    background: #f4f6fb;
+    color: #2b2f38;
+}
 
-    /* Cards */
-    .card {
-        border: none;
-        border-radius: 14px;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-    }
+/* Cards */
+.card {
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
 
-    .card-header {
-        background: transparent;
-        font-weight: 600;
-        border-bottom: 1px solid #eef0f5;
-    }
+.card-header {
+    background: transparent;
+    font-weight: 600;
+    border-bottom: 1px solid #eef0f5;
+}
 
-    /* Stat cards */
-    .stat-card {
-        color: #fff;
-        padding: 22px;
-    }
+/* Stat cards */
+.stat-card {
+    color: #fff;
+    padding: 22px;
+}
 
-    .stat-blue {
-        background: linear-gradient(135deg, #4f46e5, #3b82f6);
-    }
+.stat-blue {
+    background: linear-gradient(135deg, #4f46e5, #3b82f6);
+}
 
-    .stat-green {
-        background: linear-gradient(135deg, #16a34a, #22c55e);
-    }
+.stat-green {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+}
 
-    .stat-orange {
-        background: linear-gradient(135deg, #f97316, #fb923c);
-    }
+.stat-orange {
+    background: linear-gradient(135deg, #f97316, #fb923c);
+}
 
-    .stat-purple {
-        background: linear-gradient(135deg, #7c3aed, #a855f7);
-    }
+.stat-purple {
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+}
 
-    .stat-card small {
-        opacity: .85;
-    }
+.stat-card small {
+    opacity: .85;
+}
 
-    .stat-card h3 {
-        margin-top: 8px;
-        font-weight: 700;
-    }
+.stat-card h3 {
+    margin-top: 8px;
+    font-weight: 700;
+}
 
-    /* Buttons */
-    .btn {
-        border-radius: 10px;
-        font-weight: 500;
-    }
+/* Buttons */
+.btn {
+    border-radius: 10px;
+    font-weight: 500;
+}
 
-    /* Table */
-    .table thead th {
-        background: #f1f3f9;
-        font-weight: 600;
-    }
+/* Table */
+.table thead th {
+    background: #f1f3f9;
+    font-weight: 600;
+}
 
-    .table tbody tr:hover {
-        background: #f9faff;
-    }
+.table tbody tr:hover {
+    background: #f9faff;
+}
 
-    /* Charts spacing */
-    canvas {
-        max-height: 220px;
-    }
+/* Charts spacing */
+canvas {
+    max-height: 220px;
+}
 </style>
 
 <body>
@@ -197,9 +212,9 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
                     <div class="row g-4 mb-4">
                         <div class="col-xl-3 col-md-6">
                             <!-- card -->
-                            <a class="card" href="emp_list.php">
+                            <a class="card" href="employee_report.php">
                                 <div class="card-header text-center bg-primary ">
-                                    <h5 class="text-white mb-0"> Total Employees</h5>
+                                    <h5 class="text-white mb-0"> Total Active Employees</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
@@ -243,10 +258,23 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
                                             <img src="img/today-attandance.png" class="w-100 pt-2" alt="">
                                         </div>
                                         <div class="col-9 pt-1 text-end">
+
+                                            <h6 class="mb-1">
+                                                <a href="day_wise_attendence_report.php?attendance_date=<?= $datecurrent; ?>&att_action=Incomplete"
+                                                    class="text-warning  text-decoration-none fw-bold">
+                                                    <?= $today_incomplete ?> Incomplete
+                                                </a>
+                                            </h6>
                                             <h6 class="mb-1">
                                                 <a href="day_wise_attendence_report.php?attendance_date=<?= $datecurrent; ?>&att_action=Present"
                                                     class="text-success text-decoration-none fw-bold">
-                                                    <?= $todayin ?> Present
+                                                    <?= $today_present ?> Present
+                                                </a>
+                                            </h6>
+                                            <h6 class="mb-1">
+                                                <a href="day_wise_attendence_report.php?attendance_date=<?= $datecurrent; ?>&att_action=Half Day"
+                                                    class="text-primary text-decoration-none fw-bold">
+                                                    <?= $today_half_day ?> Half Day
                                                 </a>
                                             </h6>
                                             <h6 class="mb-1">
@@ -255,12 +283,12 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
                                                     <?= $total_absent ?> Absent
                                                 </a>
                                             </h6>
-                                            <h6>
+                                            <!-- <h6>
                                                 <a href="day_wise_attendence_report.php?attendance_date=<?= $datecurrent; ?>&att_action=Leave"
                                                     class="text-warning text-decoration-none fw-bold">
                                                     <?= $today_leave ?> Leave
                                                 </a>
-                                            </h6>
+                                            </h6> -->
                                         </div>
                                     </div>
                                 </div>
@@ -286,7 +314,7 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
                         </div><!-- end col -->
                         <div class="col-xl-3 col-md-6 mt-0">
                             <!-- card -->
-                            <a class="card" href="emp_list.php?sixty_plus_age=1">
+                            <a class="card" href="employee_report.php?sixty_plus_age=1&submit=Search">
                                 <div class="card-header text-center bg-primary ">
                                     <h5 class="text-white mb-0">60+ Age Employee</h5>
                                 </div>
@@ -305,7 +333,7 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
 
                         <div class="col-xl-3 col-md-6 mt-0">
                             <!-- card -->
-                            <a class="card" href="emp_list.php?dob=<?= $datecurrent; ?>">
+                            <a class="card" href="employee_report.php?dob=<?= $datecurrent; ?>&submit=Search">
                                 <div class="card-header text-center bg-primary ">
                                     <h5 class="text-white mb-0">Today Birthday</h5>
                                 </div>
@@ -323,7 +351,8 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
                         </div>
                         <div class="col-xl-3 col-md-6 mt-0">
                             <!-- card -->
-                            <a class="card" href="emp_list.php?anniversary_date=<?= $datecurrent; ?>">
+                            <a class="card"
+                                href="employee_report.php?anniversary_date=<?= $datecurrent; ?>&submit=Search">
                                 <div class="card-header text-center bg-primary ">
                                     <h5 class="text-white mb-0">Today Anniversary</h5>
                                 </div>
@@ -341,7 +370,8 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
                         </div>
                         <div class="col-xl-3 col-md-6 mt-0">
                             <!-- card -->
-                            <a class="card" href="emp_list.php?work_anniversary=<?= $datecurrent; ?>">
+                            <a class="card"
+                                href="employee_report.php?work_anniversary=<?= $datecurrent; ?>&submit=Search">
                                 <div class="card-header text-center bg-primary ">
                                     <h5 class="text-white mb-0">Work Anniversary</h5>
                                 </div>
@@ -394,8 +424,10 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
                                 <div class="card-header border-bottom-dashed">Payroll Processing</div>
                                 <div class="card-body d-grid gap-2">
                                     <a href="salary_generate.php" class="btn btn-outline-primary">Generate Salary</a>
-                                    <a href="salary_generate_report.php" class="btn btn-outline-secondary">Recalculate Payroll</a>
-                                    <a href="upload_attachment.php" class="btn btn-outline-success">Upload Attachment</a>
+                                    <a href="salary_generate_report.php" class="btn btn-outline-secondary">Recalculate
+                                        Payroll</a>
+                                    <a href="upload_attachment.php" class="btn btn-outline-success">Upload
+                                        Attachment</a>
                                     <a href="salary_generate_report.php" class="btn btn-outline-dark">Salary Slip</a>
                                 </div>
                             </div>
@@ -405,10 +437,17 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
                             <div class="card h-100">
                                 <div class="card-header border-bottom-dashed">Statutory Compliance</div>
                                 <ul class="list-group list-group-flush">
-                                    <li class="list-group-item d-flex justify-content-between">PF <strong>₹<?= $total_pf; ?></strong></li>
-                                    <li class="list-group-item d-flex justify-content-between">ESIC <strong>₹<?= $total_esic; ?></strong></li>
-                                    <li class="list-group-item d-flex justify-content-between">PF Employer <strong>₹<?= $total_pf_emp; ?></strong></li>
-                                    <li class="list-group-item d-flex justify-content-between">ESIC Employer<strong>₹<?= $total_esic_emp; ?></strong></li>
+                                    <li class="list-group-item d-flex justify-content-between">PF
+                                        <strong>₹<?= $total_pf; ?></strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">ESIC
+                                        <strong>₹<?= $total_esic; ?></strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">PF Employer
+                                        <strong>₹<?= $total_pf_emp; ?></strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">ESIC
+                                        Employer<strong>₹<?= $total_esic_emp; ?></strong></li>
 
                                 </ul>
                             </div>
@@ -421,7 +460,7 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
                                     <a href="employee_master.php" class="btn btn-primary">Add Employee</a>
                                     <a href="employee_wise_attendance.php" class="btn btn-warning">Apply Leave</a>
                                     <a href="employee_wise_attendance.php" class="btn btn-info">Manual Attendance</a>
-                                    <a href="emp_list.php" class="btn btn-secondary">View Employee Reports</a>
+                                    <a href="employee_report.php" class="btn btn-secondary">View Employee Reports</a>
                                 </div>
                             </div>
                         </div>
@@ -432,17 +471,19 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
                         <div class="card-header border-bottom-dashed">
                             <div class="row g-4 align-items-center">
                                 <div class="col-sm">
-                                    <h5 class="card-title mb-0"> Today's Present List<span class="text-danger"></span></h5>
+                                    <h5 class="card-title mb-0"> Today's Present List<span class="text-danger"></span>
+                                    </h5>
                                 </div>
                             </div>
                         </div>
-
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table id="buttons-datatables" class="display table table-sm table-bordered" style="width:100%">
+                                <table id="buttons-datatables" class="display table table-sm table-bordered"
+                                    style="width:100%">
                                     <thead>
                                         <tr>
                                             <td>SNo.</td>
+                                            <th>Emp Code</th>
                                             <th>Employee Name</th>
                                             <th>Department</th>
                                             <th>In Time</th>
@@ -458,21 +499,24 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
                                         foreach ($res as $row) {
                                             $department_name = $obj->getvalfield("department_master", "department_name", "department_id='$row[department_id]'");
                                         ?>
-                                            <tr>
-                                                <td><?= $sno++; ?></td>
-                                                <td><?= $row['emp_code']; ?>-<?= ucfirst($row['first_name'] ?? ''); ?> <?= ucfirst($row['last_name'] ?? ''); ?></td>
-                                                <td><?= $department_name; ?></td>
-                                                <td>
-                                                    <?= !empty($row["intime"]) ? date("h:i A", strtotime($row["intime"])) : "-" ?>
-                                                </td>
-                                                <td>
-                                                    <?= !empty($row["outtime"]) ? date("h:i A", strtotime($row["outtime"])) : "-" ?>
-                                                </td>
-                                                <td> <span class="badge bg-success"><a href="employee_wise_attendance.php?emp_id=<?= $row['emp_id'] ?>&currentYear=<?= $currentYear ?>&currentMonth=<?= $currentMonth ?>&date=<?= $row['attendance_date']; ?>"
-                                                            target="_blank" class="text-white">
-                                                            <?= $row['attendance_status']; ?>
-                                                        </a> </span></td>
-                                            </tr>
+                                        <tr>
+                                            <td><?= $sno++; ?></td>
+                                            <td><?= $row['emp_code']; ?></td>
+                                            <td><?= $row['emp_code']; ?>-<?= ucfirst($row['first_name'] ?? ''); ?>
+                                                <?= ucfirst($row['last_name'] ?? ''); ?></td>
+                                            <td><?= $department_name; ?></td>
+                                            <td>
+                                                <?= !empty($row["intime"]) ? date("h:i A", strtotime($row["intime"])) : "-" ?>
+                                            </td>
+                                            <td>
+                                                <?= !empty($row["outtime"]) ? date("h:i A", strtotime($row["outtime"])) : "-" ?>
+                                            </td>
+                                            <td> <span class="badge bg-success"><a
+                                                        href="employee_wise_attendance.php?emp_id=<?= $row['emp_id'] ?>&currentYear=<?= $currentYear ?>&currentMonth=<?= $currentMonth ?>&date=<?= $row['attendance_date']; ?>"
+                                                        target="_blank" class="text-white">
+                                                        <?= $row['attendance_status']; ?>
+                                                    </a> </span></td>
+                                        </tr>
                                         <?php } ?>
                                     </tbody>
                                 </table>
@@ -494,60 +538,60 @@ $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
     <!-- CHART SCRIPTS -->
 
     <script>
-        function changeHeaderSession(sessionid) {
-            location = "dashboard.php?header_session_id=" + sessionid;
+    function changeHeaderSession(sessionid) {
+        location = "dashboard.php?header_session_id=" + sessionid;
+    }
+    const salaryLabels = <?php echo json_encode($monthLabels); ?>;
+    const salaryData = <?php echo json_encode($salaryTrend); ?>;
+    new Chart(salaryChart, {
+        type: 'line',
+        data: {
+            labels: salaryLabels,
+            datasets: [{
+                data: salaryData,
+                borderColor: '#4f46e5',
+                tension: .4,
+                fill: false
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
         }
-        const salaryLabels = <?php echo json_encode($monthLabels); ?>;
-        const salaryData = <?php echo json_encode($salaryTrend); ?>;
-        new Chart(salaryChart, {
-            type: 'line',
-            data: {
-                labels: salaryLabels,
-                datasets: [{
-                    data: salaryData,
-                    borderColor: '#4f46e5',
-                    tension: .4,
-                    fill: false
-                }]
-            },
-            options: {
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
+    });
 
-        new Chart(attendanceChart, {
-            type: 'doughnut',
-            data: {
-                labels: ['Present', 'Absent', 'Leave'],
-                datasets: [{
-                    data: ['<?= $todayin ?>', '<?= $total_absent ?>', '<?= $today_leave ?>'],
-                    backgroundColor: ['#22c55e', '#ef4444', '#facc15']
-                }]
-            }
-        });
-        const departmentLabels = <?php echo json_encode($deptLabels); ?>;
-        const departmentData = <?php echo json_encode($deptData); ?>;
-        new Chart(departmentChart, {
-            type: 'bar',
-            data: {
-                labels: departmentLabels,
-                datasets: [{
-                    data: departmentData,
-                    backgroundColor: '#7c3aed'
-                }]
-            },
-            options: {
-                plugins: {
-                    legend: {
-                        display: false
-                    }
+    new Chart(attendanceChart, {
+        type: 'doughnut',
+        data: {
+            labels: ['Present', 'Absent', 'Leave'],
+            datasets: [{
+                data: ['<?= $todayin ?>', '<?= $total_absent ?>', '<?= $today_leave ?>'],
+                backgroundColor: ['#22c55e', '#ef4444', '#facc15']
+            }]
+        }
+    });
+    const departmentLabels = <?php echo json_encode($deptLabels); ?>;
+    const departmentData = <?php echo json_encode($deptData); ?>;
+    new Chart(departmentChart, {
+        type: 'bar',
+        data: {
+            labels: departmentLabels,
+            datasets: [{
+                data: departmentData,
+                backgroundColor: '#7c3aed'
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    display: false
                 }
             }
-        });
+        }
+    });
     </script>
 
 </body>

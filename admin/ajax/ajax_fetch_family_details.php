@@ -27,7 +27,21 @@ if ($type == 'family') {
                     </div>
                 </div>
             </td>
+
             <td>
+                <button type="button" class="btn btn-primary btn-sm"
+                    onclick="edit_family(
+                    '<?= $row['family_detail_id']; ?>',
+                    '<?= htmlspecialchars($row['member_name'], ENT_QUOTES); ?>',
+                    '<?= htmlspecialchars($row['relation'], ENT_QUOTES); ?>',
+                    '<?= $row['dob']; ?>',
+                    '<?= htmlspecialchars($row['address'], ENT_QUOTES); ?>',
+                    '<?= $row['gender']; ?>',
+                    '<?= $row['is_nominee']; ?>',
+                    '<?= $row['aadhar_card']; ?>'
+                )">
+                    <i class="ri-edit-line"></i> Edit
+                </button>
                 <button type="button" class="btn btn-danger btn-sm btn-label right ms-auto nexttab nexttab"
                     data-nexttab="pills-experience-tab" onclick="delete_family('<?= $row['family_detail_id']; ?>','<?= $row['aadhar_card']; ?>');"><i
                         class="ri-delete-bin-5-line label-icon align-middle fs-14 ms-2"></i>Del</button>
@@ -47,6 +61,18 @@ if ($type == 'family') {
             <td><?= $row['percentage']; ?> </td>
             <td><?= $row['subject']; ?> </td>
             <td>
+                <button type="button" class="btn btn-primary btn-sm"
+                    onclick="edit_education(
+            '<?= $row['education_id']; ?>',
+            '<?= htmlspecialchars($row['examination'], ENT_QUOTES); ?>',
+            '<?= htmlspecialchars($row['university'], ENT_QUOTES); ?>',
+            '<?= htmlspecialchars($row['college'], ENT_QUOTES); ?>',
+            '<?= $row['pass_year']; ?>',
+            '<?= $row['percentage']; ?>',
+            '<?= htmlspecialchars($row['subject'], ENT_QUOTES); ?>'
+        )">
+                    <i class="ri-edit-line"></i> Edit
+                </button>
                 <button type="button" class="btn btn-danger btn-sm btn-label right ms-auto nexttab nexttab"
                     data-nexttab="pills-experience-tab" onclick="delete_education('<?= $row['education_id']; ?>');"><i
                         class="ri-delete-bin-5-line label-icon align-middle fs-14 ms-2"></i>Del</button>
@@ -69,6 +95,17 @@ if ($type == 'family') {
             <td><?= $row['doc_remark']; ?> </td>
 
             <td>
+                <button type="button"
+                    class="btn btn-success btn-sm"
+                    onclick="edit_document(
+                '<?= $row['emp_doc_id']; ?>',
+                '<?= $row['doc_id']; ?>',
+                '<?= $row['doc_expiry_date']; ?>',
+                '<?= addslashes($row['doc_remark']); ?>',
+                '<?= $row['doc_file']; ?>'
+            )">
+                    <i class="ri-edit-line"></i> Edit
+                </button>
                 <button type="button" class="btn btn-danger btn-sm btn-label right ms-auto nexttab nexttab"
                     data-nexttab="pills-experience-tab" onclick="delete_document('<?= $row['emp_doc_id']; ?>','<?= $row['doc_file']; ?>');"><i
                         class="ri-delete-bin-5-line label-icon align-middle fs-14 ms-2"></i>Del</button>
@@ -89,12 +126,23 @@ if ($type == 'family') {
             <td><?= $row['is_write'] == '1' ? 'Yes' : 'No'; ?> </td>
 
             <td>
+
+                <button type="button"
+                    class="btn btn-success btn-sm"
+                    onclick="edit_language(
+                '<?= $row['emp_language_id']; ?>',
+                '<?= addslashes($row['language_name']); ?>',
+                '<?= $row['is_speak']; ?>',
+                '<?= $row['is_read']; ?>',
+                '<?= $row['is_write']; ?>'
+            )">
+                    <i class="ri-edit-line"></i> Edit
+                </button>
                 <button type="button" class="btn btn-danger btn-sm btn-label right ms-auto nexttab nexttab"
                     data-nexttab="pills-experience-tab" onclick="delete_language('<?= $row['emp_language_id']; ?>');"><i
                         class="ri-delete-bin-5-line label-icon align-middle fs-14 ms-2"></i>Del</button>
             </td>
         </tr>
-
     <?php }
 } else if ($type == 'bank_details') {
 
@@ -124,6 +172,19 @@ if ($type == 'family') {
                 </div>
             </td>
             <td>
+
+                <button type="button"
+                    class="btn btn-success btn-sm"
+                    onclick="edit_bank(
+                '<?= $row['emp_bank_id']; ?>',
+                '<?= $row['bank_id']; ?>',
+                '<?= addslashes($row['acc_holder_name']); ?>',
+                '<?= $row['account_no']; ?>',
+                '<?= $row['ifsc_code']; ?>',
+                '<?= $row['is_active']; ?>'
+            )">
+                    <i class="ri-edit-line"></i> Edit
+                </button>
                 <button type="button" class="btn btn-danger btn-sm btn-label right ms-auto nexttab nexttab"
                     data-nexttab="pills-experience-tab" onclick="delete_bank_details('<?= $row['emp_bank_id']; ?>');"><i
                         class="ri-delete-bin-5-line label-icon align-middle fs-14 ms-2"></i>Del</button>

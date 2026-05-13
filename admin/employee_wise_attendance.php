@@ -15,15 +15,20 @@ if (isset($_GET['currentYear']) && isset($_GET['currentMonth'])) {
 
 if (isset($_GET['emp_id'])) {
     $emp_id = $_GET['emp_id'];
-    $basic_salary = $obj->getvalfield("employee_master", "basic_salary", "emp_id='$emp_id'");
-    $mobile_no = $obj->getvalfield("employee_master", "mobile_no", "emp_id='$emp_id'");
-    $emp_shift_id = $obj->getvalfield("employee_master", "shift_id", "emp_id='$emp_id'");
-    $emp_depart_id = $obj->getvalfield("employee_master", "department_id", "emp_id='$emp_id'");
+    $emp_data = $obj->select_record("employee_master", ['emp_id' => $emp_id]);
+    $basic_salary = $emp_data['basic_salary'] ?? '';
+    $mobile_no = $emp_data['mobile_no'] ?? '';
+    $emp_shift_id = $emp_data['shift_id'] ?? '';
+    $emp_depart_id = $emp_data['department_id'] ?? '';
+
     $department_name = $obj->getvalfield("department_master", "department_name", "department_id='$emp_depart_id'");
-    $emp_shift_name = $obj->getvalfield("shift_master", "shift_name", "shift_id='$emp_shift_id'");
-    $shift_in_time = $obj->getvalfield("shift_master", "in_time", "shift_id='$emp_shift_id'");
-    $shift_out_time = $obj->getvalfield("shift_master", "out_time", "shift_id='$emp_shift_id'");
-    $is_cross_day = $obj->getvalfield("shift_master", "is_cross_day", "shift_id='$emp_shift_id'");
+
+
+    $shift_data = $obj->select_record("shift_master", ['shift_id' => $emp_shift_id]);
+    $shift_in_time = $shift_data['in_time'] ?? '';
+    $shift_out_time = $shift_data['out_time'] ?? '';
+    $is_cross_day = $shift_data['is_cross_day'] ?? '';
+    $emp_shift_name = $shift_data['shift_name'] ?? '';
 
     $shift_in_time  = date("h:i A", strtotime($shift_in_time));
     $shift_out_time = date("h:i A", strtotime($shift_out_time));
@@ -50,7 +55,7 @@ if (isset($_GET['next'])) {
         $currentYear++;
     }
 }
-$three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear) ?? 0;
+//$three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear) ?? 0;
 
 //$days_array = $obj->getDaysArray($currentMonth, $currentYear);
 if (isset($_GET['date'])) {
@@ -74,7 +79,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 
         foreach ($res as $row) {
             $selected = ($empp_shift_id == $row['shift_id']) ? 'selected' : '';
-            $options .= "<option value='" . $row['shift_id'] . "' $selected>" . $row['shift_name'] . " / " . $row['working_hour'] . " Hrs" . "</option>";
+            $options .= "<option value='" . $row['shift_id'] . "' $selected>" . $row['shift_name'] . " / " . $obj->getCustomCode($row['working_hour']) .   "</option>";
         }
     }
 
@@ -157,7 +162,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                                     document.getElementById('emp_id').value =
                                                         '<?= $emp_id; ?>';
                                                 </script>
-                                                <h4 class="mt-4 fw-bold">Balance C-Off : <span class="fw-semibold"><?= $three_month_leave; ?></span></h4>
+
                                             </div>
                                             <?php if ($emp_id > 0) {
                                             ?>
@@ -169,7 +174,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                                     </div>
                                                     <div class="d-flex justify-content-between border-top pt-1">
 
-                                                        <span> <b>Shift Hours : </b><?= $emp_shift_id ?> Hrs </span>
+                                                        <span> <b>Shift Code : </b><?= $obj->getCustomCode($emp_shift_id) ?> </span>
                                                         <span><b>Department : </b> <?= $department_name; ?></span>
                                                     </div>
                                                     <div class="d-flex justify-content-between border-top pt-1">
@@ -239,7 +244,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">Punch Attandance</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <hr class="mb-0 mt-2">
@@ -247,16 +252,21 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                     <div class="row">
                         <div class="col-lg-12 col-12 mb-2">
                             <label for="">Attandance</label>
-                            <select name="punch_status" id="punch_status" class="form-select form-select-sm">
+                            <select name="punch_status" id="punch_status" class="form-select form-select-sm chosen-select">
                                 <option value="Present">Present</option>
                                 <option value="Absent">Absent</option>
                                 <option value="first_half">Half Day (1st Half)</option>
                                 <option value="second_half">Half Day (2nd Half)</option>
-                                <option value="Leave">Leave</option>
+                                <option value="weekly_leave">Weekly Leave</option>
+                                <option value="earn_leave">Earn Leave</option>
+                                <option value="half_weekly_leave">Half Weekly Leave</option>
+                                <option value="half_earn_leave">Half Earn Leave</option>
+                                <option value="c_off">C-Off</option>
+                                <option value="half_c_off">Half C-Off</option>
                             </select>
                         </div>
                         <div class="col-lg-12 " id="punchShiftBox">
-                            <label for="punch_att_shift_id" class="form-label ">Shift<span
+                            <label for="punch_att_shift_id" class="form-label ">Shift Code<span
                                     class="text-danger fw-bold"> </span></label>
                             <select class="form-select form-select-sm chosen-select"
                                 name="punch_att_shift_id" id="punch_att_shift_id">
@@ -285,7 +295,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="AllAttendenceModalLabel">Modal title</h1>
+                    <h1 class="modal-title fs-5" id="AllAttendenceModalLabel">Punch Attandance</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <hr class="mb-0 mt-2">
@@ -293,12 +303,17 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                     <div class="row">
                         <div class="col-lg-12 col-12 mb-2">
                             <label for="">Attandance</label>
-                            <select name="punch_all_status" id="punch_all_status" class="form-select form-select-sm">
+                            <select name="punch_all_status" id="punch_all_status" class="form-select form-select-sm chosen-select">
                                 <option value="Present">Present</option>
                                 <option value="Absent">Absent</option>
                                 <option value="first_half">Half Day (1st Half)</option>
                                 <option value="second_half">Half Day (2nd Half)</option>
-                                <option value="Leave">Leave</option>
+                                <option value="weekly_leave">Weekly Leave</option>
+                                <option value="earn_leave">Earn Leave</option>
+                                <option value="half_weekly_leave">Half Weekly Leave</option>
+                                <option value="half_earn_leave">Half Earn Leave</option>
+                                <option value="c_off">C-Off</option>
+                                <option value="half_c_off">Half C-Off</option>
                             </select>
                         </div>
                         <div class="col-lg-12 col-12 mb-2">
@@ -309,7 +324,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                             </select>
                         </div>
                         <div class="col-lg-12 " id="punchShiftBox">
-                            <label for="all_att_shift_id" class="form-label ">Shift<span
+                            <label for="all_att_shift_id" class="form-label ">Shift Code<span
                                     class="text-danger fw-bold"> </span></label>
                             <select class="form-select form-select-sm chosen-select"
                                 name="all_att_shift_id" id="all_att_shift_id">
@@ -327,6 +342,22 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-primary" id="saveAllbutton" onclick="saveAllPunch()">Punch All</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="detailsModal" tabindex="-1">
+        <div class="modal-dialog modal-md modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Attendance Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalDetailsBody">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -450,6 +481,10 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                 alert("Please Select Shift Name");
                 return false;
             }
+            if (punch_remark == '') {
+                alert("Please Enter Remark");
+                return false;
+            }
 
             //alert(is_cross_day);
 
@@ -474,7 +509,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                 data: 'punchtime=' + punchtime + '&status=' + 'punchinout' + '&emp_id=' + emp_id + '&punchtype=' + punchtype + '&attdate=' + attdate + '&currentYear=' + currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark + '&punch_shift_id=' + punch_shift_id,
                 dataType: 'html',
                 success: function(data) {
-
+                    console.log(data);
                     showatttype();
                     $('#timepicker').modal('hide');
                     document.getElementById('punch_remark').value = '';
@@ -561,6 +596,10 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                 alert("Please Select Shift Name");
                 return false;
             }
+            if (punch_remark == '') {
+                alert("Please Enter Remark");
+                return false;
+            }
             var currentYear = '<?php echo $currentYear; ?>';
             var currentMonth = '<?php echo $currentMonth; ?>';
             var emp_id = '<?php echo $emp_id; ?>';
@@ -572,7 +611,8 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                 data: 'punchtime=' + punchtime + '&emp_id=' + emp_id + '&attdate=' + attdate + '&currentYear=' + currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark + '&punch_status=' + punch_status + '&punch_shift_id=' + punch_shift_id,
                 dataType: 'html',
                 success: function(data) {
-                    //alert(data);
+                    console.log(data);
+                    // alert(data);
                     showatttype();
                     $('#exampleModal').modal('hide');
                     document.getElementById('punching_remark').value = '';
@@ -601,6 +641,10 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 
             if (punch_shift_id == "") {
                 alert("Please Select Shift Name");
+                return false;
+            }
+            if (punch_remark == '') {
+                alert("Please Enter Remark");
                 return false;
             }
             var currentYear = '<?php echo $currentYear; ?>';
@@ -649,6 +693,32 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 
             }); //ajax close
 
+        }
+
+        function showDetails(date, emp_id) {
+
+            $('#detailsModal').modal('show');
+
+            $('#modalDetailsBody').html(
+                '<div class="text-center"><div class="spinner-border text-primary"></div></div>'
+            );
+
+            $.ajax({
+                url: "get_attendance_details.php",
+                type: "POST",
+                data: {
+                    fulldate: date,
+                    emp_id: emp_id
+                },
+                success: function(response) {
+                    $('#modalDetailsBody').html(response);
+                },
+                error: function() {
+                    $('#modalDetailsBody').html(
+                        '<div class="text-danger text-center">Error loading details</div>'
+                    );
+                }
+            });
         }
     </script>
 </body>

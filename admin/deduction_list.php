@@ -216,17 +216,22 @@ if (isset($_GET['emp_id'])) {
 
                                                     <td>
                                                         <ul class="list-inline hstack gap-2 mb-0">
-                                                            <li class="list-inline-item " data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Edit">
-                                                                <a href="deduction_entry.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>" class="edit-item-btn">
-                                                                    <i class="ri-pencil-fill align-bottom text-success"></i>
-                                                                </a>
-                                                            </li>
-
-                                                            <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
-                                                                <a class="remove-item-btn" type="button" onclick="funDel('<?php echo $row[$tblpkey]; ?>');">
-                                                                    <i class="ri-delete-bin-fill align-bottom text-danger"></i>
-                                                                </a>
-                                                            </li>
+                                                            <?php $chkedit = $obj->check_editBtn($pagename, $loginid);
+                                                            if ($chkedit == 1) {  ?>
+                                                                <li class="list-inline-item " data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Edit">
+                                                                    <a href="deduction_entry.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>" class="edit-item-btn">
+                                                                        <i class="ri-pencil-fill align-bottom text-success"></i>
+                                                                    </a>
+                                                                </li>
+                                                            <?php }
+                                                            $chkdel = $obj->check_delBtn($pagename, $loginid);
+                                                            if ($chkdel == 1) {  ?>
+                                                                <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
+                                                                    <a class="remove-item-btn" type="button" onclick="funDel('<?php echo $row[$tblpkey]; ?>');">
+                                                                        <i class="ri-delete-bin-fill align-bottom text-danger"></i>
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
                                                         </ul>
                                                     </td>
                                                 </tr>

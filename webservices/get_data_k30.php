@@ -1,221 +1,292 @@
-<?php ini_set('max_execution_time', 300);
+<?php
+ini_set('max_execution_time', 300);
 include("../action.php");
 
 $sessionid = $obj->getvalfield("m_session", "sessionid", "status=1");
 
 $inputJSON = file_get_contents('php://input');
+ // 6755625040000090 out
+ // 6728422090000160 in
+$inputJSON = '{"EmployeeID":"2213","SerialNo":"6728322120001144","AttendanceDate":"2026-05-02","PunchTime":"2026-05-01T09:59:01"}';
+//$inputJSON = '{"EmployeeID":"1031","SerialNo":"6728422090000160","AttendanceDate":"2026-04-01","PunchTime":"2026-04-01T14:35:36"}';
 
-$inputJSON = '{"data":["1#2026-01-05 08:00:00#5#1##0#0#",""],"SN":"CGCA201263139"}';
+// if ($inputJSON != "") {
 
-if ($inputJSON != "") {
-	$myfile = fopen("testfile.txt", "w");
-	fwrite($myfile, $inputJSON);
-	fclose($myfile);
-	//die;
+// 	// Convert JSON to array
+// 	$data = json_decode($inputJSON, true);
+
+// 	// Pretty JSON format
+// 	$formattedJSON = json_encode($data, JSON_PRETTY_PRINT);
+
+// 	// Get current time with milliseconds
+// 	$microtime = microtime(true);
+// 	$datetime = date('Y-m-d H:i:s.') . sprintf("%03d", ($microtime - floor($microtime)) * 1000);
+
+// 	// Open file in append mode
+// 	$myfile = fopen("testfile.txt", "a");
+
+// 	// Write data
+// 	fwrite($myfile, "============================\n");
+// 	fwrite($myfile, "Received At: " . $datetime . "\n");
+
+// 	// Optional: PunchTime bhi show karo (important for debugging)
+// 	if (isset($data['PunchTime'])) {
+// 		fwrite($myfile, "PunchTime: " . $data['PunchTime'] . "\n");
+// 	}
+// 	fwrite($myfile, $formattedJSON . "\n\n");
+// 	fclose($myfile);
+// }
+$arr = json_decode($inputJSON, true);
+
+$device = !empty($arr['SerialNo']) ? $arr['SerialNo'] : $arr['DeviceID'];
+$punchTime = date("Y-m-d H:i:s", strtotime($arr['PunchTime']));
+
+// $IN_MACHINE  = '6728322120001025';
+// $OUT_MACHINE = '6728322120001144';
+
+// $mode = ($device == $IN_MACHINE) ? 'IN' : (($device == $OUT_MACHINE) ? 'OUT' : 'AUTO');
+
+$machine_userid = $arr['EmployeeID'];
+$attendance_stamp = $punchTime;
+	$createdate = date('Y-m-d');
+$mode = $obj->getvalfield("att_machine_master", "type", "machine_id='$device'");
+
+$emp_unit = $obj->getvalfield("att_machine_master", "unit_id", "machine_id='$device'");
+if ($emp_unit > 0) {
+	$emp_id = $obj->getvalfield("employee_master", "emp_id", "biomatric_id='$machine_userid' and unit_id='$emp_unit'");
+} else {
+	$emp_id = $obj->getvalfield("employee_master", "emp_id", "biomatric_id='$machine_userid'");
 }
-
-if ($inputJSON != "") {
-
-	echo "<pre>";
-	$input = json_decode($inputJSON, TRUE); //convert JSON into array
-
-
-	$data = $input['data'];
-	//$table = $input['table'];
-	$SN = $input['SN'];
-	$machineid = $SN;
-	$createdate = date('Y-m-d h:i:s');
-
-	// print_r($machineid);
-	// die;
-	$emp_id = 0;
-
-
-	foreach ($data as $value) {
-		echo $value;
-		$datstr = explode('#', $value);
-		print_r($datstr);
-
-		if (isset($datstr[0]))
-			$machine_userid = $datstr[0];
-		else
-			$machine_userid = "";
-
-		if (isset($datstr[1]))
-			$attendance_stamp = $datstr[1];
-		else
-			$attendance_stamp = "";
-
-		if (isset($datstr[2]))
-			$data1 = $datstr[2];
-		else
-			$data1 = "";
-
-		if (isset($datstr[3]))
-			$verifyiedby = $datstr[3];
-		else
-			$verifyiedby = "";
-		//sprintf($machine_userid);die;
-
-
-		$emp_id = $obj->getvalfield("employee_master", "emp_id", "biomatric_id='$machine_userid'");
-
-
-		if ($machine_userid != '') {
-			$punch_date = date('Y-m-d', strtotime($attendance_stamp));
-			$punch_time = date('H:i:s', strtotime($attendance_stamp));
-
-			$attendance_date = $punch_date;
-			// $attendance_date = date('Y-m-d', strtotime($attendance_stamp));
-
-			$attendance_time = date('H:i:s', strtotime($attendance_stamp));
-			$createdate = date('Y-m-d');
-			$year = date('Y', strtotime($attendance_stamp));
-			$month = date('m', strtotime($attendance_stamp));
-
-			$total_days = cal_days_in_month(CAL_GREGORIAN, $month, $year);
-
-			$emp_salary =  $obj->getvalfield("employee_master", "basic_salary", "emp_id='$emp_id'");
-			$department_id =  $obj->getvalfield("employee_master", "department_id", "emp_id='$emp_id'");
-			$unit_id =  $obj->getvalfield("employee_master", "unit_id", "emp_id='$emp_id'");
-
-			//$Office_working_hour =  $obj->getvalfield("employee_master", "shift_id", "emp_id='$emp_id'");
-
-			$Office_working_hour = '12:00:00';
-
-			$sql = "SELECT shift_id, in_time, out_time, is_cross_day,grace_time_in,grace_time_out,ABS(TIME_TO_SEC(TIMEDIFF(in_time, '$attendance_time'))) AS time_diff FROM shift_master WHERE unit_id = '$unit_id' AND working_hour = '$Office_working_hour' ORDER BY time_diff ASC LIMIT 1";
-			$res = $obj->executequery($sql);
-			$shift = $res[0];
-
-			$shift_id     = $shift['shift_id'];
-			$is_cross_day     = $shift['is_cross_day'];
-			$out_time     = $shift['out_time'];
-
-			// echo  $shift_id;
-			// die;
-
-			if ($emp_id > 0) {
-
-
-				if ($is_cross_day == 1 && $punch_time < $out_time) {
-					// OUT punch belongs to previous day
-					$attendance_date = date('Y-m-d', strtotime($punch_date . ' -1 day'));
-				}
-
-				$count = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$year' and month ='$month'");
-
-				if ($count == 0) {
-					// echo 'ji';
-					// die;
-
-					$status = 'IN';
-					$form_data1 = array(
-						'emp_id' => $emp_id,
-						'shift_id' => $shift_id,
-						'department_id' => $department_id,
-						'machine_userid' => $machine_userid,
-						'intime' => $attendance_time,
-						'attendance_stamp' => $attendance_stamp,
-						'attendance_date' => $attendance_date,
-						'attendanceby' => '1',
-						'verifyiedby' => $verifyiedby,
-						'createdate' => $createdate,
-						'machineid' => $SN,
-						'entry_type' => 'machine',
-						'in_status' => $status,
-						'month' => $month,
-						'year' => $year,
-						'unit_id' => $unit_id,
-						'basic_salary' => $emp_salary,
-						'createtime' => $attendance_time,
-						'attendance_status' => 'Incomplete'
-					);
-					$obj->insert_record("attendance_entry", $form_data1);
-				} else {
-					$status = 'OUT';
-
-					$emp_shift_id = $obj->getvalfield(
-						"attendance_entry",
-						"shift_id",
-						"emp_id='$emp_id' and year='$year' and month ='$month' order by attendance_id desc"
-					);
-
-					$shift_data = $obj->select_record("shift_master", array('shift_id' => $emp_shift_id));
-					$is_cross_day = $shift_data['is_cross_day'];
-					$shift_in     = $shift_data['in_time'];
-					$shift_out    = $shift_data['out_time'];
-					$in_margin    = $shift_data['grace_time_in'];
-					$out_margin    = $shift_data['grace_time_out'];
-
-
-					$attendance_id = $obj->getvalfield("attendance_entry", "attendance_id", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$year' and month ='$month' ");
-					$intime = $obj->getvalfield(
-						"attendance_entry",
-						"intime",
-						"attendance_id='$attendance_id'"
-					);
-
-					list($wh, $wm, $ws) = explode(':', $Office_working_hour);
-					$officeWorkingMinutes = ($wh * 60) + $wm;
-
-					$start = new DateTime($attendance_date . ' ' . $intime);
-					$end   = new DateTime($attendance_stamp);
-					if ($end < $start) {
-						$end->modify('+1 day');
-					}
-					$interval = $start->diff($end);
-					$totalSeconds =
-						($interval->days * 24 * 60 * 60) +
-						($interval->h * 60 * 60) +
-						($interval->i * 60) +
-						$interval->s;
-
-					$working_hours = gmdate('H:i:s', $totalSeconds);
-					// Get the total hours between the two times
-
-					$total_hours = ($interval->h) + ($interval->i / 60);
-					$total_sal = $emp_salary * $total_hours;
-
-
-					$workedMinutes = ($interval->h * 60) + $interval->i;
-
-					$totalMarginMinutes = $in_margin + $out_margin;
-					$minimumRequiredMinutes = $officeWorkingMinutes - $totalMarginMinutes;
-
-					if ($workedMinutes < $minimumRequiredMinutes) {
-						$attendance_status = "Half Day";
-						$attheadid = 3;
-					} else {
-						$attendance_status = "Present";
-						$attheadid = 1;
-					}
-
-				      		 
-        		//$overtimeMinutes = $obj->calculateOvertimeMinutes($intime, $attendance_time,$working_hours, $Office_working_hour);
-        		$overtimeMinutes = $obj->calculateOvertimeTime($working_hours, $Office_working_hour);
-				// echo $overtimeMinutes;
  
-					//echo $attendance_status;
-					$form_data1 = array(
-						'outtime' => $attendance_time,
-						'sessionid' => $sessionid,
-						'department_id' => $department_id,
-						'working_hours' => $working_hours,
-						'lastupdated' => date('Y-m-d'),
-						'entry_type_out' => 'machine',
-						'basic_salary' => $total_sal,
-						'attendance_status' => $attendance_status,
-						'out_status' => $status,
-						'overtime' => $overtimeMinutes,
-						'machine_userid' => $machine_userid
-					);
-					//print_r($form_data1);
-					$where = array('attendance_id' => $attendance_id);
-					//print_r($where);
-					$obj->update_record("attendance_entry", $where, $form_data1);
-					//echo 'byy';die;
-				}
-			}
-		}
-	}
+if ($emp_id > 0) {
+
+    $attendance_date = date('Y-m-d', strtotime($attendance_stamp));
+    $attendance_time = date('H:i:s', strtotime($attendance_stamp));
+    $month = date('m', strtotime($attendance_stamp));
+    $year  = date('Y', strtotime($attendance_stamp));
+
+    $emp_data = $obj->select_record("employee_master", ['emp_id' => $emp_id]);
+
+    $unit_id = $emp_data['unit_id'];
+    $department_id = $emp_data['department_id'];
+    $Office_working_hour  = $emp_data['shift_id'];
+
+     	$sql = $sql = "SELECT *
+FROM (
+    SELECT 
+        shift_id,
+        in_time,
+        out_time,
+        is_cross_day,
+        grace_time_in,
+        grace_time_out,
+        min_working_hrs,
+
+        ADDTIME(in_time, min_working_hrs) AS max_allowed_time,
+ 
+        CASE 
+            WHEN '$attendance_time' BETWEEN in_time 
+                 AND ADDTIME(in_time, min_working_hrs)
+            THEN 0   
+
+            WHEN in_time > '$attendance_time'
+            THEN 1  
+
+            ELSE 2  
+        END AS priority,
+
+        ABS(TIME_TO_SEC(TIMEDIFF(in_time, '$attendance_time'))) AS time_diff
+
+    FROM shift_master
+    WHERE unit_id = '$unit_id'
+    AND working_hour = '$Office_working_hour'
+
+) AS shifts
+
+ORDER BY 
+    priority ASC,    
+    in_time ASC,   
+    time_diff ASC  
+
+LIMIT 1;";
+	$res = $obj->executequery($sql);
+			$shift = $res[0];
+			$shift_id     = $shift['shift_id'];
+            	$shift_in  = $shift['in_time'];
+
+                echo $shift_in; die;
+			//$shift_out = $shift['out_time'];
+			$in_margin  = $shift['grace_time_in'];
+			//$out_margin = $shift['grace_time_out'];
+     
+    
+// $prev_att_id = $obj->getvalfield(
+//     "attendance_entry",
+//     "attendance_id",
+//     "emp_id='$emp_id' 
+//      ORDER BY attendance_id DESC LIMIT 1"
+// );
+
+
+// $prev_att_id = $obj->getvalfield( "attendance_entry", "attendance_id", "emp_id='$emp_id' AND attendance_date <= '$attendance_date' AND (outtime IS NULL OR outtime = '') ORDER BY attendance_date DESC, attendance_id DESC LIMIT 1" );
+
+$prev_att_id = $obj->getvalfield(
+    "attendance_entry",
+    "attendance_id",
+    "emp_id='$emp_id'
+     AND (attendance_date < '$attendance_date' 
+          OR (attendance_date = '$attendance_date' AND intime <= '$attendance_time'))
+     ORDER BY attendance_date DESC, intime DESC
+     LIMIT 1"
+);
+ 
+    /* ================= IN LOGIC ================= */
+ 
+if ($mode == 'IN') {
+
+    $today_entry = $obj->getvalfield(
+        "attendance_entry",
+        "attendance_id",
+        "emp_id='$emp_id' 
+         AND attendance_date='$attendance_date'
+         ORDER BY attendance_id ASC LIMIT 1"
+    );
+
+    if (!$today_entry) {
+ $late_in = $obj->calculateLateIn($shift_in, $attendance_time, $in_margin);
+        $form_data = [
+            'emp_id' => $emp_id,      
+            'intime' => $attendance_time,
+            'attendance_stamp' => $attendance_stamp,
+              'machine_userid' => $machine_userid,
+            'department_id' => $department_id,
+            'attendance_date' => $attendance_date,
+            'attendance_status' => 'Incomplete',
+            'prev_attendance_status' => 'Incomplete',
+            'machineid' => $device,
+            'late_in' => $late_in,
+            'shift_id' => $shift_id,
+            'in_status' => 'IN',
+            'entry_type' => 'machine',
+            'month' => $month,
+            'year' => $year,
+            'unit_id' => $unit_id,
+			'sessionid' => $sessionid,
+            'createtime' => $attendance_time,
+            'createdate' => $createdate
+        ];
+
+        $obj->insert_record("attendance_entry", $form_data);
+    }
+}if ($mode == 'OUT') {
+
+    $prev_data = $obj->select_record("attendance_entry", ['attendance_id' => $prev_att_id]);
+    $prev_intime =$prev_data['intime']??'';
+    $prev_attendance_date =$prev_data['attendance_date']??'';
+    $prev_shift_id =$prev_data['shift_id']??'';
+
+    $inDateTime = strtotime($prev_attendance_date . ' ' . $prev_intime);
+    $outDateTime = strtotime($attendance_stamp);
+    $emp_shift_data =   $obj->select_record("shift_master", ['shift_id' => $prev_shift_id]);
+    $emp_in_margin = $emp_shift_data['grace_time_in']??'';
+    $emp_out_margin = $emp_shift_data['grace_time_out']??'';
+    $shift_working_half_hrs = $emp_shift_data['min_working_hrs']??'';
+    $emp_shift_out = $emp_shift_data['out_time']??'';
+    $shift_working_hrs = $emp_shift_data['max_working_hrs']??'';
+    
+
+    // ❌ OUT must be after IN
+    if ($outDateTime <= $inDateTime) {
+        // only log
+    } else {
+
+        /* ================= MAX OUT TIME ================= */
+        $base_date = date('Y-m-d', strtotime($prev_data['attendance_date'] . ' +1 day'));
+        $shift_row = $obj->executequery("select in_time from shift_master where working_hour='$Office_working_hour' order by in_time asc limit 1");
+        
+
+$morning_in = $shift_row[0]['in_time'] ?? '06:00:00';
+
+
+$morning_timestamp = strtotime($base_date . ' ' . $morning_in);
+// extra buffer (4 hrs)
+$extra_seconds = 4 * 3600;
+
+// ✅ FINAL MAX OUT TIME
+$max_out_time = $morning_timestamp + $extra_seconds;
+ 
+
+        /* ================= CHECK WITHIN LIMIT ================= */
+
+        if ($outDateTime <= $max_out_time) {
+
+            // always keep LAST OUT
+            $existing_out = $prev_data['outtime']
+                ? strtotime($prev_data['attendance_date'] . ' ' . $prev_data['outtime'])
+                : 0;
+
+            if ($outDateTime > $existing_out) {
+
+                $working_hours = round(($outDateTime - $inDateTime) / 3600, 2);
+
+                 $result = $obj->calculateWorkingHoursAndStatus(
+                        $prev_data['attendance_date'],
+                        $prev_data['intime'],
+                        $attendance_stamp,
+                        $shift_working_hrs,
+                        $shift_working_half_hrs,
+                        $emp_in_margin,
+                        $emp_out_margin
+                    ); 
+                    
+					$working_hours = $result['working_hours'];
+					$attendance_status = $result['attendance_status'];
+				 
+ $early_out = $obj->calculateEarlyOut($emp_shift_out, date('H:i:s', $outDateTime), $emp_out_margin);
+$overtimeMinutes = $obj->calculateOvertimeTime($working_hours, $shift_working_hrs);
+
+
+
+                $update_data = [
+                    'outtime' => date('H:i:s', $outDateTime),
+                   'working_hours' => $working_hours,
+                    'attendance_status' => $attendance_status,
+                    'out_status' => 'OUT',
+                    'machineid' => $device,
+                    'overtime' => $overtimeMinutes,
+                    'early_out' => $early_out,
+                    'lastupdated' => date('Y-m-d H:i:s')
+                ];
+
+                $obj->update_record(
+                    "attendance_entry",
+                    ['attendance_id' => $prev_att_id],
+                    $update_data
+                );
+            }
+        }
+    }
 }
+
+    /* ================= LOG INSERT ================= */
+    $log_data = [
+        'emp_id' => $emp_id,
+        'department_id' => $department_id,
+        'machine_userid' => $machine_userid,
+        'attendance_stamp' => $attendance_stamp,
+        'attendance_date' => $attendance_date,
+        'intime' => $attendance_time,
+        'in_status' => $mode,
+        'machineid' => $device,
+        'month' => $month,
+        'year' => $year,
+         'entry_type' => 'machine',
+        'unit_id' => $unit_id,
+        'sessionid' => $sessionid,
+        'createtime' => $attendance_time,
+       'createdate' => $createdate
+    ];
+
+    $obj->insert_record("attendance_log", $log_data);
+}
+?>

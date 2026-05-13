@@ -127,6 +127,7 @@ function checkinputmaster(id) {
   }
 }
 
+
 function onlyalphabets(name) {
   var reg = /^[a-zA-Z -]*$/;
   return reg.test(name);
