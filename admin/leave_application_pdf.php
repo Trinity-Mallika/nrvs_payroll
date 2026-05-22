@@ -60,8 +60,10 @@ if (isset($_GET[$tblpkey])) {
     $gst = $unit_data["gstin_no"] ?? "";
     $currentYear  = date('Y', strtotime($application_date));
     $currentMonth = date('m', strtotime($application_date));
-    $three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
+    $opening_leave_balance =$obj->get_opening_leave_balance($emp_id, $sessionid);
     $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
+     
+    $extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear);
 }
 $total_days  = $obj->getvalfield(
     "leave_apply_detail",
@@ -212,9 +214,9 @@ ob_start();
 
 <table class="table no-border">
     <tr>
-        <td><b>Bal. As <?= $obj->dateformatindia($application_date) ?>:</b> Weekly leave(C-Off) - <?= $three_month_leave; ?> <br> Earning Leave : <?= $total_earning_leave ?>
+        <td><b>Bal Leave:</b> Opening Leave Balance - <?= $opening_leave_balance; ?> <br>Extra Off : <?= $extra_off['balance'] ?>
         </td>
-        <td><b>Total Days:</b> <?= $total_days ?></td>
+        <td><b>Earn Leave :</b> <?= $total_earning_leave ?></td>
     </tr>
     <tr>
         <td><b>Address:</b> <?= $leave_address ?></td>

@@ -306,8 +306,26 @@ if (isset($_POST['department_idd'])) {
                                                             SUM(attendance_status='Earning Leave') AS leavecnt2,
                                                             SUM(attendance_status='Half Earning Leave') AS halfearn,
                                                             SUM(attendance_status='Half Weekly Leave') AS halfweek,
+                                                            SUM(attendance_status='Leave') AS op_leave,
+                                                            SUM(attendance_status='Half Leave') AS halfopleave,
+                                                            SUM(attendance_status='Half Extra Off') AS half_extra_off,
+                                                            SUM(attendance_status='Extra Off') AS extra_off,
                                                             SUM(attendance_status='C Off') AS coff,
                                                             SUM(attendance_status='Half C Off') AS halfcoff,
+                                                            SUM(
+                                                                CASE 
+                                                                    WHEN attendance_status = 'Leave' THEN 1
+                                                                    WHEN attendance_status = 'Half Leave' THEN 0.5
+                                                                    ELSE 0
+                                                                END
+                                                            ) AS total_opening_leave,
+                                                            SUM(
+                                                                CASE 
+                                                                    WHEN attendance_status = 'Extra Off' THEN 1
+                                                                    WHEN attendance_status = 'Half Extra Off' THEN 0.5
+                                                                    ELSE 0
+                                                                END
+                                                            ) AS total_used_extra_off,
                                                              SUM(CASE 
             WHEN late_in IS NOT NULL 
             AND late_in != '00:00:00' 
@@ -356,8 +374,8 @@ if (isset($_POST['department_idd'])) {
                                                         <th>Used Weekly</th>
                                                         <th>Earn Leave</th>
                                                         <th>Used Earn</th>
-                                                        <th>C-OFF</th>
-                                                        <th>Used C-OFF</th>
+                                                        <th>Used Leave</th>
+                                                        <th>Used Extra OFF</th>
                                                         <th>Total Payable Days</th>
                                                     </tr>
                                                 </thead>
@@ -389,18 +407,26 @@ if (isset($_POST['department_idd'])) {
                                                         $is_esic = $emp['is_esic'];
                                                         $setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
 
-                                                        $sum   = $summary[$empId] ?? ['present' => 0, 'halfday' => 0, 'leavecnt' => 0, 'leavecnt2' => 0, 'halfearn' => 0, 'halfweek' => 0, 'coff' => 0, 'halfcoff' => 0];
+                                                        $sum   = $summary[$empId] ?? ['present' => 0, 'halfday' => 0, 'leavecnt' => 0, 'leavecnt2' => 0, 'halfearn' => 0, 'halfweek' => 0, 'coff' => 0, 'halfcoff' => 0,'op_leave' => 0,'halfopleave' => 0,'half_extra_off' => 0,'extra_off' => 0,'total_opening_leave' => 0,'total_used_extra_off' => 0];
 
-                                                        $totalAttendance = $sum['present'] + ($sum['halfday'] / 2) + $sum['leavecnt'] + $sum['leavecnt2'] + ($sum['halfearn'] / 2) + ($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2);
+                                                        $totalAttendance = $sum['present'] + ($sum['halfday'] / 2) + $sum['leavecnt'] + $sum['leavecnt2'] + ($sum['halfearn'] / 2) + ($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2) + ($sum['halfopleave'] / 2) + ($sum['half_extra_off'] / 2) + $sum['op_leave'] + $sum['extra_off'];
 
-                                                        $leave_att =  $sum['leavecnt'] + $sum['leavecnt2'] + ($sum['halfearn'] / 2) + ($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2);
+                                                        $leave_att =  $sum['leavecnt'] + $sum['leavecnt2'] + ($sum['halfearn'] / 2) + ($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2) + $sum['op_leave'] + ($sum['halfopleave'] / 2)+ $sum['extra_off'] + ($sum['half_extra_off'] / 2);
 
                                                         $real_total_att = $sum['present'] + ($sum['halfday'] / 2);
+                                                        $total_opening_leave = $sum['total_opening_leave'];
+                                                        $total_used_extra_off = $sum['total_used_extra_off'];
+ 
                                                         $is_all_leave_add = $obj->getvalfield("unit_master", "add_leave", "unit_id='$emp[unit_id]'");
 
-                                                        $three_month_leave = $obj->getLeave($empId, $month, $year);
-                                                        $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $real_total_att, $unit_id);
+                                                       // $three_month_leave = $obj->getLeave($empId, $month, $year);
+                                                        $extra_off =$obj->getExtraOffBalance($empId, $month, $year);
                                                         $week_leave = $obj->totalWeeklyLeave($unit_id, $real_total_att, $allow_weekly_off);
+
+                                                        $earn_leave_present = $real_total_att +$week_leave;
+
+                                                        $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unit_id);
+                                                       
 
 
                                                         $holidayData = $obj->getHolidayCountWithSandwichRule(
@@ -420,9 +446,10 @@ if (isset($_POST['department_idd'])) {
                                                             $totalAttendance,
                                                             $week_leave,
                                                             $monthly_leave,
-                                                            $three_month_leave,
+                                                            // $three_month_leave,
                                                             $is_allow_c_off,
                                                             $is_all_leave_add
+                                                            
                                                         );
 
                                                         $used_weekly_leave = $result['used_weekly'];
@@ -430,23 +457,7 @@ if (isset($_POST['department_idd'])) {
                                                         $used_three_month_leave = $result['used_coff'];
                                                         $total_payable_days = $result['total_working_days'];
 
-                                                        // $shortage = $absent;
-                                                        // $used_three_month_leave = 0;
-                                                        // if ($is_allow_c_off == 1) {
-                                                        //     $used_three_month_leave = min($shortage, $three_month_leave);
-                                                        //     $shortage -= $used_three_month_leave;
-                                                        // }
-                                                        // $used_weekly_leave = min($shortage, $week_leave);
-                                                        // $shortage -= $used_weekly_leave;
-
-                                                        // $used_monthly_leave = 0;
-                                                        // if ($is_all_leave_add == 1) {
-                                                        //     $used_monthly_leave = min($shortage, $monthly_leave);
-                                                        //     $shortage -= $used_monthly_leave;
-                                                        // }
-
-
-                                                        //  $total_payable_days = $totalAttendance + $used_weekly_leave + $used_monthly_leave + $used_three_month_leave;
+                                                       
 
                                                         $total_present += $sum['present'];
                                                         $total_halfday += $sum['halfday'];
@@ -459,8 +470,8 @@ if (isset($_POST['department_idd'])) {
                                                         $total_monthly_leave += $monthly_leave;
                                                         $total_used_monthly += $used_monthly_leave;
 
-                                                        $total_coff += $three_month_leave;
-                                                        $total_used_coff += $used_three_month_leave;
+                                                        $total_coff += $total_opening_leave;
+                                                        $total_used_coff += $total_used_extra_off;
 
                                                         $total_payable += $total_payable_days;
                                                         $total_holiday += $holiday;
@@ -505,9 +516,9 @@ if (isset($_POST['department_idd'])) {
 
                                                         echo "<td class='text-center'>" . number_format($monthly_leave, 1) . "</td>";
                                                         echo "<td class='text-center text-success'>" . number_format($used_monthly_leave, 1) . "</td>";
-
-                                                        echo "<td class='text-center'>" . number_format($three_month_leave, 1) . "</td>";
-                                                        echo "<td class='text-center text-success'>" . number_format($used_three_month_leave, 1) . "</td>";
+                                                        echo "<td class='text-center text-success'>" . number_format($total_opening_leave, 1) . "</td>";
+                                                        echo "<td class='text-center'>" . number_format($extra_off['balance'], 1) . "</td>";
+                                                        
 
                                                         echo "<td class='text-center fw-bold'>" . number_format($total_payable_days, 1) . "</td>";
                                                         echo "</tr>";

@@ -163,7 +163,6 @@ if (isset($_POST['submit'])) {
         $action = 2;
         $process = "updated";
     }
-
     echo "<script>location='$pagename?action=$action'</script>";
 }
 
@@ -189,7 +188,7 @@ if (isset($_GET[$tblpkey])) {
     $remark = $sqledit['remark'] ?? "";
     $start_month = $sqledit['start_month'] ?? 0;
     $start_year = $sqledit['start_year'] ?? 0;
-
+    $genrate_installment = "1";
     $img = "";
 } else {
     $loan_date = date('Y-m-d');
@@ -199,6 +198,7 @@ if (isset($_GET[$tblpkey])) {
     $reference_no  = "";
     $loan_adv_amt  = "";
     $attach_file = "";
+    $genrate_installment = "0";
     $start_month = (int)date('m');
     $start_year = (int)date('Y');
     $interest_amount =  $no_of_inst = $inst_amount = $total_amount = $remark = $guarantor_name1 = $guarantor_name2 = $purpose_of_loan_adv = "";
@@ -240,7 +240,7 @@ if (isset($_GET[$tblpkey])) {
                                     <div class="row g-4 align-items-center">
                                         <div class="col-sm">
                                             <div>
-                                                <h5 class="card-title mb-0"> <?= $module; ?> <a href="loan_advance_list.php" class="float-end btn btn-sm btn-primary">List</a></h5>
+                                                <h5 class="card-title mb-0"> <?= $module; ?> <a href="loan_advance_list.php" class="float-end btn btn-sm btn-primary ms-2">List</a><a href="show_loan_details.php" class="float-end btn btn-sm btn-primary ms-2">Show Loan/Advance Details</a></h5>
                                             </div>
                                         </div>
                                     </div>
@@ -248,7 +248,18 @@ if (isset($_GET[$tblpkey])) {
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-lg-4 mb-2">
-                                            <label for="emp_id" class="form-label">Employee Name<span class="text-danger fw-bold">*</span></label>
+                                           <div class="d-flex justify-content-between align-items-center">
+                                                <label for="emp_id" class="form-label mb-1">
+                                                    Employee Name
+                                                    <span class="text-danger fw-bold">*</span>
+                                                </label>
+
+                                                <button type="button"
+                                                    class="btn btn-sm btn-primary"
+                                                    onclick="showLoanAdvanceDetails();">
+                                                    Show
+                                                </button>
+                                            </div>
                                             <select class="form-select form-select-sm chosen-select" name="emp_id" id="emp_id">
                                                 <option value="">Select Employee</option>
                                                 <?php
@@ -262,6 +273,7 @@ if (isset($_GET[$tblpkey])) {
                                             <script>
                                                 document.getElementById('emp_id').value = '<?= $emp_id; ?>';
                                             </script>
+                                            
                                         </div>
                                         <div class="col-lg-4 mb-3">
                                             <label for="">Date<span class="text-danger fw-bold">*</span></label>
@@ -465,8 +477,9 @@ if (isset($_GET[$tblpkey])) {
                                         <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
                                         if ($chkadd == 1) {  ?>
                                             <div class="col-lg-12 text-center mt-4">
+                                                <input type="hidden" id="installment_generated" value="<?=$genrate_installment?>">
                                                 <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
-                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('emp_id,loan_date,loan_adv_amt,no_of_inst,inst_amount,total_amount')">
+                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return validateInstallmentGenerate()">
                                                 <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
                                             </div>
                                         <?php } ?>
@@ -486,6 +499,28 @@ if (isset($_GET[$tblpkey])) {
     </div>
     <!-- End Page-content -->
     </div>
+
+    <div class="modal fade" id="loanAdvanceModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Employee Loan / Advance Details
+                </h5>
+
+                <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body" id="loanAdvanceModalBody">
+                Loading...
+            </div>
+
+        </div>
+    </div>
+</div>
 
     <?php include('inc/delete.php') ?>
     <?php include('inc/js.php') ?>
@@ -594,6 +629,7 @@ if (isset($_GET[$tblpkey])) {
 </tr>
 `;
                 tbody.innerHTML += row;
+                document.getElementById('installment_generated').value = 1;
             }
         }
 
@@ -646,6 +682,47 @@ if (isset($_GET[$tblpkey])) {
                 if (theEvent.preventDefault) theEvent.preventDefault();
             }
         }
+
+        function validateInstallmentGenerate() {
+
+    let generated = $('#installment_generated').val();
+
+    if (generated != 1) {
+
+        Swal.fire({
+            icon: 'warning',
+            title: 'Warning',
+            text: 'Please Calculate Installment First'
+        });
+
+        return false;
+    }
+
+    return checkinputmaster('emp_id,loan_date,loan_adv_amt,no_of_inst,inst_amount,total_amount');
+}
+
+   function showLoanAdvanceDetails() {
+        let emp_id = $("#emp_id").val();
+        if (emp_id == '') {
+            alert("Please Select Employee First");
+            $("#emp_id").focus();
+            return false;
+        }
+
+        $.ajax({
+            url: "get_employee_loan_advance_details.php",
+            type: "POST",
+            data: {
+                emp_id: emp_id
+            },
+            success: function(response) {
+
+                $("#loanAdvanceModalBody").html(response);
+
+                $("#loanAdvanceModal").modal('show');
+            }
+        });
+    }
     </script>
 </body>
 

@@ -250,6 +250,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                 <hr class="mb-0 mt-2">
                 <div class="modal-body">
                     <div class="row">
+                       
                         <div class="col-lg-12 col-12 mb-2">
                             <label for="">Attandance</label>
                             <select name="punch_status" id="punch_status" class="form-select form-select-sm chosen-select">
@@ -257,12 +258,18 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                 <option value="Absent">Absent</option>
                                 <option value="first_half">Half Day (1st Half)</option>
                                 <option value="second_half">Half Day (2nd Half)</option>
-                                <option value="weekly_leave">Weekly Leave</option>
-                                <option value="earn_leave">Earn Leave</option>
-                                <option value="half_weekly_leave">Half Weekly Leave</option>
-                                <option value="half_earn_leave">Half Earn Leave</option>
-                                <option value="c_off">C-Off</option>
-                                <option value="half_c_off">Half C-Off</option>
+                                <!-- <option value="weekly_leave">Weekly Leave</option> -->
+                                <option value="earn_leave" class="earnOption2">Earn Leave</option>
+                                <!-- <option value="half_weekly_leave">Half Weekly Leave</option> -->
+                                <option value="half_earn_leave" class="earnOption2">Half Earn Leave</option>
+                                <!-- <option value="c_off">C-Off</option>
+                                <option value="half_c_off">Half C-Off</option> -->
+                                <option value="eoff" class="extraOffOption">Extra Off</option>
+                                <option value="half_eoff" class="extraOffOption">Half Extra Off</option>
+
+                                <option value="leave" class="leaveOption">Leave</option>
+                                <option value="half_leave" class="leaveOption">Half Leave</option>
+                                 
                             </select>
                         </div>
                         <div class="col-lg-12 " id="punchShiftBox">
@@ -295,7 +302,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="AllAttendenceModalLabel">Punch Attandance</h1>
+                    <h1 class="modal-title fs-5" id="AllAttendenceModalLabel">Punch All Attandance</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <hr class="mb-0 mt-2">
@@ -308,12 +315,15 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                 <option value="Absent">Absent</option>
                                 <option value="first_half">Half Day (1st Half)</option>
                                 <option value="second_half">Half Day (2nd Half)</option>
-                                <option value="weekly_leave">Weekly Leave</option>
-                                <option value="earn_leave">Earn Leave</option>
-                                <option value="half_weekly_leave">Half Weekly Leave</option>
-                                <option value="half_earn_leave">Half Earn Leave</option>
-                                <option value="c_off">C-Off</option>
-                                <option value="half_c_off">Half C-Off</option>
+                                <!-- <option value="weekly_leave">Weekly Leave</option> -->
+                                <option value="earn_leave" class="earnOption2">Earn Leave</option>
+                                <!-- <option value="half_weekly_leave">Half Weekly Leave</option> -->
+                                <option value="half_earn_leave" class="earnOption2">Half Earn Leave</option>
+                                <option value="eoff" class="extraOffOption2">Extra Off</option>
+                                <option value="half_eoff" class="extraOffOption2">Half Extra Off</option>
+
+                                <option value="leave" class="leaveOption2">Leave</option>
+                                <option value="half_leave" class="leaveOption2">Half Leave</option>
                             </select>
                         </div>
                         <div class="col-lg-12 col-12 mb-2">
@@ -552,7 +562,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 
         } //fun close
 
-        function openPunchModal(attdate, time, remark, emp_shift_hrs, empp_shift_id) {
+        function openPunchModal(attdate, time, remark, emp_shift_hrs, empp_shift_id, extraOffBalance, openingLeaveBalance,total_earning_leave) {
             document.getElementById('punch_attdate').value = attdate;
             document.getElementById('punching_remark').value = remark;
             $.ajax({
@@ -566,10 +576,71 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                     $("#punch_att_shift_id").html(data).trigger("change.select2");
                 }
             });
+
+               extraOffBalance = parseFloat(extraOffBalance);
+
+            if (extraOffBalance >= 1) {
+                // Full + Half  enable
+                $("option[value='eoff']").prop("disabled", false).show();
+                $("option[value='half_eoff']").prop("disabled", false).show();
+
+            } else if (extraOffBalance >= 0.5) {
+                // only Half enable
+                $("option[value='eoff']").prop("disabled", true).hide();
+                $("option[value='half_eoff']").prop("disabled", false).show();
+
+            } else {
+                // both disable
+                $("option[value='eoff']").prop("disabled", true).hide();
+                $("option[value='half_eoff']").prop("disabled", true).hide();
+            }
+
+
+            /* ================= LEAVE ================= */
+            openingLeaveBalance = parseFloat(openingLeaveBalance);
+
+            if (openingLeaveBalance >= 1) {
+
+                $("option[value='leave']").prop("disabled", false).show();
+                $("option[value='half_leave']").prop("disabled", false).show();
+
+            } else if (openingLeaveBalance >= 0.5) {
+
+                $("option[value='leave']").prop("disabled", true).hide();
+                $("option[value='half_leave']").prop("disabled", false).show();
+
+            } else {
+
+                $("option[value='leave']").prop("disabled", true).hide();
+                $("option[value='half_leave']").prop("disabled", true).hide();
+            }
+
+
+            /* ================= EARN LEAVE ================= */
+            total_earning_leave = parseFloat(total_earning_leave);
+
+            if (total_earning_leave >= 1) {
+
+                $("option[value='earn_leave']").prop("disabled", false).show();
+                $("option[value='half_earn_leave']").prop("disabled", false).show();
+
+            } else if (total_earning_leave >= 0.5) {
+
+                // Only Half Earn Leave enable
+                $("option[value='earn_leave']").prop("disabled", true).hide();
+                $("option[value='half_earn_leave']").prop("disabled", false).show();
+
+            } else {
+
+                $("option[value='earn_leave']").prop("disabled", true).hide();
+                $("option[value='half_earn_leave']").prop("disabled", true).hide();
+            }
+            $("#punch_status").trigger("chosen:updated");
             $('#exampleModal').modal('show');
         };
 
-        function add_all_att(emp_shift_hrs, empp_shift_id) {
+        function add_all_att(emp_shift_hrs, empp_shift_id, extraOffBalance, openingLeaveBalance,total_earning_leave) {
+             
             $.ajax({
                 type: "POST",
                 url: "",
@@ -581,6 +652,68 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                     $("#all_att_shift_id").html(data).trigger("change.select2");
                 }
             });
+ 
+            extraOffBalance = parseFloat(extraOffBalance);
+
+            if (extraOffBalance >= 1) {
+                // Full + Half  enable
+                $("option[value='eoff']").prop("disabled", false).show();
+                $("option[value='half_eoff']").prop("disabled", false).show();
+
+            } else if (extraOffBalance >= 0.5) {
+                // only Half enable
+                $("option[value='eoff']").prop("disabled", true).hide();
+                $("option[value='half_eoff']").prop("disabled", false).show();
+
+            } else {
+                // both disable
+                $("option[value='eoff']").prop("disabled", true).hide();
+                $("option[value='half_eoff']").prop("disabled", true).hide();
+            }
+
+
+            /* ================= LEAVE ================= */
+            openingLeaveBalance = parseFloat(openingLeaveBalance);
+
+            if (openingLeaveBalance >= 1) {
+
+                $("option[value='leave']").prop("disabled", false).show();
+                $("option[value='half_leave']").prop("disabled", false).show();
+
+            } else if (openingLeaveBalance >= 0.5) {
+
+                $("option[value='leave']").prop("disabled", true).hide();
+                $("option[value='half_leave']").prop("disabled", false).show();
+
+            } else {
+
+                $("option[value='leave']").prop("disabled", true).hide();
+                $("option[value='half_leave']").prop("disabled", true).hide();
+            }
+
+
+            /* ================= EARN LEAVE ================= */
+            total_earning_leave = parseFloat(total_earning_leave);
+
+            if (total_earning_leave >= 1) {
+
+                $("option[value='earn_leave']").prop("disabled", false).show();
+                $("option[value='half_earn_leave']").prop("disabled", false).show();
+
+            } else if (total_earning_leave >= 0.5) {
+
+                // सिर्फ Half Earn Leave enable
+                $("option[value='earn_leave']").prop("disabled", true).hide();
+                $("option[value='half_earn_leave']").prop("disabled", false).show();
+
+            } else {
+
+                $("option[value='earn_leave']").prop("disabled", true).hide();
+                $("option[value='half_earn_leave']").prop("disabled", true).hide();
+            }
+
+ 
+            $("#punch_all_status").trigger("chosen:updated");
             $('#AllAttendenceModal').modal('show');
         };
 

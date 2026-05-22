@@ -44,7 +44,7 @@ $leave_data = array(
 if ($punch_status == 'Absent') {
     $attendance_id = $obj->getvalfield("attendance_entry", "attendance_id", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$currentYear' and month ='$currentMonth' ");
 
-    $previous_att_status = $obj->getvalfield("attendance_entry", "attendance_status", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$currentYear' and month ='$currentMonth'");
+    //$previous_att_status = $obj->getvalfield("attendance_entry", "attendance_status", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$currentYear' and month ='$currentMonth'");
     $where = array(
         'emp_id' => $emp_id,
         'attendance_date'  => $attendance_date,
@@ -147,32 +147,44 @@ if ($punch_status == 'Absent') {
                 $halfMinutes % 60,
                 0
             );
-        } elseif ($punch_status == 'weekly_leave') {
+        } elseif ($punch_status == 'eoff') {
+            $form_date['attendance_status'] = 'Extra Off'; 
+        }elseif ($punch_status == 'half_eoff') {
+            $form_date['attendance_status'] = 'Half Extra Off'; 
+        }elseif ($punch_status == 'leave') {
+            $form_date['attendance_status'] = 'Leave'; 
+        }elseif ($punch_status == 'half_leave') {
+            $form_date['attendance_status'] = 'Half Leave'; 
+        }elseif ($punch_status == 'weekly_leave') {
             $form_date['attendance_status'] = 'Weekly Leave';
-            $leave_data['total_leave'] = '-1';
-            $leave_data['remining_leave'] = '-1';
-            $leave_data['leave_date'] = $attendance_date;
-            $leave_data['leave_type'] = 'weekly';
+            // $leave_data['total_leave'] = '-1';
+            // $leave_data['remining_leave'] = '-1';
+            // $leave_data['leave_date'] = $attendance_date;
+            // $leave_data['leave_type'] = 'weekly';
+            // $obj->insert_record("emp_monthly_leave", $leave_data);
         } elseif ($punch_status == 'earn_leave') {
             $form_date['attendance_status'] = 'Earning Leave';
-            $leave_data['total_leave'] = '-1';
-            $leave_data['remining_leave'] = '-1';
-            $leave_data['leave_date'] = $attendance_date;
-            $leave_data['leave_type'] = 'earning';
+            // $leave_data['total_leave'] = '-1';
+            // $leave_data['remining_leave'] = '-1';
+            // $leave_data['leave_date'] = $attendance_date;
+            // $leave_data['leave_type'] = 'earning';
+            // $obj->insert_record("emp_monthly_leave", $leave_data);
         } elseif ($punch_status == 'half_weekly_leave') {
             $form_date['attendance_status'] = 'Half Weekly Leave';
-            $leave_data['total_leave'] = '-0.5';
-            $leave_data['remining_leave'] = '-0.5';
-            $leave_data['leave_type'] = 'weekly';
-            $leave_data['leave_date'] = $attendance_date;
+            // $leave_data['total_leave'] = '-0.5';
+            // $leave_data['remining_leave'] = '-0.5';
+            // $leave_data['leave_type'] = 'weekly';
+            // $leave_data['leave_date'] = $attendance_date;
+            // $obj->insert_record("emp_monthly_leave", $leave_data);
         } elseif ($punch_status == 'half_earn_leave') {
             $form_date['attendance_status'] = 'Half Earning Leave';
-            $leave_data['total_leave'] = '-0.5';
-            $leave_data['remining_leave'] = '-0.5';
-            $leave_data['leave_date'] = $attendance_date;
-            $leave_data['leave_type'] = 'earning';
+            // $leave_data['total_leave'] = '-0.5';
+            // $leave_data['remining_leave'] = '-0.5';
+            // $leave_data['leave_date'] = $attendance_date;
+            // $leave_data['leave_type'] = 'earning';
+            // $obj->insert_record("emp_monthly_leave", $leave_data);
         }
-        $obj->insert_record("emp_monthly_leave", $leave_data);
+       
         $lastid = $obj->insert_record_lastid("attendance_entry", $form_date);
 
         $form_data1 = array(
@@ -193,8 +205,8 @@ if ($punch_status == 'Absent') {
     } else {
         $attendance_id = $obj->getvalfield("attendance_entry", "attendance_id", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$currentYear' and month ='$currentMonth' ");
 
-        $previous_att_status = $obj->getvalfield("attendance_entry", "attendance_status", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$currentYear' and month ='$currentMonth'");
-
+        //$previous_att_status = $obj->getvalfield("attendance_entry", "attendance_status", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$currentYear' and month ='$currentMonth'");
+        $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
 
         $form_date = array(
             'emp_id' => $emp_id,
@@ -244,7 +256,7 @@ if ($punch_status == 'Absent') {
                 $totalMinutes % 60,
                 0
             );
-            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
+             
         } elseif ($punch_status == 'first_half') {
 
             $form_date['intime'] = $firstHalfStart->format('H:i:s');
@@ -257,7 +269,7 @@ if ($punch_status == 'Absent') {
                 $halfMinutes % 60,
                 0
             );
-            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
+           
         } elseif ($punch_status == 'second_half') {
 
             $form_date['intime'] = $secondHalfStart->format('H:i:s');
@@ -270,7 +282,7 @@ if ($punch_status == 'Absent') {
                 $halfMinutes % 60,
                 0
             );
-            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
+           
             // if ($previous_att_status == 'Weekly Leave' || $previous_att_status == 'Earning Leave') {
             //     $leave_data['total_leave'] = '1';
             //     $leave_data['remining_leave'] = '1';
@@ -284,45 +296,48 @@ if ($punch_status == 'Absent') {
             // }
         } elseif ($punch_status == 'weekly_leave') {
             $form_date['attendance_status'] = 'Weekly Leave';
-            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
-
-            $leave_data['total_leave'] = '-1';
-            $leave_data['remining_leave'] = '-1';
-            $leave_data['leave_type'] = 'weekly';
-            $leave_data['leave_date'] = $attendance_date;
-            $obj->insert_record("emp_monthly_leave", $leave_data);
+            
+            // $leave_data['total_leave'] = '-1';
+            // $leave_data['remining_leave'] = '-1';
+            // $leave_data['leave_type'] = 'weekly';
+            // $leave_data['leave_date'] = $attendance_date;
+            // $obj->insert_record("emp_monthly_leave", $leave_data);
         } elseif ($punch_status == 'earn_leave') {
-            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
-
             $form_date['attendance_status'] = 'Earning Leave';
-            $leave_data['total_leave'] = '-1';
-            $leave_data['remining_leave'] = '-1';
-            $leave_data['leave_type'] = 'earning';
-            $leave_data['leave_date'] = $attendance_date;
-            $obj->insert_record("emp_monthly_leave", $leave_data);
-        } elseif ($punch_status == 'half_weekly_leave') {
-            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
 
+            // $leave_data['total_leave'] = '-1';
+            // $leave_data['remining_leave'] = '-1';
+            // $leave_data['leave_type'] = 'earning';
+            // $leave_data['leave_date'] = $attendance_date;
+            // $obj->insert_record("emp_monthly_leave", $leave_data);
+        } elseif ($punch_status == 'half_weekly_leave') {
             $form_date['attendance_status'] = 'Half Weekly Leave';
-            $leave_data['total_leave'] = '-0.5';
-            $leave_data['remining_leave'] = '-0.5';
-            $leave_data['leave_type'] = 'weekly';
-            $leave_data['leave_date'] = $attendance_date;
-            $obj->insert_record("emp_monthly_leave", $leave_data);
+
+            // $leave_data['total_leave'] = '-0.5';
+            // $leave_data['remining_leave'] = '-0.5';
+            // $leave_data['leave_type'] = 'weekly';
+            // $leave_data['leave_date'] = $attendance_date;
+            // $obj->insert_record("emp_monthly_leave", $leave_data);
         } elseif ($punch_status == 'half_earn_leave') {
-            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
             $form_date['attendance_status'] = 'Half Earning Leave';
-            $leave_data['total_leave'] = '-0.5';
-            $leave_data['remining_leave'] = '-0.5';
-            $leave_data['leave_type'] = 'earning';
-            $leave_data['leave_date'] = $attendance_date;
-            $obj->insert_record("emp_monthly_leave", $leave_data);
+            
+            // $leave_data['total_leave'] = '-0.5';
+            // $leave_data['remining_leave'] = '-0.5';
+            // $leave_data['leave_type'] = 'earning';
+            // $leave_data['leave_date'] = $attendance_date;
+            // $obj->insert_record("emp_monthly_leave", $leave_data);
         } elseif ($punch_status == 'c_off') {
-            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
             $form_date['attendance_status'] = 'C Off';
         } elseif ($punch_status == 'half_c_off') {
-            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
             $form_date['attendance_status'] = 'Half C Off';
+        }elseif ($punch_status == 'eoff') {
+            $form_date['attendance_status'] = 'Extra Off'; 
+        }elseif ($punch_status == 'half_eoff') {
+            $form_date['attendance_status'] = 'Half Extra Off'; 
+        }elseif ($punch_status == 'leave') {
+            $form_date['attendance_status'] = 'Leave'; 
+        }elseif ($punch_status == 'half_leave') {
+            $form_date['attendance_status'] = 'Half Leave'; 
         }
 
 

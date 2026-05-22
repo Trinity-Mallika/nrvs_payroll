@@ -45,7 +45,7 @@ for ($i = 0; $i < count($months); $i++) {
 }
 
 
-$obj->update_record("loan_advance", ['loan_advance_id' => $loan_advance_id, 'unit_id' => $unitid], ['appr_remark' => $approval_remark, 'appr_status' => $status]);
+$obj->update_record("loan_advance", ['loan_advance_id' => $loan_advance_id, 'unit_id' => $unitid], ['appr_remark' => $approval_remark, 'appr_status' => $status,'updatedby'=>$loginid,'lastupdated'=>$createdate]);
 $form_data1 = array(
     "primary_id" => $loan_advance_id,
     "flag" => "Loan Advance Approved",

@@ -1,5 +1,5 @@
 <?php include("../adminsession.php");
-$title = "Month Wise Attendance Report";// purana sahi wala hai
+$title = "Month Wise Attendance Report"; // purana sahi wala hai
 $pagename = "month_wise_attendance_report.php";
 $module = "Search Attendance";
 $submodule = "Month Wise Attendance List";
@@ -7,7 +7,7 @@ $btn_name = "Search";
 $keyvalue = 0;
 $tblname = "attendance_entry";
 $tblpkey = "attendance_id";
-
+$is_all_leave_add = $obj->getvalfield("unit_master", "add_leave", "unit_id='$unitid'");
 $crit2 = " and 1=1";
 
 if (isset($_GET['department_id'])) {
@@ -101,7 +101,8 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 ?>
 
 <!doctype html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
+    data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
 
 <head>
     <meta charset="utf-8" />
@@ -111,15 +112,15 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 
 </head>
 <style>
-    table.dataTable>thead>tr>th:not(.sorting_disabled),
-    table.dataTable>thead>tr>td:not(.sorting_disabled) {
-        padding-right: 5px !important;
-    }
+table.dataTable>thead>tr>th:not(.sorting_disabled),
+table.dataTable>thead>tr>td:not(.sorting_disabled) {
+    padding-right: 5px !important;
+}
 
-    table.dataTable>thead>tr>th:last-child:not(.sorting_disabled),
-    table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
-        padding-right: 20px !important;
-    }
+table.dataTable>thead>tr>th:last-child:not(.sorting_disabled),
+table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
+    padding-right: 20px !important;
+}
 </style>
 
 <body>
@@ -133,181 +134,210 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                     <div class="col-lg-12">
                         <fieldset class="mt-2">
                             <?php if (!isset($_GET['search'])) { ?>
-                                <form action="<?php echo $pagename; ?>" method="get">
-                                    <div class="card">
-                                        <div class="card-header border-bottom-dashed">
-                                            <div class="row g-4 align-items-center">
-                                                <div class="col-sm">
-                                                    <div>
-                                                        <h5 class="card-title mb-0"> <?= $module; ?></h5>
-                                                    </div>
+                            <form action="<?php echo $pagename; ?>" method="get">
+                                <div class="card">
+                                    <div class="card-header border-bottom-dashed">
+                                        <div class="row g-4 align-items-center">
+                                            <div class="col-sm">
+                                                <div>
+                                                    <h5 class="card-title mb-0"> <?= $module; ?></h5>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="card-body">
-                                            <div class="row">
-                                                <div class="col-lg-3 mb-3">
-                                                    <label for="department_id" class="form-label">Department Name<span class="text-danger fw-bold"></span></label>
-                                                    <select class="form-select chosen-select" name="department_id" id="department_id">
-                                                        <option value="">All</option>
-                                                        <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_name asc");
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-lg-3 mb-3">
+                                                <label for="department_id" class="form-label">Department Name<span
+                                                        class="text-danger fw-bold"></span></label>
+                                                <select class="form-select chosen-select" name="department_id"
+                                                    id="department_id">
+                                                    <option value="">All</option>
+                                                    <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_name asc");
                                                         foreach ($res as $key) {
                                                             echo "<option value='" . $key['department_id'] . "'>" . $key['department_name'] . "</option>";
                                                         } ?>
-                                                    </select>
-                                                    <script>
-                                                        document.getElementById('department_id').value = '<?= $department_id; ?>';
-                                                    </script>
-                                                </div>
-                                                <div class="col-lg-3 col-12">
-                                                    <label for="year" class="form-label">Year<span class="text-danger fw-bold">*</span></label>
-                                                    <select class="form-select chosen-select" name="year" id="year">
-                                                        <option value="">Select</option>
-                                                        <?php
+                                                </select>
+                                                <script>
+                                                document.getElementById('department_id').value =
+                                                    '<?= $department_id; ?>';
+                                                </script>
+                                            </div>
+                                            <div class="col-lg-3 col-12">
+                                                <label for="year" class="form-label">Year<span
+                                                        class="text-danger fw-bold">*</span></label>
+                                                <select class="form-select chosen-select" name="year" id="year">
+                                                    <option value="">Select</option>
+                                                    <?php
                                                         $startYear = 2025;
                                                         $endYear = 2100;
                                                         for ($year1 = $startYear; $year1 <= $endYear; $year1++) {
                                                             echo "<option value=\"$year1\">$year1</option>";
                                                         } ?>
-                                                    </select>
-                                                    <script>
-                                                        document.getElementById('year').value = '<?php echo $year ?>'
-                                                    </script>
-                                                </div>
-                                                <div class="col-md-3 md-2">
-                                                    <strong><label for="Month">Month<span class="text-danger fw-bold">*</span></label></strong></br>
-                                                    <select name="month" class="chosen-select form-control form-control" id="month">
-                                                        <option value="">--Select Month--</option>
-                                                        <?php for ($iM = 1; $iM <= 12; $iM++) {
+                                                </select>
+                                                <script>
+                                                document.getElementById('year').value = '<?php echo $year ?>'
+                                                </script>
+                                            </div>
+                                            <div class="col-md-3 md-2">
+                                                <strong><label for="Month">Month<span
+                                                            class="text-danger fw-bold">*</span></label></strong></br>
+                                                <select name="month" class="chosen-select form-control form-control"
+                                                    id="month">
+                                                    <option value="">--Select Month--</option>
+                                                    <?php for ($iM = 1; $iM <= 12; $iM++) {
                                                         ?>
-                                                            <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>"><?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?></option>
+                                                    <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>">
+                                                        <?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?>
+                                                    </option>
 
-                                                        <?php
+                                                    <?php
                                                         } ?>
-                                                    </select>
-                                                    <script>
-                                                        document.getElementById('month').value = '<?php echo $month; ?>';
-                                                    </script>
-                                                </div>
-                                                <div class="col-md-3 md-2">
-                                                    <strong><label for="Fields">Fields<span class="text-danger fw-bold"></span></label></strong>
-                                                    <select id="show_field" class="form-control" multiple>
-                                                        <!-- <option value="1">Mobile Number</option> -->
-                                                        <option value="2">Emp Code</option>
-                                                        <option value="3">Emp Name</option>
-                                                        <option value="4">Aadhaar No</option>
-                                                        <option value="5">Present Salary</option>
-                                                        <option value="6">Grade</option>
-                                                        <option value="7">Department</option>
-                                                        <option value="8">Designation</option>
-                                                        <option value="9">Date of Joining</option>
-                                                        <option value="10">Job Location</option>
-                                                        <option value="11">Shift Hours</option>
-                                                    </select>
-                                                </div>
-                                                <input type="hidden" name="show_field_encoded" id="show_field_encoded">
+                                                </select>
+                                                <script>
+                                                document.getElementById('month').value = '<?php echo $month; ?>';
+                                                </script>
+                                            </div>
+                                            <div class="col-md-3 md-2">
+                                                <strong><label for="Fields">Fields<span
+                                                            class="text-danger fw-bold"></span></label></strong>
+                                                <select id="show_field" class="form-control" multiple>
+                                                    <!-- <option value="1">Mobile Number</option> -->
+                                                    <option value="2">Emp Code</option>
+                                                    <option value="3">Emp Name</option>
+                                                    <option value="4">Aadhaar No</option>
+                                                    <option value="5">Present Salary</option>
+                                                    <option value="6">Grade</option>
+                                                    <option value="7">Department</option>
+                                                    <option value="8">Designation</option>
+                                                    <option value="9">Date of Joining</option>
+                                                    <option value="10">Job Location</option>
+                                                    <option value="11">Shift Hours</option>
+                                                </select>
+                                            </div>
+                                            <input type="hidden" name="show_field_encoded" id="show_field_encoded">
 
-                                                <div class="col-md-3 mt-4 ">
-                                                    <input type="submit" class="btn btn-primary add-btn" onclick="return checkinputmaster('year,month')" name="search" value="Search">
-                                                    <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset" id="reset">Reset</a>
-                                                </div>
+                                            <div class="col-md-3 mt-4 ">
+                                                <input type="submit" class="btn btn-primary add-btn"
+                                                    onclick="return checkinputmaster('year,month')" name="search"
+                                                    value="Search">
+                                                <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset"
+                                                    id="reset">Reset</a>
                                             </div>
                                         </div>
                                     </div>
-                                </form>
+                                </div>
+                            </form>
                             <?php } ?>
                         </fieldset>
                     </div>
                 </div>
                 <?php if (isset($_GET['search'])) {   ?>
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <div class="card mb-1">
-                                <div class="card-header border-bottom-dashed" style="margin-bottom: 0px; padding-bottom: 0px;">
-                                    <div class="row g-4 align-items-center">
-                                        <div class="col-sm" style="margin-top: 8px;">
-                                            <div class="d-flex justify-content-between align-items-center flex-wrap">
-                                                <h5 class="card-title mb-0">
-                                                    <?= $submodule; ?>
-                                                </h5>
-                                                <div class="ms-2 card-title mb-0"><b>
-                                                        <?php if (!empty($_GET['year'])) { ?>
-                                                            Year: <?= $_GET['year']; ?>
-                                                        <?php } ?>
-                                                        <?php if (!empty($month_name)) { ?>
-                                                            | Month: <?= $month_name; ?>
-                                                        <?php } ?>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="card mb-1">
+                            <div class="card-header border-bottom-dashed"
+                                style="margin-bottom: 0px; padding-bottom: 0px;">
+                                <div class="row g-4 align-items-center">
+                                    <div class="col-sm" style="margin-top: 8px;">
+                                        <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                            <h5 class="card-title mb-0">
+                                                <?= $submodule; ?>
+                                            </h5>
+                                            <div class="ms-2 card-title mb-0"><b>
+                                                    <?php if (!empty($_GET['year'])) { ?>
+                                                    Year: <?= $_GET['year']; ?>
+                                                    <?php } ?>
+                                                    <?php if (!empty($month_name)) { ?>
+                                                    | Month: <?= $month_name; ?>
+                                                    <?php } ?>
 
-                                                        <?php if (!empty($department_name)) { ?>
-                                                            | Dept: <?= $department_name; ?>
-                                                        <?php } ?></b>
-                                                </div>
-                                                <div>
-                                                    <a href="<?php echo $pagename; ?>" class="btn btn-sm btn-primary">
-                                                        Search Again
-                                                    </a>
-                                                </div>
+                                                    <?php if (!empty($department_name)) { ?>
+                                                    | Dept: <?= $department_name; ?>
+                                                    <?php } ?></b>
                                             </div>
-
+                                            <div>
+                                                <a href="<?php echo $pagename; ?>" class="btn btn-sm btn-primary">
+                                                    Search Again
+                                                </a>
+                                            </div>
                                         </div>
+
                                     </div>
                                 </div>
                             </div>
-       <div class="card-header border-bottom">
-                        <div class="d-flex flex-wrap gap-3 align-items-center">
+                        </div>
+                        <div class="card-header border-bottom">
+                            <div class="d-flex flex-wrap gap-3 align-items-center">
 
-                            <span class="badge bg-success">
-                                P = Present
-                            </span>
+                                <span class="badge bg-success">
+                                    P = Present
+                                </span>
 
-                            <span class="badge bg-danger">
-                                A = Absent
-                            </span>
+                                <span class="badge bg-danger">
+                                    A = Absent
+                                </span>
 
-                            <span class="badge bg-warning text-dark">
-                                HD = Half Day
-                            </span>
+                                <span class="badge bg-warning text-dark">
+                                    HD = Half Day
+                                </span>
 
-                            <span class="badge" style="background:rgb(229,204,255);color:#000;">
-                                WL = Weekly Leave
-                            </span>
+                                <span class="badge" style="background:rgb(229,204,255);color:#000;">
+                                    WL = Weekly Leave
+                                </span>
 
-                            <span class="badge" style="background:rgb(121,170,248);">
-                                L = Earn Leave
-                            </span>
+                                <span class="badge" style="background:rgb(121,170,248);">
+                                    EL = Earn Leave
+                                </span>
 
-                            <span class="badge" style="background:rgb(121, 246, 248);color:#000;">
-                                HL = Half Earn Leave
-                            </span>
+                                <span class="badge" style="background:rgb(121, 246, 248);color:#000;">
+                                    HEL = Half Earn Leave
+                                </span>
 
-                            <span class="badge" style="background:rgb(226, 237, 109);color:#000;">
-                                HW = Half Weekly Leave
-                            </span>
+                                <span class="badge" style="background:rgb(226, 237, 109);color:#000;">
+                                    HW = Half Weekly Leave
+                                </span>
 
-                            <!-- <span class="badge" style="background:#f7b1f2;color:#000;">
+                                <!-- <span class="badge" style="background:#f7b1f2;color:#000;">
                                 M = Miss Punch
                             </span> -->
 
-                            <span class="badge" style="background:rgb(121, 246, 248);color:#000;">
-                                C = C Off
-                            </span>
+                                <span class="badge" style="background:rgb(121, 246, 248);color:#000;">
+                                    C = C Off
+                                </span>
 
-                            <span class="badge" style="background:rgb(226, 237, 109);color:#000;">
-                                HC = Half C Off
-                            </span>
+                                <span class="badge" style="background:rgb(226, 237, 109);color:#000;">
+                                    HC = Half C Off
+                                </span>
 
-                            <span class="badge" style="background:rgb(180,210,255);color:#000;">
-                                PL = Paid Holiday
-                            </span>
+                                <span class="badge" style="background:rgb(180,210,255);color:#000;">
+                                    PL = Paid Holiday
+                                </span>
 
-                            <span class="badge" style="background:rgb(233,61,61);">
-                                I = Incomplete
-                            </span>
+                                <span class="badge" style="background:rgb(233,61,61);">
+                                    I = Incomplete
+                                </span>
 
+                                  <span class="badge" style="background:rgb(99, 236, 218);color:#000;">
+                                    L = Leave
+                                </span>
+
+                                <span class="badge" style="background:rgb(57, 233, 239);color:#000;">
+                                    HL = Half C Off
+                                </span>
+
+                                <span class="badge" style="background:rgb(149, 121, 248);color:#000;">
+                                    E = Extra Off
+                                </span>
+
+                                <span class="badge" style="background:rgb(149, 121, 248);">
+                                    HE = Half Extra Off
+                                </span>
+ 
+                            </div>
                         </div>
-                    </div>
-                            <div class="card-body">
-                                <?php
+                        <div class="card-body">
+                            <?php
                                 $employees = $obj->executequery("SELECT e.emp_id,e.allow_weekly_off,e.department_id,e.is_esic,e.emp_code,e.first_name,e.last_name,e.mobile_no,e.aadhar_no,e.shift_id,
                                                         e.basic_salary,e.date_of_joining,e.job_location,g.grade_name,d.department_name,des.designation,s.working_hour AS shift_hours  FROM employee_master e
 
@@ -357,6 +387,10 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                                             SUM(attendance_status='Earning Leave') AS leavecnt2,
                                                             SUM(attendance_status='Half Earning Leave') AS halfearn,
                                                             SUM(attendance_status='Half Weekly Leave') AS halfweek,
+                                                            SUM(attendance_status='Leave') AS op_leave,
+                                                            SUM(attendance_status='Half Leave') AS halfopleave,
+                                                            SUM(attendance_status='Half Extra Off') AS half_extra_off,
+                                                            SUM(attendance_status='Extra Off') AS extra_off, 
                                                             SUM(attendance_status='C Off') AS coff,
                                                             SUM(attendance_status='Half C Off') AS halfcoff
                                                         FROM attendance_entry
@@ -397,39 +431,41 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                 }
 
                                 ?>
-                                <!-- floating scrollbar -->
-                                <div class="auto-scroll-wrapper">
-                                    <div class="table-responsive">
-                                        <table id="buttons-datatables" class="table table-sm table-bordered table-hover align-middle display ">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th>S.No.</th>
-                                                    <?php
+                            <!-- floating scrollbar -->
+                            <div class="auto-scroll-wrapper">
+                                <div class="table-responsive">
+                                    <table id="buttons-datatables"
+                                        class="table table-sm table-bordered table-hover align-middle display bg-white">
+                                        <thead class="table-primary">
+                                            <tr>
+                                                <th>S.No.</th>
+                                                <?php
                                                     foreach ($showFields as $fid) {
                                                         if (!isset($fieldMap[$fid])) continue;
                                                         echo "<th>{$fieldMap[$fid]['label']}</th>";
                                                     }
                                                     ?>
-                                                    <th>Present <br> Days</th>
-                                                    <th>Total <br> Week <br> Off</th>
-                                                    <th>Total <br>Payable <br>Day</th>
-                                            
-                                                    <th>Total <br> Earn <br> Leave</th>
-                                                    <th>C-OFF</th>
-                                                    <th>Punch <br> All</th>
+                                                <th>Present <br> Days</th>
+                                                <th>Total <br> Week <br> Off</th>
+                                                <th>Total <br>Payable <br>Day</th>
 
-                                                    <?php for ($i = 1; $i <= $length; $i++) { ?>
-                                                        <th class="text-center">D<?php echo $i; ?></th>
-                                                    <?php } ?>
+                                                <th>Total <br> Earn <br> Leave</th>
+                                                <th>C-OFF</th>
+                                                <th>Punch <br> All</th>
 
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php
+                                                <?php for ($i = 1; $i <= $length; $i++) { ?>
+                                                <th class="text-center">D<?php echo $i; ?></th>
+                                                <?php } ?>
+
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php
                                                 $slno = 1;
                                                 $currentDate = date("Y-m-d");
                                                 $totalPresentDays = 0;
                                                 $totalWeekOff = 0;
+                                                $total_tpd = 0;
                                                 $totalEarnLEave = 0;
                                                 $chkedit = $obj->check_editBtn($pagename, $loginid);
                                                 foreach ($employees as $emp) {
@@ -439,29 +475,39 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 
                                                     $is_esic = $emp['is_esic'];
                                                     $setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
+ 
 
-                                                    $sum   = $summary[$empId] ?? ['present' => 0, 'halfday' => 0, 'leavecnt' => 0, 'leavecnt2' => 0, 'halfearn' => 0, 'halfweek' => 0, 'coff' => 0, 'halfcoff' => 0];
+                                                    $sum   = $summary[$empId] ?? ['present' => 0, 'halfday' => 0, 'leavecnt' => 0, 'leavecnt2' => 0, 'halfearn' => 0, 'halfweek' => 0, 'coff' => 0, 'halfcoff' => 0,'op_leave' => 0,'halfopleave' => 0,'half_extra_off' => 0,'extra_off' => 0];
 
-                                                    $totalAttendance = $sum['present'] + ($sum['halfday'] / 2) + $sum['leavecnt'] + $sum['leavecnt2'] + ($sum['halfearn'] / 2) + ($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2);
+                                                    $totalAttendance = $sum['present'] + ($sum['halfday'] / 2) + $sum['leavecnt'] + $sum['leavecnt2'] + ($sum['halfearn'] / 2) + ($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2) + ($sum['halfopleave'] / 2) + ($sum['half_extra_off'] / 2) + $sum['op_leave'] + $sum['extra_off'];
 
                                                     $real_total_att = $sum['present'] + ($sum['halfday'] / 2);
 
                                                     $salaryCount = $salaryGenerated[$empId] ?? 0;
 
                                                     $totalPresentDays +=  $totalAttendance;
-                                                    $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $real_total_att, $unitid);
+
                                                     $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_att, $allow_weekly_off);
+
+                                                    $earn_leave_present = $real_total_att + $week_leave;
+
+                                                    $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
+
+                                                    $total_earning_leave = $obj->getEarningLeave($empId, $sessionid);
+                                                    $extra_off =$obj->getExtraOffBalance($empId, $month, $year);
+                                                    $opening_leave_balance =$obj->get_opening_leave_balance($empId, $sessionid);
+                                                    
                                                     $totalWeekOff += $week_leave;
                                                     $totalEarnLEave += $monthly_leave;
-                                                    $tpd=$totalAttendance+$week_leave;
                                                     $tpd = $totalAttendance + $week_leave;
+                                                    
 
                                                     $extra_coff = 0;
                                                     if ($tpd > $length) {
                                                         $extra_coff = $tpd - $length;
                                                         $tpd = $length;
                                                     }
-
+$total_tpd +=$tpd;
                                                     echo "<tr>";
                                                     echo "<td>" . $slno++ . "</td>";
                                                     foreach ($showFields as $fid) {
@@ -488,16 +534,16 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 
                                                     echo "<td class='text-center fw-bold text-danger' style='background:#ffe5e5'>" . number_format($extra_coff, 1) . "</td>";
 
-                                                   
+
                                                     if ($chkedit == 1) {
                                                         echo "<td class='text-center' style='cursor:pointer'
-                                                                onclick=\"add_all_att('{$emp['shift_id']}','','{$month}','{$year}','{$empId}','{$salaryCount}')\">                                   
+                                                                onclick=\"add_all_att('{$emp['shift_id']}','','{$month}','{$year}','{$empId}','{$salaryCount}','{$extra_off['balance']}','{$opening_leave_balance}','{$total_earning_leave}')\">                                   
                                                                 <i class='ri-add-line text-primary'></i> 
                                                             </td>";
                                                     } else {
                                                         echo "<td class='text-center'>
-                <i class='ri-forbid-2-line text-danger'></i>
-              </td>";
+                                                                <i class='ri-forbid-2-line text-danger'></i>
+                                                            </td>";
                                                     }
 
                                                     for ($d = 1; $d <= $length; $d++) {
@@ -535,11 +581,11 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                                                 $bg = 'rgb(229,204,255)';
                                                                 break;
                                                             case 'Earning Leave':
-                                                                $txt = 'L';
+                                                                $txt = 'EL';
                                                                 $bg = 'rgb(121,170,248)';
                                                                 break;
                                                             case 'Half Earning Leave':
-                                                                $txt = 'HL';
+                                                                $txt = 'HEL';
                                                                 $bg = 'rgb(121, 246, 248)';
                                                                 break;
                                                             case 'Half Weekly Leave':
@@ -555,6 +601,23 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                                                 $bg = 'rgb(226, 237, 109)';
                                                                 break;
 
+                                                            case 'Leave':
+                                                                $txt = 'L';
+                                                                $bg = 'rgb(99, 236, 218)';
+                                                                break;
+                                                            case 'Half Leave':
+                                                                $txt = 'HL';
+                                                                $bg = 'rgb(57, 233, 239)';
+                                                                break;
+                                                            case 'Extra Off':
+                                                                $txt = 'E';
+                                                                $bg = 'rgb(149, 121, 248)';
+                                                                break;
+                                                            case 'Half Extra Off':
+                                                                $txt = 'HE';
+                                                                $bg = 'rgb(149, 121, 248)';
+                                                                break;
+
 
                                                             default:
                                                                 $txt = $isHoliday ? 'PL' : 'A';
@@ -563,7 +626,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 
                                                         echo "<td style='background:$bg;text-align:center;padding:0' id='cell_{$empId}_{$date}'>
                                                                             <span style='display:block;padding:8px;cursor:pointer'
-                                                                            onclick=\"openPunchModal('$date','$intime','$remark','{$emp['shift_id']}','$shift','$month','$year','$empId','$salaryCount')\">
+                                                                            onclick=\"openPunchModal('$date','$intime','$remark','{$emp['shift_id']}','$shift','$month','$year','$empId','$salaryCount','{$extra_off['balance']}','{$opening_leave_balance}','{$total_earning_leave}')\">
                                                                             <b>$txt</b>
                                                                             </span>
                                                                         </td>";
@@ -573,34 +636,37 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                                 }
 
                                                 ?>
-                                            </tbody>
-                                            <tfoot>
-                                                <tr style="background:#e9ecef;font-weight:bold">
-                                                    <td colspan="<?php echo count($showFields) + 1; ?>" class="text-end">
-                                                        Total
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <?php echo number_format($totalPresentDays, 1); ?>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <?php echo number_format($totalWeekOff, 1); ?>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <?php echo number_format($totalEarnLEave, 1); ?>
-                                                    </td>
-                                                    <td></td>
-                                                    <td colspan="<?= $length ?>"></td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style="background:#e9ecef;font-weight:bold">
+                                                <td colspan="<?php echo count($showFields) + 1; ?>" class="text-end">
+                                                    Total
+                                                </td>
+                                                <td class="text-center">
+                                                    <?php echo number_format($totalPresentDays, 1); ?>
+                                                </td>
+                                                <td class="text-center">
+                                                    <?php echo number_format($totalWeekOff, 1); ?>
+                                                </td>
+                                                  <td class="text-center">
+                                                    <?php echo number_format($total_tpd, 1); ?>
+                                                </td>
+                                                <td class="text-center">
+                                                    <?php echo number_format($totalEarnLEave, 1); ?>
+                                                </td> 
+                                                <td></td>
+                                                <td colspan="<?= $length ?>"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
 
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
             </div>
-        <?php
+            <?php
                 }
 
         ?>
@@ -614,8 +680,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 
                 <!-- Header -->
                 <div class="modal-header border-0 justify-content-end pb-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
                 <!-- Body -->
@@ -637,8 +702,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                     </p>
 
                     <!-- Action Button -->
-                    <a href="#" id="salaryReportLink"
-                        class="btn btn-primary btn-sm px-3">
+                    <a href="#" id="salaryReportLink" class="btn btn-primary btn-sm px-3">
                         <i class="ri-money-rupee-circle-line me-1"></i>
                         View Salary Report
                     </a>
@@ -647,8 +711,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 
                 <!-- Footer -->
                 <div class="modal-footer border-0 pt-0 justify-content-center">
-                    <button type="button" class="btn btn-outline-secondary btn-sm px-4"
-                        data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-4" data-bs-dismiss="modal">
                         Close
                     </button>
                 </div>
@@ -661,7 +724,8 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="exampleModalLabel">Attendance Punch &nbsp;&nbsp;<a id="show_att_details" class="float-end" target="_blank" title="View">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">Attendance Punch &nbsp;&nbsp;<a
+                            id="show_att_details" class="float-end" target="_blank" title="View">
                             <i class="ri-eye-line align-bottom text-primary fs-4"></i>
                         </a></h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -676,20 +740,23 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                 <option value="Absent">Absent</option>
                                 <option value="first_half">Half Day (1st Half)</option>
                                 <option value="second_half">Half Day (2nd Half)</option>
-                                <option value="weekly_leave">Weekly Leave</option>
-
+                                <!-- <option value="weekly_leave">Weekly Leave</option> -->
                                 <option value="earn_leave">Earn Leave</option>
-                                <option value="half_weekly_leave">Half Weekly Leave</option>
                                 <option value="half_earn_leave">Half Earn Leave</option>
+                                <!-- <option value="half_weekly_leave">Half Weekly Leave</option>
                                 <option value="c_off">C-Off</option>
-                                <option value="half_c_off">Half C-Off</option>
+                                <option value="half_c_off">Half C-Off</option> -->
+                                <option value="eoff" class="extraOffOption2">Extra Off</option>
+                                <option value="half_eoff" class="extraOffOption2">Half Extra Off</option>
+                                <option value="leave" class="leaveOption2">Leave</option>
+                                <option value="half_leave" class="leaveOption2">Half Leave</option>
                             </select>
                         </div>
                         <div class="col-lg-12 " id="punchShiftBox">
-                            <label for="punch_att_shift_id" class="form-label ">Shift<span
-                                    class="text-danger fw-bold"> </span></label>
-                            <select class="form-select form-select-sm chosen-select"
-                                name="punch_att_shift_id" id="punch_att_shift_id">
+                            <label for="punch_att_shift_id" class="form-label ">Shift<span class="text-danger fw-bold">
+                                </span></label>
+                            <select class="form-select form-select-sm chosen-select" name="punch_att_shift_id"
+                                id="punch_att_shift_id">
                                 <option value="">Select</option>
 
                             </select>
@@ -709,20 +776,22 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                 <?php
                 $chkedit = $obj->check_editBtn($pagename, $loginid);
                 if ($chkedit == 1) { ?>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" id="savebutton" onclick="savePunch()">Punch</button>
-                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="savebutton" onclick="savePunch()">Punch</button>
+                </div>
                 <?php } ?>
             </div>
         </div>
     </div>
 
-    <div class="modal fade" id="AllAttendenceModal" tabindex="-1" aria-labelledby="AllAttendenceModalLabel" aria-hidden="true">
+    <div class="modal fade" id="AllAttendenceModal" tabindex="-1" aria-labelledby="AllAttendenceModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="AllAttendenceModalLabel">Attendance Punch &nbsp;&nbsp;<a id="show_attAll_details" class="float-end" target="_blank" title="View">
+                    <h1 class="modal-title fs-5" id="AllAttendenceModalLabel">Attendance Punch &nbsp;&nbsp;<a
+                            id="show_attAll_details" class="float-end" target="_blank" title="View">
                             <i class="ri-eye-line align-bottom text-primary fs-4"></i>
                         </a></h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -737,12 +806,16 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                 <option value="Absent">Absent</option>
                                 <option value="first_half">Half Day (1st Half)</option>
                                 <option value="second_half">Half Day (2nd Half)</option>
-                                <option value="weekly_leave">Weekly Leave</option>
+                                <!-- <option value="weekly_leave">Weekly Leave</option> -->
                                 <option value="earn_leave">Earn Leave</option>
-                                <option value="half_weekly_leave">Half Weekly Leave</option>
                                 <option value="half_earn_leave">Half Earn Leave</option>
+                                <!-- <option value="half_weekly_leave">Half Weekly Leave</option>
                                 <option value="c_off">C-Off</option>
-                                <option value="half_c_off">Half C-Off</option>
+                                <option value="half_c_off">Half C-Off</option> -->
+                                <option value="eoff" class="extraOffOption2">Extra Off</option>
+                                <option value="half_eoff" class="extraOffOption2">Half Extra Off</option>
+                                <option value="leave" class="leaveOption2">Leave</option>
+                                <option value="half_leave" class="leaveOption2">Half Leave</option>
                             </select>
                         </div>
                         <div class="col-lg-12 col-12 mb-2">
@@ -753,10 +826,10 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                             </select>
                         </div>
                         <div class="col-lg-12 " id="punchShiftBox">
-                            <label for="all_att_shift_id" class="form-label ">Shift<span
-                                    class="text-danger fw-bold"> </span></label>
-                            <select class="form-select form-select-sm chosen-select"
-                                name="all_att_shift_id" id="all_att_shift_id">
+                            <label for="all_att_shift_id" class="form-label ">Shift<span class="text-danger fw-bold">
+                                </span></label>
+                            <select class="form-select form-select-sm chosen-select" name="all_att_shift_id"
+                                id="all_att_shift_id">
                                 <option value="">Select</option>
 
                             </select>
@@ -766,7 +839,8 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                         <input type="hidden" id="punch_all_employee_id">
                         <div class="col-lg-12 col-12">
                             <label for="">Remark</label>
-                            <textarea name="punching_all_remark" id="punching_all_remark" class="form-control"></textarea>
+                            <textarea name="punching_all_remark" id="punching_all_remark"
+                                class="form-control"></textarea>
                         </div>
                     </div>
                 </div>
@@ -774,344 +848,493 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                 <?php
                 $chkedit = $obj->check_editBtn($pagename, $loginid);
                 if ($chkedit == 1) { ?>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" id="saveAllbutton" onclick="saveAllPunch()">Punch All</button>
-                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveAllbutton" onclick="saveAllPunch()">Punch
+                        All</button>
+                </div>
                 <?php } ?>
             </div>
         </div>
     </div>
+
+    <?php include('inc/footer.php') ?>
+
     <!-- script tag -->
     <?php include('inc/delete.php') ?>
     <?php include('inc/js.php') ?>
-    <?php include('inc/footer.php') ?>
 
     <!-- script tag -->
 
     <script>
-        const statusMap = {
-            "Present": {
-                txt: "P",
-                bg: "rgb(173,233,179)"
-            },
-            "Absent": {
-                txt: "A",
-                bg: "rgb(251,175,175)"
-            },
-            "first_half": {
-                txt: "HD",
-                bg: "rgb(255,246,163)"
-            },
-            "second_half": {
-                txt: "HD",
-                bg: "rgb(255,246,163)"
-            },
-            "weekly_leave": {
-                txt: "WL",
-                bg: "rgb(229,204,255)"
-            },
-            "earn_leave": {
-                txt: "L",
-                bg: "rgb(121,170,248)"
-            },
-            "half_earn_leave": {
-                txt: "HL",
-                bg: "rgb(121,246,248)"
-            },
-            "half_weekly_leave": {
-                txt: "HW",
-                bg: "rgb(226,237,109)"
-            },
-            "c_off": {
-                txt: "C",
-                bg: "rgb(121,246,248)"
-            },
-            "half_c_off": {
-                txt: "HC",
-                bg: "rgb(226,237,109)"
-            }
-        };
+    const statusMap = {
+        "Present": {
+            txt: "P",
+            bg: "rgb(173,233,179)"
+        },
+        "Absent": {
+            txt: "A",
+            bg: "rgb(251,175,175)"
+        },
+        "first_half": {
+            txt: "HD",
+            bg: "rgb(255,246,163)"
+        },
+        "second_half": {
+            txt: "HD",
+            bg: "rgb(255,246,163)"
+        },
+        "weekly_leave": {
+            txt: "WL",
+            bg: "rgb(229,204,255)"
+        },
+        "earn_leave": {
+            txt: "EL",
+            bg: "rgb(121,170,248)"
+        },
+        "half_earn_leave": {
+            txt: "HEL",
+            bg: "rgb(121,246,248)"
+        },
+        "half_weekly_leave": {
+            txt: "HW",
+            bg: "rgb(226,237,109)"
+        },
+        "c_off": {
+            txt: "C",
+            bg: "rgb(121,246,248)"
+        },
+        "half_c_off": {
+            txt: "HC",
+            bg: "rgb(226,237,109)"
+        },
+        "eoff":{
+            txt : 'HW',
+            bg : 'rgb(149, 121, 248)'
+        },
+        "half_eoff":{
+            txt : 'C',
+            bg : 'rgb(149, 121, 248)'
+        },
+        "leave":{
+            txt : 'HC',
+            bg : 'rgb(99, 236, 218)'
+        },
+        "half_leave":{
+            txt : 'HC',
+            bg : 'rgb(57, 233, 239)'
+        }
+    };
 
-        var s = statusMap[punch_all_status] || statusMap["Absent"];
-        $(document).ready(function() {
-            $(".chosen-select").select2();
+    var s = statusMap[punch_all_status] || statusMap["Absent"];
+    $(document).ready(function() {
+        $(".chosen-select").select2();
 
-            const $select = $("#show_field").select2({
-                placeholder: "Select Fields",
-                width: "100%",
-                closeOnSelect: false
-            });
+        const $select = $("#show_field").select2({
+            placeholder: "Select Fields",
+            width: "100%",
+            closeOnSelect: false
+        });
 
-            const selectedFields = <?= json_encode($showFields) ?> || [];
-            if (selectedFields.length) {
-                $select.val(selectedFields.map(String)).trigger("change");
-            }
+        const selectedFields = <?= json_encode($showFields) ?> || [];
+        if (selectedFields.length) {
+            $select.val(selectedFields.map(String)).trigger("change");
+        }
 
-            $("form").on("submit", function() {
-                const selected = $select.val() || [];
-                $("#show_field_encoded").val(selected.join(","));
-                $select.removeAttr("name");
-            });
-
-
-            // $('#buttons-datatables').DataTable().destroy();
-            // $('#buttons-datatables').DataTable({
-            //     autoWidth: false,
-            //     dom: "lBfrtip",
-            //     buttons: [
-            //         "csv",
-            //         {
-            //             extend: "excel",
-            //             pageSize: "LEGAL",
-            //             footer: true
-            //         }
-            //     ],
-            // });
-
-
-
-
+        $("form").on("submit", function() {
+            const selected = $select.val() || [];
+            $("#show_field_encoded").val(selected.join(","));
+            $select.removeAttr("name");
         });
 
 
-        function openPunchModal(attdate, time, remark, emp_shift_hrs, empp_shift_id, month, year, emp_id, salary_generate_count) {
-            document.getElementById('punch_attdate').value = attdate;
-            document.getElementById('punching_remark').value = remark;
-            document.getElementById('current_month').value = month;
-            document.getElementById('current_year').value = year;
-            document.getElementById('employee_id').value = emp_id;
-            month2 = parseInt(month);
-            if (salary_generate_count > 0) {
-                $('#salaryReportLink').attr(
-                    'href',
-                    'salary_generate_report.php?emp_id=' + emp_id + '&month=' + month2 + '&year=' + year + '&submit=Search'
-                );
-                $('#salaryGeneratedModal').modal('show');
-            } else {
-                $.ajax({
-                    type: "POST",
-                    url: "",
-                    data: {
-                        ajax_emp_shift_hrs: emp_shift_hrs,
-                        empp_shift_id: empp_shift_id
-                    },
-                    success: function(data) {
-                        $("#punch_att_shift_id").html(data).trigger("change.select2");
-                    }
-                });
-                $('#exampleModal').modal('show');
-            }
+        // $('#buttons-datatables').DataTable().destroy();
+        // $('#buttons-datatables').DataTable({
+        //     autoWidth: false,
+        //     dom: "lBfrtip",
+        //     buttons: [
+        //         "csv",
+        //         {
+        //             extend: "excel",
+        //             pageSize: "LEGAL",
+        //             footer: true
+        //         }
+        //     ],
+        // });
 
-            $('#show_att_details').attr(
+
+
+
+    });
+
+
+    function openPunchModal(attdate, time, remark, emp_shift_hrs, empp_shift_id, month, year, emp_id,
+        salary_generate_count, extraOffBalance, openingLeaveBalance, total_earning_leave) {
+        document.getElementById('punch_attdate').value = attdate;
+        document.getElementById('punching_remark').value = remark;
+        document.getElementById('current_month').value = month;
+        document.getElementById('current_year').value = year;
+        document.getElementById('employee_id').value = emp_id;
+        month2 = parseInt(month);
+        if (salary_generate_count > 0) {
+            $('#salaryReportLink').attr(
                 'href',
-                'employee_wise_attendance.php?emp_id=' + emp_id + '&currentYear=' + year + '&currentMonth=' + month + '&date=' + attdate
+                'salary_generate_report.php?emp_id=' + emp_id + '&month=' + month2 + '&year=' + year +
+                '&submit=Search'
             );
-
-        };
-
-        function savePunch() {
-            var btn = document.getElementById('savebutton');
-            var punchtime = document.getElementById('punch_time').value;
-            var attdate = document.getElementById('punch_attdate').value;
-            var punch_remark = document.getElementById('punching_remark').value;
-            var punch_status = document.getElementById('punch_status').value;
-            var punch_shift_id = document.getElementById('punch_att_shift_id').value;
-            var currentMonth = document.getElementById('current_month').value;
-            var currentYear = document.getElementById('current_year').value;
-            var emp_id = document.getElementById('employee_id').value;
-
-
-
-            if (punch_shift_id == "") {
-                alert("Please Select Shift Name");
-                return false;
-            }
-            btn.disabled = true;
-            btn.value = 'Saving...';
-            jQuery.ajax({
-                type: 'POST',
-                url: 'ajax_att_save_punch.php',
-                data: 'punchtime=' + punchtime + '&emp_id=' + emp_id + '&attdate=' + attdate + '&currentYear=' + currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark + '&punch_status=' + punch_status + '&punch_shift_id=' + punch_shift_id,
-                dataType: 'html',
-                success: function(data) {
-                    //alert(data);
-                    // showatttype();
-                    $('#exampleModal').modal('hide');
-                    var emp_id = document.getElementById('employee_id').value;
-                    var attdate = document.getElementById('punch_attdate').value;
-                    var status = document.getElementById('punch_status').value;
-
-                    var txt = 'A';
-                    var bg = 'rgb(251,175,175)';
-
-                    if (status == 'Present') {
-                        txt = 'P';
-                        bg = 'rgb(173,233,179)';
-                    } else if (status == 'first_half' || status == 'second_half') {
-                        txt = 'HD';
-                        bg = 'rgb(255,246,163)';
-                    } else if (status == 'Incomplete') {
-                        txt = 'I';
-                        bg = 'rgb(233,61,61)';
-                    } else if (status == 'weekly_leave') {
-                        txt = 'WL';
-                        bg = 'rgb(229,204,255)';
-                    } else if (status == 'earn_leave') {
-                        txt = 'L';
-                        bg = 'rgb(121,170,248)';
-                    } else if (status == 'half_earn_leave') {
-                        txt = 'HL';
-                        bg = 'rgb(121,246,248)';
-                    } else if (status == 'half_weekly_leave') {
-                        txt = 'HW';
-                        bg = 'rgb(226,237,109)';
-                    } else if (status == 'c_off') {
-                        txt = 'C';
-                        bg = 'rgb(121,246,248)';
-                    } else if (status == 'half_c_off') {
-                        txt = 'HC';
-                        bg = 'rgb(226,237,109)';
-                    }
-
-                    // 🔥 update only that cell
-                    var cellId = "#cell_" + emp_id + "_" + attdate;
-
-                    $(cellId).css("background", bg);
-                    $(cellId).find("b").text(txt);
-
-
-                    document.getElementById('punching_remark').value = '';
-                    $('#punch_status').val('Present').trigger('chosen:updated').trigger('change');
-
-                    btn.disabled = false;
-                    btn.value = 'Save change';
-                    // total(emp_id, currentMonth, currentYear);
-                    //  location.reload();
+            $('#salaryGeneratedModal').modal('show');
+        } else {
+            $.ajax({
+                type: "POST",
+                url: "",
+                data: {
+                    ajax_emp_shift_hrs: emp_shift_hrs,
+                    empp_shift_id: empp_shift_id
                 },
-                error: function() {
-                    btn.disabled = false;
-                    btn.value = 'Punch In';
-                    Swal.fire("Error", "Error while uploading. Try again.");
-                }
-
-            }); //ajax close
-
-        }
-
-        function add_all_att(emp_shift_hrs, empp_shift_id, month, year, emp_id, salary_generate_count) {
-            document.getElementById('punch_all_month').value = month;
-            document.getElementById('punch_all_year').value = year;
-            document.getElementById('punch_all_employee_id').value = emp_id;
-            if (salary_generate_count > 0) {
-                $('#salaryReportLink').attr(
-                    'href',
-                    'salary_generate_report.php?emp_id=' + emp_id
-                );
-                $('#salaryGeneratedModal').modal('show');
-            } else {
-
-
-                $.ajax({
-                    type: "POST",
-                    url: "",
-                    data: {
-                        ajax_emp_shift_hrs: emp_shift_hrs,
-                        empp_shift_id: empp_shift_id
-                    },
-                    success: function(data) {
-                        $("#all_att_shift_id").html(data).trigger("change.select2");
-                    }
-                });
-                $('#AllAttendenceModal').modal('show');
-            }
-
-            $('#show_attAll_details').attr(
-                'href',
-                'employee_wise_attendance.php?emp_id=' + emp_id + '&currentYear=' + year + '&currentMonth=' + month
-            );
-        };
-
-
-        function saveAllPunch() {
-            var btn = document.getElementById('saveAllbutton');
-            var punch_remark = document.getElementById('punching_all_remark').value;
-            var punch_all_status = document.getElementById('punch_all_status').value;
-            var punch_shift_id = document.getElementById('all_att_shift_id').value;
-            var punchtime = ' <?= date("H:i:s"); ?>';
-            var currentMonth = document.getElementById('punch_all_month').value;
-            var currentYear = document.getElementById('punch_all_year').value;
-            var emp_id = document.getElementById('punch_all_employee_id').value;
-            var punch_all_type = document.getElementById('punch_all_type').value;
-
-            if (punch_shift_id == "") {
-                alert("Please Select Shift Name");
-                return false;
-            }
-
-            btn.disabled = true;
-            btn.value = 'Saving...';
-            Swal.fire({
-                title: 'Please wait...',
-                text: 'Applying attendance for all days',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                didOpen: () => {
-                    Swal.showLoading();
+                success: function(data) {
+                    $("#punch_att_shift_id").html(data).trigger("change.select2");
                 }
             });
-            jQuery.ajax({
-                type: 'POST',
-                url: 'ajax_att_save_all_punch.php',
-                data: 'emp_id=' + emp_id + '&currentYear=' + currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark + '&punch_status=' + punch_all_status + '&punch_shift_id=' + punch_shift_id + '&punchtime=' + punchtime + '&punch_all_type=' + punch_all_type,
-                dataType: 'html',
-                success: function(data) {
-                    Swal.close();
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success',
-                        text: 'Attendance saved successfully',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        $('#AllAttendenceModal').modal('hide');
-                        var emp_id = document.getElementById('punch_all_employee_id').value;
+            extraOffBalance = parseFloat(extraOffBalance);
 
-                        var s = statusMap[punch_all_status] || statusMap["Absent"];
+            if (extraOffBalance >= 1) {
+                // Full + Half  enable
+                $("option[value='eoff']").prop("disabled", false);
+                $("option[value='half_eoff']").prop("disabled", false);
+            } else if (extraOffBalance >= 0.5) {
+                // only Half enable
+                $("option[value='eoff']").prop("disabled", true);
+                $("option[value='half_eoff']").prop("disabled", false);
+            } else {
+                // both disable
+                $("option[value='eoff']").prop("disabled", true);
+                $("option[value='half_eoff']").prop("disabled", true);
+            }
+            /* ================= LEAVE ================= */
+            openingLeaveBalance = parseFloat(openingLeaveBalance);
+            if (openingLeaveBalance >= 1) {
+                $("option[value='leave']").prop("disabled", false);
+                $("option[value='half_leave']").prop("disabled", false);
 
-                        for (var d = 1; d <= '<?= $length ?>'; d++) {
+            } else if (openingLeaveBalance >= 0.5) {
+                $("option[value='leave']").prop("disabled", true);
+                $("option[value='half_leave']").prop("disabled", false);
+            } else {
+                $("option[value='leave']").prop("disabled", true);
+                $("option[value='half_leave']").prop("disabled", true);
+            }
 
-                            var day = d.toString().padStart(2, '0');
-                            var date = currentYear + "-" + currentMonth + "-" + day;
+            total_earning_leave = parseFloat(total_earning_leave);
 
-                            var cellId = "#cell_" + emp_id + "_" + date;
+            if (total_earning_leave >= 1) {
 
-                            if ($(cellId).length) {
-                                $(cellId).css("background", s.bg);
-                                $(cellId).find("b").text(s.txt);
-                            }
-                        }
+                $("option[value='earn_leave']").prop("disabled", false);
+                $("option[value='half_earn_leave']").prop("disabled", false);
 
+            } else if (total_earning_leave >= 0.5) {
 
-                        document.getElementById('punching_all_remark').value = '';
-                        $('#punch_all_status').val('Present').trigger('chosen:updated').trigger('change');
-                        btn.disabled = false;
-                        btn.value = 'Save change';
-                        // location.reload();
-                    });
+                // Only Half Earn Leave enable
+                $("option[value='earn_leave']").prop("disabled", true);
+                $("option[value='half_earn_leave']").prop("disabled", false);
 
+            } else {
 
-
-                },
-                error: function() {
-                    btn.disabled = false;
-                    btn.value = 'Punch In';
-                    Swal.fire("Error", "Error while uploading. Try again.");
-                }
-
-            }); //ajax close
-
+                $("option[value='earn_leave']").prop("disabled", true);
+                $("option[value='half_earn_leave']").prop("disabled", true);
+            }
+            $("#punch_status").trigger("chosen:updated");
+            $('#exampleModal').modal('show');
         }
+
+        $('#show_att_details').attr(
+            'href',
+            'employee_wise_attendance.php?emp_id=' + emp_id + '&currentYear=' + year + '&currentMonth=' + month +
+            '&date=' + attdate
+        );
+
+    };
+
+    function savePunch() {
+        var btn = document.getElementById('savebutton');
+        var punchtime = document.getElementById('punch_time').value;
+        var attdate = document.getElementById('punch_attdate').value;
+        var punch_remark = document.getElementById('punching_remark').value;
+        var punch_status = document.getElementById('punch_status').value;
+        var punch_shift_id = document.getElementById('punch_att_shift_id').value;
+        var currentMonth = document.getElementById('current_month').value;
+        var currentYear = document.getElementById('current_year').value;
+        var emp_id = document.getElementById('employee_id').value;
+
+
+
+        if (punch_shift_id == "") {
+            alert("Please Select Shift Name");
+            return false;
+        }
+        btn.disabled = true;
+        btn.value = 'Saving...';
+        jQuery.ajax({
+            type: 'POST',
+            url: 'ajax_att_save_punch.php',
+            data: 'punchtime=' + punchtime + '&emp_id=' + emp_id + '&attdate=' + attdate + '&currentYear=' +
+                currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark +
+                '&punch_status=' + punch_status + '&punch_shift_id=' + punch_shift_id,
+            dataType: 'html',
+            success: function(data) {
+                //alert(data);
+                // showatttype();
+                $('#exampleModal').modal('hide');
+                var emp_id = document.getElementById('employee_id').value;
+                var attdate = document.getElementById('punch_attdate').value;
+                var status = document.getElementById('punch_status').value;
+
+                var txt = 'A';
+                var bg = 'rgb(251,175,175)';
+
+                if (status == 'Present') {
+                    txt = 'P';
+                    bg = 'rgb(173,233,179)';
+                } else if (status == 'first_half' || status == 'second_half') {
+                    txt = 'HD';
+                    bg = 'rgb(255,246,163)';
+                } else if (status == 'Incomplete') {
+                    txt = 'I';
+                    bg = 'rgb(233,61,61)';
+                } else if (status == 'weekly_leave') {
+                    txt = 'WL';
+                    bg = 'rgb(229,204,255)';
+                } else if (status == 'earn_leave') {
+                    txt = 'EL';
+                    bg = 'rgb(121,170,248)';
+                } else if (status == 'half_earn_leave') {
+                    txt = 'HEL';
+                    bg = 'rgb(121,246,248)';
+                } else if (status == 'half_weekly_leave') {
+                    txt = 'HW';
+                    bg = 'rgb(226,237,109)';
+                } else if (status == 'c_off') {
+                    txt = 'C';
+                    bg = 'rgb(121,246,248)';
+                } else if (status == 'half_c_off') {
+                    txt = 'HC';
+                    bg = 'rgb(226,237,109)';
+                } else if (status == 'half_earn_leave') {
+                    txt = 'HL';
+                    bg = 'rgb(121,246,248)';
+                } else if (status == 'eoff') {
+                    txt = 'HW';
+                    bg = 'rgb(149, 121, 248)';
+                } else if (status == 'half_eoff') {
+                    txt = 'C';
+                    bg = 'rgb(149, 121, 248)';
+                } else if (status == 'leave') {
+                    txt = 'HC';
+                    bg = 'rgb(99, 236, 218)';
+                }else if (status == 'half_leave') {
+                    txt = 'HC';
+                    bg = 'rgb(57, 233, 239)';
+                }
+ 
+                // 🔥 update only that cell
+                var cellId = "#cell_" + emp_id + "_" + attdate;
+
+                $(cellId).css("background", bg);
+                $(cellId).find("b").text(txt);
+
+
+                document.getElementById('punching_remark').value = '';
+                $('#punch_status').val('Present').trigger('chosen:updated').trigger('change');
+
+                btn.disabled = false;
+                btn.value = 'Save change';
+                // total(emp_id, currentMonth, currentYear);
+                //  location.reload();
+            },
+            error: function() {
+                btn.disabled = false;
+                btn.value = 'Punch In';
+                Swal.fire("Error", "Error while uploading. Try again.");
+            }
+
+        }); //ajax close
+
+    }
+
+    function add_all_att(emp_shift_hrs, empp_shift_id, month, year, emp_id, salary_generate_count, extraOffBalance, openingLeaveBalance,total_earning_leave) {
+        document.getElementById('punch_all_month').value = month;
+        document.getElementById('punch_all_year').value = year;
+        document.getElementById('punch_all_employee_id').value = emp_id;
+        if (salary_generate_count > 0) {
+            $('#salaryReportLink').attr(
+                'href',
+                'salary_generate_report.php?emp_id=' + emp_id
+            );
+            $('#salaryGeneratedModal').modal('show');
+        } else {
+
+
+            $.ajax({
+                type: "POST",
+                url: "",
+                data: {
+                    ajax_emp_shift_hrs: emp_shift_hrs,
+                    empp_shift_id: empp_shift_id
+                },
+                success: function(data) {
+                    $("#all_att_shift_id").html(data).trigger("change.select2");
+                }
+            });
+extraOffBalance = parseFloat(extraOffBalance);
+
+            if (extraOffBalance >= 1) {
+                // Full + Half  enable
+                $("option[value='eoff']").prop("disabled", false);
+                $("option[value='half_eoff']").prop("disabled", false);
+
+            } else if (extraOffBalance >= 0.5) {
+                // only Half enable
+                $("option[value='eoff']").prop("disabled", true);
+                $("option[value='half_eoff']").prop("disabled", false);
+
+            } else {
+                // both disable
+                $("option[value='eoff']").prop("disabled", true);
+                $("option[value='half_eoff']").prop("disabled", true);
+            }
+
+
+            /* ================= LEAVE ================= */
+            openingLeaveBalance = parseFloat(openingLeaveBalance);
+
+            if (openingLeaveBalance >= 1) {
+
+                $("option[value='leave']").prop("disabled", false);
+                $("option[value='half_leave']").prop("disabled", false);
+
+            } else if (openingLeaveBalance >= 0.5) {
+
+                $("option[value='leave']").prop("disabled", true);
+                $("option[value='half_leave']").prop("disabled", false);
+
+            } else {
+
+                $("option[value='leave']").prop("disabled", true);
+                $("option[value='half_leave']").prop("disabled", true);
+            }
+
+
+            /* ================= EARN LEAVE ================= */
+            total_earning_leave = parseFloat(total_earning_leave);
+
+            if (total_earning_leave >= 1) {
+
+                $("option[value='earn_leave']").prop("disabled", false);
+                $("option[value='half_earn_leave']").prop("disabled", false);
+
+            } else if (total_earning_leave >= 0.5) {
+
+                // सिर्फ Half Earn Leave enable
+                $("option[value='earn_leave']").prop("disabled", true);
+                $("option[value='half_earn_leave']").prop("disabled", false);
+
+            } else {
+
+                $("option[value='earn_leave']").prop("disabled", true);
+                $("option[value='half_earn_leave']").prop("disabled", true);
+            }
+            $("#punch_all_status").trigger("chosen:updated");
+            $('#AllAttendenceModal').modal('show');
+        }
+        
+        $('#show_attAll_details').attr(
+            'href',
+            'employee_wise_attendance.php?emp_id=' + emp_id + '&currentYear=' + year + '&currentMonth=' + month
+        );
+    };
+
+
+    function saveAllPunch() {
+        var btn = document.getElementById('saveAllbutton');
+        var punch_remark = document.getElementById('punching_all_remark').value;
+        var punch_all_status = document.getElementById('punch_all_status').value;
+        var punch_shift_id = document.getElementById('all_att_shift_id').value;
+        var punchtime = ' <?= date("H:i:s"); ?>';
+        var currentMonth = document.getElementById('punch_all_month').value;
+        var currentYear = document.getElementById('punch_all_year').value;
+        var emp_id = document.getElementById('punch_all_employee_id').value;
+        var punch_all_type = document.getElementById('punch_all_type').value;
+
+        if (punch_shift_id == "") {
+            alert("Please Select Shift Name");
+            return false;
+        }
+
+        btn.disabled = true;
+        btn.value = 'Saving...';
+        Swal.fire({
+            title: 'Please wait...',
+            text: 'Applying attendance for all days',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        jQuery.ajax({
+            type: 'POST',
+            url: 'ajax_att_save_all_punch.php',
+            data: 'emp_id=' + emp_id + '&currentYear=' + currentYear + '&currentMonth=' + currentMonth +
+                '&punch_remark=' + punch_remark + '&punch_status=' + punch_all_status + '&punch_shift_id=' +
+                punch_shift_id + '&punchtime=' + punchtime + '&punch_all_type=' + punch_all_type,
+            dataType: 'html',
+            success: function(data) {
+                Swal.close();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Attendance saved successfully',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    $('#AllAttendenceModal').modal('hide');
+                    var emp_id = document.getElementById('punch_all_employee_id').value;
+
+                    var s = statusMap[punch_all_status] || statusMap["Absent"];
+
+                    for (var d = 1; d <= '<?= $length ?>'; d++) {
+
+                        var day = d.toString().padStart(2, '0');
+                        var date = currentYear + "-" + currentMonth + "-" + day;
+
+                        var cellId = "#cell_" + emp_id + "_" + date;
+
+                        if ($(cellId).length) {
+                            $(cellId).css("background", s.bg);
+                            $(cellId).find("b").text(s.txt);
+                        }
+                    }
+
+
+                    document.getElementById('punching_all_remark').value = '';
+                    $('#punch_all_status').val('Present').trigger('chosen:updated').trigger(
+                        'change');
+                    btn.disabled = false;
+                    btn.value = 'Save change';
+                    // location.reload();
+                });
+
+
+
+            },
+            error: function() {
+                btn.disabled = false;
+                btn.value = 'Punch In';
+                Swal.fire("Error", "Error while uploading. Try again.");
+            }
+
+        }); //ajax close
+
+    }
     </script>
 </body>
 

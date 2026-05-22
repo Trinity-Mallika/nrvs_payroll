@@ -5,15 +5,25 @@ $on_duty_id = $obj->test_input($_POST['on_duty_id']);
 $type = $obj->test_input($_POST['type']);
 $detail_crit = "WHERE on_duty_id='$on_duty_id'";
 if ($type == "approved") {
-    $detail_crit .= " AND status=1";
+    $detail_crit .= " AND lad.status=1";
 } elseif ($type == "rejected") {
-    $detail_crit .= " AND status=2";
+    $detail_crit .= " AND lad.status=2";
 } elseif ($type == "pending") {
-    $detail_crit .= " AND status=0";
+    $detail_crit .= " AND lad.status=0";
 }
 $sn = 1;
 $emp_id = $obj->getvalfield("on_duty_master", "emp_id", "on_duty_id='$on_duty_id'");
-$details = $obj->executequery("SELECT * FROM leave_apply_detail $detail_crit");
+//$details = $obj->executequery("SELECT * FROM leave_apply_detail $detail_crit");
+$details = $obj->executequery("
+    SELECT 
+        lad.*, 
+        u.fullname AS updated_by_name
+    FROM leave_apply_detail lad
+    LEFT JOIN user u 
+        ON lad.updatedby = u.userid
+    $detail_crit
+    ORDER BY lad.date ASC
+");
 
 $leaveDayArr = [
     'FD' => 'Full Day',
@@ -23,7 +33,9 @@ $leaveDayArr = [
 ];
 
 $leaveTypeArr = [
-    'EL' => 'Earned Leave',
+   'EL' => 'Earned Leave',
+    'EO' => 'EXTRA OFF',
+    'L' => 'OPENING LEAVE',
     'WL' => 'Weekly Leave',
     'LWP' => 'Leave Without Pay'
 ];
@@ -59,8 +71,9 @@ $leaveTypeArr = [
                 </td>
                 <td>
                     <select class="form-select form-select-sm chosen-select" id="modal_leave_type_<?= $row['leave_details_id'] ?>">
-                        <option value="EL" <?= ($row['leave_type'] == 'EL') ? 'selected' : '' ?>>EARNED LEAVE</option>
-                        <option value="WL" <?= ($row['leave_type'] == 'WL') ? 'selected' : '' ?>>WEEKLY LEAVE</option>
+                        <option value="EL" <?= ($row['leave_type'] == 'EL') ? 'selected' : '' ?>>EARNED LEAVE</option> 
+                        <option value="EO" <?= ($row['leave_type'] == 'EO') ? 'selected' : '' ?>>EXTRA OFF</option>
+                        <option value="L" <?= ($row['leave_type'] == 'L') ? 'selected' : '' ?>>OPENING LEAVE</option>
                         <option value="LWP" <?= ($row['leave_type'] == 'LWP') ? 'selected' : '' ?>>LEAVE WITHOUT PAY</option>
                     </select>
 
@@ -76,7 +89,7 @@ $leaveTypeArr = [
                     <input type="checkbox" <?= $row['status'] == 2 ? 'checked' : '' ?> data-id="<?= $row['leave_details_id'] ?>" class="form-check-input reject_chk" <?= ($row['status'] == 1 || $row['status'] == 2) ? 'disabled' : '' ?>>
                 </td>
 
-                <td>
+                  <td class="text-center">
                     <?php
                     if ($row['status'] == "1") {
                         echo '<span class="badge bg-success text-white">Approved</span>';
@@ -85,7 +98,13 @@ $leaveTypeArr = [
                     } else {
                         echo '<span class="badge bg-warning text-white">Pending</span>';
                     }
+                     if ($row['status'] == 1 || $row['status'] == 2) {
                     ?>
+                        <br>
+                        <?=$row['updated_by_name']?> 
+                        Dt: <?=$obj->dateformatindia($row['lastupdated'])?>
+
+                    <?php } ?>
                 </td>
 
             </tr>

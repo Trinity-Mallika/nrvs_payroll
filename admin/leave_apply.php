@@ -23,8 +23,9 @@ if (isset($_POST['submit'])) {
     $contact_no = $obj->test_input($_POST['contact_no']);
     $substitute_emp_id = $obj->test_input($_POST['substitute_emp_id'] ?? 0);
     $total_day = $obj->test_input($_POST['total_day']);
-    $weekly_leave = $obj->test_input($_POST['weekly_leave']);
+    $extra_off = $obj->test_input($_POST['extra_off']);
     $earn_leave = $obj->test_input($_POST['earn_leave']);
+    $opening_leave_balance = $obj->test_input($_POST['opening_leave_balance']);
 
     $doc_file = $_FILES["doc_file"] ?? '';
 
@@ -32,12 +33,12 @@ if (isset($_POST['submit'])) {
     $imageName = $_FILES["doc_file"]['name'];
     $imageFileType = strtolower(pathinfo($imageName, PATHINFO_EXTENSION));
 
-
     $form_data = array(
         "emp_id" => $emp_id,
         "type" => 'leave',
         "application_date" => $application_date,
-        "weekly_leave" => $weekly_leave,
+        "opening_leave_balance" => $opening_leave_balance,
+        "extra_off" => $extra_off,
         "earn_leave" => $earn_leave,
         "reason" => $reason,
         "leave_address" => $leave_address,
@@ -131,23 +132,12 @@ if (isset($_GET[$tblpkey])) {
     $reason = $sqledit['reason'];
     $substitute_emp_id = $sqledit['substitute_emp_id'];
     $earn_leave = $sqledit['earn_leave'];
-    $weekly_leave = $sqledit['weekly_leave'];
+    $extra_off = $sqledit['extra_off'];
+    $opening_leave_balance = $sqledit['opening_leave_balance'];
     $doc_file = $sqledit['doc_file'];
     $img = "";
 
-    $total_leave_taken = $obj->getvalfield(
-        "attendance_entry",
-        "SUM(
-        CASE 
-            WHEN attendance_status IN ('Weekly Leave','Earning Leave','C Off') THEN 1
-            WHEN attendance_status IN ('Half Weekly Leave','Half Earning Leave','Half C Off') THEN 0.5
-            ELSE 0
-        END
-    )",
-        "month='$app_month' 
-    AND year='$app_year' 
-    AND emp_id='$emp_id'"
-    ) ?? 0;
+    
 } else {
     $application_date = date('Y-m-d');
 
@@ -155,11 +145,12 @@ if (isset($_GET[$tblpkey])) {
     $leave_address = "";
     $substitute_emp_id = "";
     $reason = "";
-    $weekly_leave = "0";
+    $extra_off = "0";
+    $opening_leave_balance = "0";
     $earn_leave = "0";
     $doc_file = "";
     $img = "doc_file";
-    $total_leave_taken = 0;
+     
 }
 $total_day  = $obj->getvalfield(
     "leave_apply_detail",
@@ -287,26 +278,23 @@ if (isset($_POST['leave_apply_id'])) {
                                         <div class="col-lg-2 mb-2">
                                             <div class="p-2 border rounded bg-light text-center">
                                                 <small class="text-muted">Earning Leave</small><br>
-                                                <input type="text" name="earn_leave" id="earning_leave"
-                                                    value="<?= $earn_leave ?>"
+                                                <input type="text" name="earn_leave" id="earning_leave" value="<?=$earn_leave?>"
                                                     class="form-control form-control-sm text-center fw-bold border-0 bg-light"
                                                     readonly>
                                             </div>
                                         </div>
                                         <div class="col-lg-2 mb-2">
                                             <div class="p-2 border rounded bg-light text-center">
-                                                <small class="text-muted">Weekly Off</small><br>
-                                                <input type="text" name="weekly_leave" id="weekly_leave"
-                                                    value="<?= $weekly_leave ?>"
+                                                <small class="text-muted">Extra Off</small><br>
+                                                <input type="text" name="extra_off" id="extra_off"   value="<?=$extra_off?>"
                                                     class="form-control form-control-sm text-center fw-bold border-0 bg-light"
                                                     readonly>
                                             </div>
                                         </div>
                                         <div class="col-lg-2 mb-2">
                                             <div class="p-2 border rounded bg-light text-center">
-                                                <small class="text-muted">Taken Leave</small><br>
-                                                <input type="text" name="total_leave_taken" id="total_leave_taken"
-                                                    value="<?= $total_leave_taken ?>"
+                                                <small class="text-muted">Opening Leave</small><br>
+                                                <input type="text" name="opening_leave_balance" id="opening_leave_balance" value="<?=$opening_leave_balance?>"
                                                     class="form-control form-control-sm text-center fw-bold border-0 bg-light"
                                                     readonly>
                                             </div>
@@ -357,8 +345,10 @@ if (isset($_POST['leave_apply_id'])) {
                                                         <td>
                                                             <select class="form-select form-select-sm chosen-select" id="multi_leave_type">
                                                                 <option value="EL">EARNED LEAVE</option>
-                                                                <option value="WL">WEEKLY LEAVE</option>
-                                                                <option value="LWP">LEAVE WITHOUT PAY</option>
+                                                                <!-- <option value="WL">WEEKLY LEAVE</option> -->
+                                                                <option value="EO">EXTRA OFF</option>
+                                                                <option value="L">OPENING LEAVE</option>
+                                                                <option value="LWP">LEAVE WITHOUT PAY</option> 
                                                             </select>
                                                         </td>
                                                         <td>
@@ -411,7 +401,8 @@ if (isset($_POST['leave_apply_id'])) {
                                                         <td>
                                                             <select class="form-select form-select-sm chosen-select" id="leave_type">
                                                                 <option value="EL">EARNED LEAVE</option>
-                                                                <option value="WL">WEEKLY LEAVE</option>
+                                                                <option value="EO">EXTRA OFF</option>
+                                                                <option value="L">OPENING LEAVE</option>
                                                                 <option value="LWP">LEAVE WITHOUT PAY</option>
                                                             </select>
                                                         </td>
@@ -657,7 +648,7 @@ if (isset($_POST['leave_apply_id'])) {
                             fetch_leave_details();
                             $('#total_day').val(res.total_days);
                             $('#date,#remark').val('');
-                            $('#leave_details_id').val('');
+                            $('#leave_details_id').val('0');
                         })
                     } else if (res.status === "duplicate") {
                         Swal.fire({
@@ -745,8 +736,7 @@ if (isset($_POST['leave_apply_id'])) {
                     $('#ajax_multi_btn').prop("disabled", true).text("Saving...");
                 },
                 success: function(response) {
-                    let res = JSON.parse(response);
-                    console.log('res', res);
+                    let res = JSON.parse(response); 
                     if (res.status === "success") {
                         Swal.fire({
                             icon: 'success',
@@ -758,6 +748,7 @@ if (isset($_POST['leave_apply_id'])) {
                             fetch_leave_details();
                             $('#total_day').val(res.total_days);
                             $('#date,#remark').val('');
+                            $('#leave_details_id').val('0');
                         })
                     } else if (res.status === "duplicate") {
                         Swal.fire({
@@ -803,7 +794,7 @@ if (isset($_POST['leave_apply_id'])) {
             $('#leave_details_id').val(leave_details_id);
             $('#date').val(date);
             $('#leave_day').val(leave_day).trigger('change');
-            $('#leave_type').val(leave_type);
+            $('#leave_type').val(leave_type).trigger('change');
             $('#remark').val(remark).focus();
             $('#ajax_btn')
                 .prop("disabled", false)
@@ -825,9 +816,9 @@ if (isset($_POST['leave_apply_id'])) {
                     let data = JSON.parse(res);
 
                     if (data.status === "success") {
-                        $("#weekly_leave").val(data.weekly_off);
+                        $("#extra_off").val(data.extra_off);
                         $("#earning_leave").val(data.earning_leave);
-                        $("#total_leave_taken").val(data.total_leave_taken);
+                        $("#opening_leave_balance").val(data.opening_leave_balance);
 
 
                     }

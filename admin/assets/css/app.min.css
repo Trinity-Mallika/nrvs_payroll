@@ -3547,7 +3547,7 @@
 }
 
 .navbar-menu .navbar-nav .nav-sm .nav-link {
-  padding: 0.55rem 1.5rem !important;
+  padding: 0.45rem 0.55rem !important;
   color: var(--vz-vertical-menu-sub-item-color);
   white-space: none;
   position: relative;
@@ -4221,7 +4221,7 @@
     [data-layout="vertical"],
     [data-layout="semibox"]
   )[data-sidebar-size="sm"] {
-    min-height: 1400px;
+    min-height: 110vh;
   }
 
   :is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="sm"]
@@ -4333,7 +4333,7 @@
   .navbar-nav
   .nav-link
   i {
-  font-size: 30px;
+  font-size: 26px;
   text-align: center;
   width: 100px;
 }
@@ -4382,13 +4382,29 @@
   position: relative;
 }
 
+:is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="lg"]
+  .navbar-menu
+  .navbar-nav
+  .simplebar-content
+  li.nav-item:nth-child(1) {
+  margin-top: 20px;
+}
+:is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="lg"]
+  .navbar-menu
+  .navbar-nav
+  .simplebar-content
+  ul.nav
+  li.nav-item:nth-child(1) {
+  margin-top: 0px;
+}
+
 :is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="sm"]
   .navbar-menu
   .navbar-nav
   .nav-item:hover
   > a.menu-link {
   position: relative;
-  width: calc(200px + var(--vz-vertical-menu-width-sm));
+  width: calc(240px + var(--vz-vertical-menu-width-sm));
   -webkit-transition: none;
   transition: none;
   background: var(--vz-vertical-menu-bg);
@@ -4459,13 +4475,16 @@
   display: block;
   left: var(--vz-vertical-menu-width-sm);
   position: absolute;
-  width: 200px;
+  width: 240px;
   background: var(--vz-vertical-menu-bg);
   height: auto !important;
   padding: 0.5rem 0;
   border-radius: 0 0 3px 3px;
   -webkit-box-shadow: var(--vz-vertical-menu-dropdown-box-shadow);
   box-shadow: var(--vz-vertical-menu-dropdown-box-shadow);
+  max-height: 200px !important;
+  min-height: auto;
+  overflow-y: scroll;
 }
 
 :is([data-layout="vertical"], [data-layout="semibox"])[data-sidebar-size="sm"]
@@ -22378,7 +22397,7 @@ input[readonly] {
 
 /* width */
 ::-webkit-scrollbar {
-  width: 14px;
+  width: 8px;
 }
 
 /* Track */

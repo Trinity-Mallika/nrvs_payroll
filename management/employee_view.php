@@ -45,7 +45,8 @@ if ($emp_id > 0) {
 
 
 <!doctype html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
+    data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
 
 <head>
     <meta charset="utf-8" />
@@ -53,10 +54,10 @@ if ($emp_id > 0) {
     <?php include('inc/css.php') ?>
 </head>
 <style>
-    .table-borderless tr td {
-        border: 0px !important;
-        padding-bottom: 0px;
-    }
+.table-borderless tr td {
+    border: 0px !important;
+    padding-bottom: 0px;
+}
 </style>
 
 <body>
@@ -77,7 +78,9 @@ if ($emp_id > 0) {
                                 <div class="row g-4 align-items-center">
                                     <div class="col-sm">
                                         <div>
-                                            <h5 class="card-title mb-0"> <?= $module; ?> <a href="att_summary_report.php" class="float-end btn btn-primary btn-sm">Back</a></h5>
+                                            <h5 class="card-title mb-0"> <?= $module; ?> <a
+                                                    href="att_summary_report.php"
+                                                    class="float-end btn btn-primary btn-sm">Back</a></h5>
                                         </div>
                                     </div>
                                 </div>
@@ -86,7 +89,8 @@ if ($emp_id > 0) {
                                 <form method="get">
                                     <div class="row">
                                         <div class="col-lg-6 mb-3">
-                                            <label for="department_id" class="form-label">Employee<span class="text-danger fw-bold"> </span></label>
+                                            <label for="department_id" class="form-label">Employee<span
+                                                    class="text-danger fw-bold"> </span></label>
                                             <select class="form-select form-select-sm chosen-select" name="emp_id">
 
                                                 <option value="">Select</option>
@@ -96,18 +100,21 @@ if ($emp_id > 0) {
                                                 foreach ($res as $row) {
                                                 ?>
 
-                                                    <option value="<?= $row['emp_id'] ?>" <?= $emp_id == $row['emp_id'] ? 'selected' : '' ?>>
+                                                <option value="<?= $row['emp_id'] ?>"
+                                                    <?= $emp_id == $row['emp_id'] ? 'selected' : '' ?>>
 
-                                                        <?= $row['emp_code'] ?> - <?= $row['first_name'] ?> <?= $row['last_name'] ?>
+                                                    <?= $row['emp_code'] ?> - <?= $row['first_name'] ?>
+                                                    <?= $row['last_name'] ?>
 
-                                                    </option>
+                                                </option>
 
                                                 <?php } ?>
 
                                             </select>
                                         </div>
                                         <div class="col-lg-6 mb-3">
-                                            <label for="department_id" class="form-label">Month<span class="text-danger fw-bold"> </span></label>
+                                            <label for="department_id" class="form-label">Month<span
+                                                    class="text-danger fw-bold"> </span></label>
                                             <select class="form-select form-select-sm chosen-select" name="month">
                                                 <option value="">Select</option>
 
@@ -124,16 +131,18 @@ if ($emp_id > 0) {
 
                                                     $monthName = date("F", mktime(0, 0, 0, $m, 10));
                                                 ?>
-                                                    <option value="<?= $m ?>" <?= $currentMonth == $m ? 'selected' : '' ?> <?= $disabled ?>>
-                                                        <?= $monthName ?>
-                                                    </option>
+                                                <option value="<?= $m ?>" <?= $currentMonth == $m ? 'selected' : '' ?>
+                                                    <?= $disabled ?>>
+                                                    <?= $monthName ?>
+                                                </option>
                                                 <?php
                                                 }
                                                 ?>
                                             </select>
                                         </div>
                                         <div class="col-lg-6 mb-3">
-                                            <label for="department_id" class="form-label">Year<span class="text-danger fw-bold"> </span></label>
+                                            <label for="department_id" class="form-label">Year<span
+                                                    class="text-danger fw-bold"> </span></label>
                                             <select class="form-select form-select-sm chosen-select" name="year">
                                                 <option value="">Select</option>
 
@@ -149,8 +158,10 @@ if ($emp_id > 0) {
                                             </select>
                                         </div>
                                         <div class="col-lg-6 mt-4">
-                                            <input type="submit" name="submit" class="btn btn-primary add-btn btn-sm" value="Search">
-                                            <a href="<?php echo $pagename ?>" class="btn btn-danger add-btn btn-sm">Reset</a>
+                                            <input type="submit" name="submit" class="btn btn-primary add-btn btn-sm"
+                                                value="Search">
+                                            <a href="<?php echo $pagename ?>"
+                                                class="btn btn-danger add-btn btn-sm">Reset</a>
                                         </div>
                                     </div>
                                 </form>
@@ -159,43 +170,43 @@ if ($emp_id > 0) {
                     </div>
 
                     <?php if ($search && $emp_id > 0) { ?>
-                        <div class="col-lg-6 col-md-6">
-                            <div class="card card-height-100" id="customerList">
-                                <div class="card-header border-bottom-dashed">
-                                    <div class="row g-4 align-items-center">
-                                        <div class="col-sm">
-                                            <div>
-                                                <h5 class="card-title mb-0"> Employee Details </h5>
-                                            </div>
+                    <div class="col-lg-6 col-md-6">
+                        <div class="card card-height-100" id="customerList">
+                            <div class="card-header border-bottom-dashed">
+                                <div class="row g-4 align-items-center">
+                                    <div class="col-sm">
+                                        <div>
+                                            <h5 class="card-title mb-0"> Employee Details </h5>
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-
-                                        <div class="col-lg-12">
-                                            <table class="table table-bordered table-striped-columns">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Basic Salary </th>
-                                                        <td> <?= $basic_salary ?></td>
-                                                        <th>Contact Details </th>
-                                                        <td> <?= $mobile_no ?></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <th>Shift Hours </th>
-                                                        <td> <?= $shift_working_hour ?> Hrs</td>
-                                                        <th>Department </th>
-                                                        <td> <?= $department_name ?></td>
-                                                    </tr>
-                                                </thead>
-                                            </table>
-                                        </div>
-
                                     </div>
                                 </div>
                             </div>
+                            <div class="card-body">
+                                <div class="row">
+
+                                    <div class="col-lg-12">
+                                        <table class="table table-bordered table-striped-columns">
+                                            <thead>
+                                                <tr>
+                                                    <th>Basic Salary </th>
+                                                    <td> <?= $basic_salary ?></td>
+                                                    <th>Contact Details </th>
+                                                    <td> <?= $mobile_no ?></td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Shift Hours </th>
+                                                    <td> <?= $shift_working_hour ?> Hrs</td>
+                                                    <th>Department </th>
+                                                    <td> <?= $department_name ?></td>
+                                                </tr>
+                                            </thead>
+                                        </table>
+                                    </div>
+
+                                </div>
+                            </div>
                         </div>
+                    </div>
                     <?php } ?>
 
                     <?php if ($search && $emp_id > 0) {
@@ -206,23 +217,59 @@ if ($emp_id > 0) {
                             $max_day = date('d', strtotime($last_day_of_month));
                         }
 
-                        $total_present1 = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status='Present'");
+                        $res = $obj->executequery("
+    SELECT 
+        SUM(CASE 
+            WHEN attendance_status = 'Present' THEN 1 
+            ELSE 0 
+        END) AS total_present1,
 
-                        $total_half1 = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status='Half Day'");
+        SUM(CASE 
+            WHEN attendance_status = 'Half Day' THEN 1 
+            ELSE 0 
+        END) AS total_half1,
 
-                        $total_present = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status IN('Present','Weekly Leave','Earning Leave','C Off')");
+        SUM(CASE 
+            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave') THEN 1 
+            ELSE 0 
+        END) AS total_present,
 
-                        $total_half = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status IN('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off')");
+        SUM(CASE 
+            WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave') THEN 1 
+            ELSE 0 
+        END) AS total_half
 
-                        $total_attandence = $total_present + ($total_half / 2);
+    FROM attendance_entry
+    WHERE emp_id = '$emp_id' 
+    AND month = '$currentMonth' 
+    AND year = '$currentYear' AND unit_id='$unitid'
+");
+
+$row = $res[0] ?? [];
+
+                        // $total_present1 = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status='Present'");
+
+                        // $total_half1 = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status='Half Day'");
+
+                        // $total_present = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status IN('Present','Weekly Leave','Earning Leave','C Off')");
+
+                        // $total_half = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status IN('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off')");
+
+                        $total_present1 = $row['total_present1'] ?? 0;
+                        $total_half1    = $row['total_half1'] ?? 0;
+                        $total_present  = $row['total_present'] ?? 0;
+                        $total_half     = $row['total_half'] ?? 0;
 
                         $real_total_attandence = $total_present1 + ($total_half1 / 2);
+                        $total_attandence      = $total_present + ($total_half / 2);
+ 
 
                         $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $allow_weekly_off);
+                        $earn_leave_day = $real_total_attandence + $week_leave;
 
-                        $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $real_total_attandence, $unitid);
+                        $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_day, $unitid);
 
-                        $three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
+                        //$three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
 
                         $holidayData = $obj->getHolidayCountWithSandwichRule($emp_id, $unitid, $currentMonth, $currentYear);
 
@@ -239,65 +286,67 @@ if ($emp_id > 0) {
                             $total_attandence,
                             $week_leave,
                             $monthly_leave,
-                            $three_month_leave,
+                            //$three_month_leave,
                             $is_allow_c_off,
                             $is_all_leave_add
                         );
 
                         $total_payable_days = $result['total_working_days'];
                     ?>
-                        <div class="col-lg-12">
-                            <div class="card card-body pt-2 pb-2">
-                                <table class="table table-borderless mb-0">
-                                    <tr>
-                                        <td class="fs-13">Total Present: <b><?= $real_total_attandence ?></b></td>
-                                        <td class="fs-13">Total Attendance With Leave: <?= $total_attandence ?></td>
-                                        <td class="fs-13">Total C-Off : <b><?= $three_month_leave ?></b></td>
-                                        <td class="fs-13">Weekly Off : <b><?= $week_leave ?></b></td>
-                                        <td class="fs-13">Earn Leave : <?= $monthly_leave ?></td>
-                                        <td class="fs-13">Total Payable Days : <b><?= $total_payable_days ?></b> </td>
-                                        <td class="fs-13">
-                                            Holiday : <?= $holiday_total ?></b> <br>
-                                            <span class="text-secondary">NH : <?= $holiday_national ?> | RH : <?= $holiday_religious ?> | SH : <?= $holiday_seasonal ?></span>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
+                    <div class="col-lg-12">
+                        <div class="card card-body pt-2 pb-2">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <td class="fs-13">Total Present: <b><?= $real_total_attandence ?></b></td>
+                                    <td class="fs-13">Total Attendance With Leave: <?= $total_attandence ?></td>
+                                    
+                                    <td class="fs-13">Weekly Off : <b><?= $week_leave ?></b></td>
+                                    <td class="fs-13">Earn Leave : <?= $monthly_leave ?></td>
+                                    <td class="fs-13">Total Payable Days : <b><?= $total_payable_days ?></b> </td>
+                                    <td class="fs-13">
+                                        Holiday : <?= $holiday_total ?></b> <br>
+                                        <span class="text-secondary">NH : <?= $holiday_national ?> | RH :
+                                            <?= $holiday_religious ?> | SH : <?= $holiday_seasonal ?></span>
+                                    </td>
+                                </tr>
+                            </table>
                         </div>
+                    </div>
                     <?php } ?>
                     <?php if ($search && $emp_id > 0) {
                     ?>
-                        <div class="col-lg-12">
-                            <div class="card" id="customerList">
-                                <div class="card-header border-bottom-dashed">
-                                    <div class="row g-4 align-items-center">
-                                        <div class="col-sm">
-                                            <div>
-                                                <h5 class="card-title mb-0"><?php echo $submodule; ?> List </h5>
-                                            </div>
+                    <div class="col-lg-12">
+                        <div class="card" id="customerList">
+                            <div class="card-header border-bottom-dashed">
+                                <div class="row g-4 align-items-center">
+                                    <div class="col-sm">
+                                        <div>
+                                            <h5 class="card-title mb-0"><?php echo $submodule; ?> List </h5>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table id="buttons-datatables" class="display table table-sm table-bordered" style="width:100%">
-                                            <thead>
-                                                <tr class="table-primary">
-                                                    <th>Sr No.</th>
-                                                    <th>Attendence Date </th>
-                                                    <th>In Time </th>
-                                                    <th>Entry IN Type</th>
-                                                    <th>Out Time</th>
-                                                    <th>Entry Out Type</th>
-                                                    <th>Total Working Hour</th>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table id="buttons-datatables" class="display table table-sm table-bordered"
+                                        style="width:100%">
+                                        <thead>
+                                            <tr class="table-primary">
+                                                <th>Sr No.</th>
+                                                <th>Attendence Date </th>
+                                                <th>In Time </th>
+                                                <th>Entry IN Type</th>
+                                                <th>Out Time</th>
+                                                <th>Entry Out Type</th>
+                                                <th>Total Working Hour</th>
 
-                                                    <th>Machine Id</th>
-                                                    <th>Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
+                                                <th>Machine Id</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
 
-                                                <?php
+                                            <?php
                                                 $i = 1;
                                                 $days = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
 
@@ -349,29 +398,29 @@ if ($emp_id > 0) {
                                                     }
                                                 ?>
 
-                                                    <tr>
-                                                        <td><?= $i++ ?></td>
-                                                        <td><?= $obj->dateformatindia($attendance_date) ?></td>
-                                                        <td><?= $intime ?></td>
-                                                        <td><?= ucfirst($entry_type) ?></td>
-                                                        <td><?= $outtime ?></td>
-                                                        <td><?= ucfirst($entry_type_out) ?></td>
-                                                        <td><?= $working_hours ?></td>
+                                            <tr>
+                                                <td><?= $i++ ?></td>
+                                                <td><?= $obj->dateformatindia($attendance_date) ?></td>
+                                                <td><?= $intime ?></td>
+                                                <td><?= ucfirst($entry_type) ?></td>
+                                                <td><?= $outtime ?></td>
+                                                <td><?= ucfirst($entry_type_out) ?></td>
+                                                <td><?= $working_hours ?></td>
 
-                                                        <td><?= $machineid ?></td>
-                                                        <td>
-                                                            <span class="badge bg-<?= $badge ?> fs-11"><?= $status ?></span>
-                                                        </td>
-                                                    </tr>
-                                                <?php } ?>
+                                                <td><?= $machineid ?></td>
+                                                <td>
+                                                    <span class="badge bg-<?= $badge ?> fs-11"><?= $status ?></span>
+                                                </td>
+                                            </tr>
+                                            <?php } ?>
 
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                        </tbody>
+                                    </table>
                                 </div>
-
                             </div>
+
                         </div>
+                    </div>
                     <?php } ?>
                 </div>
                 <!--end col-->
@@ -386,57 +435,58 @@ if ($emp_id > 0) {
     <?php include('inc/js.php') ?>
     <?php include('inc/footer.php') ?>
     <script>
-        $(document).ready(function() {
-            $(".chosen-select").select2({
-                width: '100%',
-                search_contains: true
-            });
-
-            $('#show_field').select2({
-                width: '100%'
-            });
+    $(document).ready(function() {
+        $(".chosen-select").select2({
+            width: '100%',
+            search_contains: true
         });
 
-        function funDel(id) {
-            $('#deleteRecordModal').modal('show');
-            tblname = '<?php echo $tblname; ?>';
-            tblpkey = '<?php echo $tblpkey; ?>';
-            imgpath = '<?php echo $imgpath; ?>';
-            pagename = '<?php echo $pagename; ?>';
-            submodule = '<?php echo $submodule; ?>';
-            $('#delete-record').click(function() {
-                $.ajax({
-                    type: 'POST',
-                    url: 'ajax/delete_master_emp.php',
-                    data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&imgpath=' + imgpath + '&submodule=' + submodule + '&pagename=' + pagename,
-                    dataType: 'html',
-                    success: function(data) {
-                        $("#tr_" + id).hide();
-                        // alert(data);
-                        // location.reload();
-                    }
-                });
-                $('#deleteRecordModal').modal('hide');
+        $('#show_field').select2({
+            width: '100%'
+        });
+    });
+
+    function funDel(id) {
+        $('#deleteRecordModal').modal('show');
+        tblname = '<?php echo $tblname; ?>';
+        tblpkey = '<?php echo $tblpkey; ?>';
+        imgpath = '<?php echo $imgpath; ?>';
+        pagename = '<?php echo $pagename; ?>';
+        submodule = '<?php echo $submodule; ?>';
+        $('#delete-record').click(function() {
+            $.ajax({
+                type: 'POST',
+                url: 'ajax/delete_master_emp.php',
+                data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&imgpath=' +
+                    imgpath + '&submodule=' + submodule + '&pagename=' + pagename,
+                dataType: 'html',
+                success: function(data) {
+                    $("#tr_" + id).hide();
+                    // alert(data);
+                    // location.reload();
+                }
             });
-        };
+            $('#deleteRecordModal').modal('hide');
+        });
+    };
 
-        function numberOnly(evt) {
-            var theEvent = evt || window.event;
+    function numberOnly(evt) {
+        var theEvent = evt || window.event;
 
-            // Handle paste
-            if (theEvent.type === 'paste') {
-                key = event.clipboardData.getData('text/plain');
-            } else {
-                // Handle key press
-                var key = theEvent.keyCode || theEvent.which;
-                key = String.fromCharCode(key);
-            }
-            var regex = /[0-9]|\.|\s/;
-            if (!regex.test(key)) {
-                theEvent.returnValue = false;
-                if (theEvent.preventDefault) theEvent.preventDefault();
-            }
+        // Handle paste
+        if (theEvent.type === 'paste') {
+            key = event.clipboardData.getData('text/plain');
+        } else {
+            // Handle key press
+            var key = theEvent.keyCode || theEvent.which;
+            key = String.fromCharCode(key);
         }
+        var regex = /[0-9]|\.|\s/;
+        if (!regex.test(key)) {
+            theEvent.returnValue = false;
+            if (theEvent.preventDefault) theEvent.preventDefault();
+        }
+    }
     </script>
 </body>
 

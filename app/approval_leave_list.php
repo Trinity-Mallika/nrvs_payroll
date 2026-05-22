@@ -180,8 +180,7 @@ function deleteLeave(id) {
     }).then((result) => {
 
         if (result.isConfirmed) {
-
-            // 🔴 STEP 1: Delete child table (leave_apply_detail)
+ 
             $.ajax({
                 type: 'POST',
                 url: 'delete_master.php',
@@ -191,9 +190,7 @@ function deleteLeave(id) {
                     tblpkey: 'on_duty_id',
                     pagename: 'leave_apply_list.php'
                 },
-                success: function() {
-
-                    // 🔴 STEP 2: Delete main table (on_duty_master)
+                success: function() { 
                     $.ajax({
                         type: 'POST',
                         url: 'delete_master.php',

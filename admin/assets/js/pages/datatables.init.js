@@ -23,10 +23,10 @@ function initializeTables() {
         },
       },
     }),
-    // new DataTable("#buttons-datatables1", {
-    //   dom: "Bfrtip",
-    //   buttons: ["copy", "csv", "excel", "print", "pdf"],
-    // }),
+    new DataTable("#buttons-datatables1", {
+      dom: "Bfrtip",
+      buttons: ["copy", "csv", "excel", "print", "pdf"],
+    }),
     new DataTable("#buttons-datatables", {
       orderCellsTop: true,
 

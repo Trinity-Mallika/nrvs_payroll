@@ -68,6 +68,7 @@ if (isset($_POST['submit'])) {
     $is_pf = $obj->test_input($_POST['is_pf'] ?? 0);
     $is_esic = $obj->test_input($_POST['is_esic'] ?? 0);
     $is_rejoin = $obj->test_input($_POST['is_rejoin'] ?? 0);
+    $allow_weekly_off = $obj->test_input($_POST['allow_weekly_off'] ?? 0);
 
     $pf_uan = $obj->test_input($_POST['pf_uan']);
     $uan_no = $obj->test_input($_POST['uan_no']);
@@ -143,6 +144,7 @@ if (isset($_POST['submit'])) {
         "opening_date" => $opening_date,
         "is_pf" => $is_pf,
         "is_esic" => $is_esic,
+        "allow_weekly_off" => $allow_weekly_off,
         "is_rejoin" => $is_rejoin,
         "pf_uan" => $pf_uan,
         "uan_no" => $uan_no,
@@ -155,6 +157,33 @@ if (isset($_POST['submit'])) {
         "sessionid"   => $sessionid,
         "unit_id"   => $unitid
     );
+
+    $form_data_unit_transfer = array(
+        'joining_date' => $date_of_joining,
+        'unit_id' => $unitid,     
+        'department_id' => $department_id,
+        'designation_id' => $designation_id,
+        'basic_salary' => $basic_salary,
+        'shift_hrs' => $shift_id,
+        "createdate" => $createdate,
+        "createdby" => $loginid,
+        "ipaddress" => $ipaddress,
+        "sessionid" => $sessionid
+    );
+    $form_data_emp_promotion = array(
+        'promotion_date' => $date_of_joining,
+        'unit_id' => $unitid,     
+        'type' => 'promotion',     
+        'department_id' => $department_id,
+        'designation_id' => $designation_id,
+        'basic_salary' => $basic_salary,
+        'status' => '1',
+        "createdate" => $createdate,
+        "createdby" => $loginid,
+        "ipaddress" => $ipaddress,
+        "sessionid" => $sessionid
+    );
+
     $allowedTypes = ['jpg', 'jpeg', 'png'];
     $imageName = $_FILES["profile_image"]['name'];
     $imageName2 = $_FILES["emp_sign"]['name'];
@@ -252,34 +281,9 @@ if (isset($_POST['submit'])) {
 
             $action = 1;
             $process = "insert";
-
-            $form_data_unit_transfer = array(
-                    'emp_id' => $lastid,
-                    'joining_date' => $date_of_joining,
-                    'unit_id' => $unitid,                 
-                    'department_id' => $department_id,
-                    'designation_id' => $designation_id,
-                    'basic_salary' => $basic_salary,
-                    'shift_hrs' => $shift_id,
-                    "createdate" => $createdate,
-                    "createdby" => $loginid,
-                    "ipaddress" => $ipaddress,
-                    "sessionid" => $sessionid
-            );
-            $form_data_emp_promotion = array(
-                    'emp_id' => $lastid,
-                    'promotion_date' => $date_of_joining,
-                    'unit_id' => $unitid,                 
-                    'type' => 'promotion',                 
-                    'department_id' => $department_id,
-                    'designation_id' => $designation_id,
-                    'basic_salary' => $basic_salary,
-                    'status' => '1',
-                    "createdate" => $createdate,
-                    "createdby" => $loginid,
-                    "ipaddress" => $ipaddress,
-                    "sessionid" => $sessionid
-            );
+           
+            $form_data_unit_transfer["emp_id"] = $lastid;
+            $form_data_emp_promotion["emp_id"] = $lastid;
            $obj->insert_record("emp_branch_transfer", $form_data_unit_transfer);
            $obj->insert_record("emp_promotion", $form_data_emp_promotion);
 
@@ -308,6 +312,12 @@ if (isset($_POST['submit'])) {
             $form_data["biomatric_id"] = $biomatric_id;
             $where = array($tblpkey => $keyvalue);
             $obj->update_record($tblname, $where, $form_data);
+
+            $where2 = array('emp_id' => $keyvalue,'unit_id'=>$unitid);
+            $obj->update_record('emp_branch_transfer', $where2, $form_data_unit_transfer);
+            $obj->update_record('emp_promotion', $where2, $form_data_emp_promotion);
+ 
+            $where2 = array('emp_id' => $keyvalue,'unit_id'=>$unitid);
 
             $form_data1 = array(
                 "primary_id" => $keyvalue,
@@ -392,6 +402,7 @@ if (isset($_GET[$tblpkey])) {
    
     $is_pf = $sqledit['is_pf'];
     $is_esic = $sqledit['is_esic'];
+    $allow_weekly_off = $sqledit['allow_weekly_off'];
     $is_rejoin = $sqledit['is_rejoin'];
     $form21_last_date = $sqledit['form21_last_date'];
     $is_form21_last_date = $sqledit['is_form21_last_date'];
@@ -412,7 +423,7 @@ if (isset($_GET[$tblpkey])) {
     // die;
 } else {
     $emp_code = $biomatric_id = $obj->getcode("employee_master", "emp_code",  "1='1'");
-    $first_name = $last_name = $father_name  = $gender = $dob = $age = $blood_group = $marital_status =   $religion = $caste = $mobile_no = $alt_mobile_no = $email_id = $present_address = $permanent_address = $emer_contact_name = $emer_contact_relation = $emer_contact_no = $aadhar_no = $pan_no = $driving_license = $passport_no = $identification_masks = $department_id = $designation_id = $grade_id = $date_of_joining =   $shift_id = $employee_type = $reporting_manager = $employer_name = $employer_designation_id = $service_from = $service_to = $reason = $job_responsibility = $last_salary = $profile_image = $emp_sign = $basic_salary = $opening_balance = $opening_date = $hra = $da = $conveyance = $medical_allowance = $special_allowance = $is_pf = $is_esic = $is_rejoin = $is_pt = $is_lwf = $ctc = $gross_salary = $net_salary =  $pf_uan = $uan_no = $esic_no = $pf_joining_date = $esic_joining_date = $document_ids = $form21_last_date =  $last_name = '';
+    $first_name = $last_name = $father_name  = $gender = $dob = $age = $blood_group = $marital_status =   $religion = $caste = $mobile_no = $alt_mobile_no = $email_id = $present_address = $permanent_address = $emer_contact_name = $emer_contact_relation = $emer_contact_no = $aadhar_no = $pan_no = $driving_license = $passport_no = $identification_masks = $department_id = $designation_id = $grade_id = $date_of_joining =   $shift_id = $employee_type = $reporting_manager = $employer_name = $employer_designation_id = $service_from = $service_to = $reason = $job_responsibility = $last_salary = $profile_image = $emp_sign = $basic_salary = $opening_balance = $opening_date = $hra = $da = $conveyance = $medical_allowance = $special_allowance = $is_pf = $is_esic =$allow_weekly_off= $is_rejoin = $is_pt = $is_lwf = $ctc = $gross_salary = $net_salary =  $pf_uan = $uan_no = $esic_no = $pf_joining_date = $esic_joining_date = $document_ids = $form21_last_date =  $last_name = '';
     $is_form21_last_date = $ecoff=$coff ='0';
     $nationality = 'INDIAN';
     $job_location = 'Raigarh';
@@ -718,7 +729,7 @@ td {
                                                     </script>
                                                 </div>
 
-                                                <div class="col-lg-3 ">
+                                                <div class="col-lg-2 ">
                                                     <label for="shift_id" class="form-label">Shift Code<span
                                                             class="text-danger fw-bold">*</span> </label>
                                                     <select class="form-select form-select-sm chosen-select"
@@ -744,13 +755,23 @@ td {
                                                         </label>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-2 mt-4">
+                                                <div class="col-md-1 mt-4">
                                                     <div class="form-check">
                                                         <input class="form-check-input" type="checkbox" name="is_esic"
                                                             id="is_esic" value="1"
                                                             <?= ($is_esic == 1) ? 'checked' : '' ?>>
                                                         <label class="form-check-label" for="is_esic">
                                                             Is ESI
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-2 mt-4">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="allow_weekly_off"
+                                                            id="allow_weekly_off" value="1" <?= ($allow_weekly_off == 1) ? 'checked' : '' ?>>
+                                                        <label class="form-check-label" for="allow_weekly_off">
+                                                            Allow Weekly Off
                                                         </label>
                                                     </div>
                                                 </div>

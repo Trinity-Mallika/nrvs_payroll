@@ -15,6 +15,8 @@ $leaveDayArr = [
 
 $leaveTypeArr = [
     'EL' => 'Earned Leave',
+    'EO' => 'EXTRA OFF',
+    'L' => 'OPENING LEAVE',
     'WL' => 'Weekly Leave',
     'LWP' => 'Leave Without Pay'
 ];
