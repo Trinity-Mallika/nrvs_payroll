@@ -35,12 +35,12 @@ $res = $obj->executequery("
         END) AS total_half1,
 
         SUM(CASE 
-            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off') THEN 1 
+            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave') THEN 1 
             ELSE 0 
         END) AS total_present,
 
         SUM(CASE 
-            WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off') THEN 1 
+            WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave') THEN 1 
             ELSE 0 
         END) AS total_half
 
@@ -71,13 +71,17 @@ $emp_shift_ids = $obj->getvalfield("attendance_entry", "shift_id", "emp_id='$emp
 
 // echo $salary_generate_count;
 // die;
+$extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear);
+$opening_leave_balance =$obj->get_opening_leave_balance($emp_id, $sessionid);
 
-$three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
+// $three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
 // echo $three_month_leave;
 // die;
 $chkedit = $obj->check_editBtn($pagename, $loginid);
-$monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $real_total_attandence, $unitid);
 $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $allow_weekly_off);
+$earn_leave_present =  $real_total_attandence+$week_leave;
+$monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
+ 
 $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
 $total_curr_week_leave = $obj->getCurrentWeekLeave($emp_id, $currentMonth, $currentYear);
 
@@ -98,7 +102,7 @@ $total_payable_days += $week_leave;
 if ($is_all_leave_add == 1) {
     $total_payable_days += $monthly_leave;
 }
-$total_payable_days += $three_month_leave;
+//$total_payable_days += $three_month_leave;
 if ($is_allow_c_off == 1) {
     $total_payable_days = min($total_payable_days, $totalDaysInMonth);
 }
@@ -173,7 +177,7 @@ if ($is_allow_c_off == 1) {
             </div>
             <?php if ($chkedit == 1) { ?>
                 <div class="col-md-2 text-end">
-                    <a class="float-end btn btn-primary btn-sm mx-2" onclick="add_all_att('<?= $emp_shift_hrs; ?>','<?= $emp_shift_ids; ?>');">Add All Attendence</a>
+                    <a class="float-end btn btn-primary btn-sm mx-2" onclick="add_all_att('<?= $emp_shift_hrs; ?>','<?= $emp_shift_ids; ?>','<?= $extra_off['balance']; ?>','<?= $opening_leave_balance; ?>','<?= $total_earning_leave ?>');">Add All Attendence</a>
                 </div>
             <?php } ?>
         </div>
@@ -181,9 +185,9 @@ if ($is_allow_c_off == 1) {
         <h6 class="bg-body-secondary border-bottom-outset fs-15 mt-3 p-3 rounded-2 shadow-lg d-flex justify-content-between align-items-center"
             style="background: linear-gradient(90deg, #edf2b7, #ffffff); border-color:#7696ff;">
 
-            <span>Last three month pending Week Off : <?= $three_month_leave ?></span>
+            <span>Extra Off : <?= $extra_off['balance'] ?></span>
 
-            <span>Advance Week Off : <?= $total_curr_week_leave ?></span>
+            <span>Opening Leave Balance : <?= $opening_leave_balance ?></span>
 
             <span>Pending Earn leave : <?= $total_earning_leave ?></span>
 
@@ -212,7 +216,7 @@ if ($is_allow_c_off == 1) {
                 continue;
             }
 
-            $attendance_data = $obj->select_record('attendance_entry', ['emp_id' => $emp_id, 'attendance_date' => $key['fulldate'], 'month' => $currentMonth, 'year' => $currentYear, 'unit_id'=>$unitid]);
+            $attendance_data = $obj->select_record('attendance_entry', ['emp_id' => $emp_id, 'attendance_date' => $key['fulldate'], 'month' => $currentMonth, 'year' => $currentYear, 'unit_id' => $unitid]);
             $intime = $attendance_data['intime'] ?? '';
             $emp_shift_id = $attendance_data['shift_id'] ?? $emp_shift_ids;
             $att_in_remark = $attendance_data['in_remark'] ?? '';
@@ -263,7 +267,7 @@ if ($is_allow_c_off == 1) {
         ?>
 
                         <div class="col-lg-12 mt-1">
-                            <div class="card card-body border rounded-5 p-0" style="<?= $holiday_bg ?>">
+                            <div class="card card-body border rounded-5 p-0 mb-1" style="<?= $holiday_bg ?>">
                                 <span class="water-mark"></span>
                                 <div class="row">
                                     <div class="col-lg-2 text-center pt-3">
@@ -280,7 +284,11 @@ if ($is_allow_c_off == 1) {
                                                 $attendance_status != 'Half Earning Leave' &&
                                                 $attendance_status != 'Half Weekly Leave' &&
                                                 $attendance_status != 'Half C Off' &&
-                                                $attendance_status != 'C Off'
+                                                $attendance_status != 'C Off' &&
+                                                $attendance_status != 'Half Extra Off' &&
+                                                $attendance_status != 'Extra Off' &&
+                                                $attendance_status != 'Half Leave' &&
+                                                $attendance_status != 'Leave'  
                                             ) {
                                             ?>
                                                 <label class="radio rounded-3 mt-2"
@@ -340,7 +348,7 @@ if ($is_allow_c_off == 1) {
 
                                     <?php
                                     if ($chkedit == 1) {  ?>
-                                        <div class="col-lg-1 text-end pt-2 float-end fw-bold  pe-5"><i class="ri ri-add-circle-fill fs-2 text-success-emphasis" data-bs-toggle="modal" onclick="openPunchModal('<?php echo $key['fulldate'] ?>','<?php echo  $intime_new  ?>','<?= $att_in_remark; ?>','<?= $emp_shift_hrs; ?>','<?= $emp_shift_id; ?>');"></i></div>
+                                        <div class="col-lg-1 text-end pt-2 float-end fw-bold  pe-5"><i class="ri ri-add-circle-fill fs-2 text-success-emphasis" data-bs-toggle="modal" onclick="openPunchModal('<?php echo $key['fulldate'] ?>','<?php echo  $intime_new  ?>','<?= $att_in_remark; ?>','<?= $emp_shift_hrs; ?>','<?= $emp_shift_id; ?>','<?= $extra_off['balance']; ?>','<?= $opening_leave_balance; ?>','<?= $total_earning_leave ?>');"></i></div>
                                     <?php } ?>
 
                                     <?php if (!empty($att_in_remark || $att_out_remark)) { ?>

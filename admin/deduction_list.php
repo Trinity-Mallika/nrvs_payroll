@@ -172,8 +172,8 @@ if (isset($_GET['emp_id'])) {
                                                 <th>Employee Name</th>
                                                 <th>Month</th>
                                                 <th>Year</th>
-                                                <th>LPG Deduction</th>
-                                                <th>Shoes Deduction</th>
+                                                <th>Advance Deduction</th>
+                                                <th>Safety Deduction</th>
                                                 <th>Other Deduction</th>
                                                 <th>Actions</th>
                                             </tr>

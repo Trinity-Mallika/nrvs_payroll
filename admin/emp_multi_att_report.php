@@ -497,18 +497,14 @@ if (!empty($punchMap[$emp][$pDate][$idx]['out'])) {
                                         <thead class="table-light">
 
                                             <tr>
-
                                                 <th>Unit Name</th>
-
                                                 <?php
                                                     foreach ($showFields as $fid) {
                                                         if (!isset($fieldMap[$fid])) continue;
                                                         echo "<th>{$fieldMap[$fid]['label']}</th>";
                                                     }
                                                     ?>
-
                                                 <th>Attendance</th>
-
                                                 <th>In1</th>
                                                 <th>Out1</th>
                                                 <th>In2</th>

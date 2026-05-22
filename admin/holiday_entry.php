@@ -183,10 +183,25 @@ $tree = $obj->buildSiteTree($treeLevels);
     </div>
     <!-- End Page-content -->
     </div>
+
+    <?php include('inc/footer.php') ?>
+
     <?php include('inc/delete.php') ?>
     <?php include('inc/js.php') ?>
-    <?php include('inc/footer.php') ?>
     <?php include('inc/style-script-include.php') ?>
+
+    <script>
+        function setPageHeight() {
+
+            let sidebarHeight = document.querySelector('.vertical-menu').offsetHeight;
+
+            document.querySelector('.main-content').style.minHeight = sidebarHeight + 'px';
+
+        }
+
+        window.onload = setPageHeight;
+        window.onresize = setPageHeight;
+    </script>
 
     <script>
         $(document).ready(function() {

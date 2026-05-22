@@ -95,27 +95,25 @@ if (!empty($emp_ids_raw)) {
         $deptCondition = !empty($department_id) ? "AND department_id='$department_id'" : "";
         $row = $obj->executequery("
             SELECT 
-                COUNT(intime) AS in_count,
-                COUNT(outtime) AS out_count
+                COUNT(intime) AS in_count 
             FROM attendance_log
             WHERE emp_id IN ($emp_id_list)
             AND attendance_date BETWEEN '$from_date' AND '$to_date' $deptCondition
         ");
 
-        $processed = $row[0]['in_count'] + $row[0]['out_count'];
+        $processed = $row[0]['in_count'];
     }
 } else {
     $deptCondition = !empty($department_id) ? "AND department_id='$department_id'" : "";
     // ✅ ALL employees case
     $row = $obj->executequery("
         SELECT 
-            COUNT(intime) AS in_count,
-            COUNT(outtime) AS out_count
+            COUNT(intime) AS in_count
         FROM attendance_log
         WHERE attendance_date BETWEEN '$from_date' AND '$to_date' and unit_id='$unitid'  $deptCondition 
     ");
 
-    $processed = $row[0]['in_count'] + $row[0]['out_count'];
+    $processed = $row[0]['in_count'];
 }
 
 /* fallback */

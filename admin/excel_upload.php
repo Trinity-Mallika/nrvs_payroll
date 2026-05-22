@@ -37,8 +37,7 @@ if (isset($_POST['submit'])) {
                         $firstRow = false;
                         continue;
                     }
-
-                    //list($emp_code, $biomatric_id, $first_name, $father_name, $gender, $dob, $age, $blood_group, $marital_status, $nationality, $religion, $caste, $mobile_no, $alt_mobile_no, $email_id, $emer_contact_name, $emer_contact_relation, $emer_contact_no, $present_address, $permanent_address, $aadhar_no, $pan_no, $driving_license,  $passport_no, $identification_masks, $basic_salary, $department,  $designation, $grade, $date_of_joining,  $job_location, $shift, $reporting_manager, $employee_type, $employer_name,  $employer_designation, $service_from, $service_to, $last_salary, $reason, $job_responsibility, $bank_name, $acc_holder_name, $account_no, $ifsc_code, $is_pf, $is_esic, $pf_uan, $esic_no, $pf_joining_date, $esic_joining_date, $opening_leave, $opening_date, $uan_no, $is_form21_last_date, $form21_last_date, $anniversary_date) = $data;
+ 
 
                     list($emp_code,$biomatric_id,$first_name,$father_name,$department,$designation,$date_of_joining,$dob,$aadhar_no,$pan_no,$driving_license,$passport_no,$present_address,$permanent_address,$nationality,$religion,$caste,$gender,$age,$blood_group,$grade,$marital_status,$anniversary_date,$email_id,$mobile_no,$alt_mobile_no,$identification_masks,$basic_salary,$shift,$job_location,$is_pf,$is_esic,$pf_uan,$esic_no,$pf_joining_date,$esic_joining_date,$acc_holder_name,$account_no,$ifsc_code,$bank_name,$emer_contact_name,$emer_contact_relation,$emer_contact_no,$reporting_manager,$employee_type,$employer_name,$employer_designation,$service_from,$service_to,$last_salary,$reason,$job_responsibility,$opening_leave,$opening_date,$is_form21_last_date,$form21_last_date,) = $data;
                
@@ -67,22 +66,8 @@ if (isset($_POST['submit'])) {
                     if ($emp_code != '') {
                         $conditions[] = "emp_code = '" . addslashes(trim($emp_code)) . "'";
                     }
-                    // if ($mobile_no != '') {
-                    //     $conditions[] = "mobile_no = '" . addslashes(trim($mobile_no)) . "'";
-                    // }
-
+               
                     $where = implode(" OR ", $conditions);
-
-                    // $isDuplicate = 0;
-                    // if (!empty($where)) {
-                    //     $isDuplicate = $obj->getvalfield(
-                    //         $tblname,
-                    //         "COUNT(*)",
-                    //         "($where) AND unit_id='$unitid'"
-                    //     );
-                    // }
-
-
 
                  $existing_emp_id = 0;
 
@@ -129,9 +114,7 @@ if (!empty($where)) {
                             );
                         }
                     }
-
-                    print_r($department_id); 
-
+ 
                    $designation_id = 0;
 
                     if (!empty(trim($designation))) {
@@ -142,7 +125,7 @@ if (!empty($where)) {
                             "designation_master",
                             "designation_id",
                             "designation LIKE '%" . addslashes($designation) . "%'
-                            AND unit_id='$unitid'"
+                            AND unit_id='$unitid' and department_id='$department_id'"
                         );
 
                         // IF DESIGNATION EXISTS
@@ -244,12 +227,12 @@ if (!empty($where)) {
                         }
                     }
 
-                    if ($is_pf == 'Yes') {
+                    if ($is_pf == 'Yes'|| $is_pf == 'YES') { 
                         $is_pf = '1';
                     } else {
                         $is_pf = '0';
                     }
-                    if ($is_esic == 'Yes') {
+                    if ($is_esic == 'Yes' || $is_esic == 'YES') {
                         $is_esic = '1';
                     } else {
                         $is_esic = '0';
@@ -354,17 +337,85 @@ if (!empty($where)) {
                         "unit_id"   => $unitid
                     );
 
+                   
                         if ($existing_emp_id > 0) {
+
+                         $form_data_unit_transfer = array(
+                                'emp_id' => $existing_emp_id,
+                                'joining_date' => $date_of_joining,
+                                'unit_id' => $unitid,                 
+                                'department_id' => $department_id,
+                                'designation_id' => $designation_id,
+                                'basic_salary' => $basic_salary,
+                                'shift_hrs' => $time,
+                                "createdate" => $createdate,
+                                "createdby" => $loginid,
+                                "ipaddress" => $ipaddress,
+                                "sessionid" => $sessionid
+                            );
+                            $form_data_emp_promotion = array(
+                                'emp_id' => $existing_emp_id,
+                                'promotion_date' => $date_of_joining,
+                                'unit_id' => $unitid,                 
+                                'type' => 'promotion',                 
+                                'department_id' => $department_id,
+                                'designation_id' => $designation_id,
+                                'basic_salary' => $basic_salary,
+                                'status' => '1',
+                                "createdate" => $createdate,
+                                "createdby" => $loginid,
+                                "ipaddress" => $ipaddress,
+                                "sessionid" => $sessionid
+                            );  
 
                             $obj->update_record(
                                 $tblname,
                                 ["emp_id" => $existing_emp_id],
                                 $form_data
                             );
+ 
+                             $obj->update_record(
+                                "emp_branch_transfer",
+                                ["emp_id" => $existing_emp_id,"unit_id"=>$unitid],
+                                $form_data_unit_transfer
+                            );
+                            $obj->update_record(
+                                "emp_promotion",
+                                ["emp_id" => $existing_emp_id,"unit_id"=>$unitid],
+                                $form_data_emp_promotion
+                            );
 
                         } else {
-
-                            $obj->insert_record($tblname, $form_data);
+                           $lastid= $obj->insert_record_lastid($tblname, $form_data); 
+                            $form_data_unit_transfer = array(
+                                'emp_id' => $lastid,
+                                'joining_date' => $date_of_joining,
+                                'unit_id' => $unitid,                 
+                                'department_id' => $department_id,
+                                'designation_id' => $designation_id,
+                                'basic_salary' => $basic_salary,
+                                'shift_hrs' => $time,
+                                "createdate" => $createdate,
+                                "createdby" => $loginid,
+                                "ipaddress" => $ipaddress,
+                                "sessionid" => $sessionid
+                            );
+                            $form_data_emp_promotion = array(
+                                'emp_id' => $lastid,
+                                'promotion_date' => $date_of_joining,
+                                'unit_id' => $unitid,                 
+                                'type' => 'promotion',                 
+                                'department_id' => $department_id,
+                                'designation_id' => $designation_id,
+                                'basic_salary' => $basic_salary,
+                                'status' => '1',
+                                "createdate" => $createdate,
+                                "createdby" => $loginid,
+                                "ipaddress" => $ipaddress,
+                                "sessionid" => $sessionid
+                            );                                   
+                            $obj->insert_record("emp_branch_transfer", $form_data_unit_transfer);
+                            $obj->insert_record("emp_promotion", $form_data_emp_promotion);
                         }
 
                     $insertedCount++;

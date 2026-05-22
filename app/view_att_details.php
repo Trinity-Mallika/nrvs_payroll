@@ -233,22 +233,19 @@ foreach ($days_array as $key) {
         $attendance_status == 'C Off' ||
         $attendance_status == 'Half Weekly Leave' ||
         $attendance_status == 'Half Earning Leave' ||
-        $attendance_status == 'Half C Off'
+        $attendance_status == 'Half C Off' ||
+        $attendance_status == 'Extra Off' ||
+        $attendance_status == 'Half Extra Off' ||
+        $attendance_status == 'Half Leave' ||
+        $attendance_status == 'Leave'
     ) {
-
         $statusClass = 'status-leave';
-
     } elseif ($attendance_status == 'Holiday') {
-
         $statusClass = 'status-holiday';
-
     } elseif ($attendance_status == 'Half Day') {
-
         $statusClass = 'status-half';
     }
-
     if ($key['fulldate'] <= $current_date) {
-
         $has_valid_day = true;
 ?>
 

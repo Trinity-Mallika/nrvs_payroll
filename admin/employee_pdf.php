@@ -43,6 +43,7 @@ $fields = [
     'present_address',
     'permanent_address',
     'emer_contact_name',
+    'allow_weekly_off',
     'emer_contact_relation',
     'emer_contact_no',
     'aadhar_no',
@@ -107,17 +108,21 @@ if (isset($_GET[$tblpkey])) {
     $employer_designation = $obj->getvalfield("designation_master", "designation", "designation_id='$employer_designation_id'");
 
     $department_name = $obj->getvalfield("department_master", "department_name", "department_id='$department_id'");
+    $is_allow_c_off = $obj->getvalfield("department_master", "c_off_check", "department_id='$department_id'");
+    $is_all_leave_add = $obj->getvalfield("unit_master", "add_leave", "unit_id='$unitid'");
 
     $grade_name = $obj->getvalfield("grade_master", "grade_name", "grade_id='$grade_id'");
     $bank_name = $obj->getvalfield("bank_master", "bank_name", "bank_id='$bank_id'");
     $shift_name = $obj->getvalfield("shift_master", "shift_name", "shift_id='$shift_id'");
     $unit_logo = $obj->getvalfield("unit_master", "logo_image", "unit_id='$unit_id'");
+
     $unit_name    = $obj->getvalfield("unit_master", "unit_name", "unit_id='$unit_id'");
     $head_name    = $obj->getvalfield("unit_master", "unithead", "unit_id='$unit_id'");
     $unit_mobile  = $obj->getvalfield("unit_master", "mobile", "unit_id='$unit_id'");
     $unit_email   = $obj->getvalfield("unit_master", "email_id", "unit_id='$unit_id'");
     $unit_address = $obj->getvalfield("unit_master", "address", "unit_id='$unit_id'");
 
+$setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
 
     $checkedDocs = [];
     if (!empty($document_checked_ids)) {
@@ -770,6 +775,126 @@ ob_start();
         </table>
 
 
+          <h3>Paid Salary Detail</h3>
+
+        <table border="1" width="100%" cellpadding="5" cellspacing="0">
+
+            <tr>
+                <th style="text-align:left;"> <small>SNo</small> </th>
+                <th style="text-align:left;"> <small>Month</small> </th>
+                <th style="text-align:left;"> <small>Year</small> </th>
+                <th style="text-align:left;"> <small>Salary</small> </th>
+                <th style="text-align:left;"> <small>Increment</small> </th>
+                <th style="text-align:left;"> <small>Revised Salary</small></th>
+                <th style="text-align:left;"> <small>TD</small> </th>
+                <th style="text-align:left;"> <small>P</small> </th> 
+                <th style="text-align:left;"> <small>WO</small> </th>
+                <th style="text-align:left;"> <small>EL</small> </th>  
+                <th style="text-align:left;"> <small>TWD</small> </th>
+                <th style="text-align:left;"> <small>Gross</small> </th>
+                <th style="text-align:left;"> <small>PF</small> </th>
+                <th style="text-align:left;"> <small>ESIC</small> </th>
+                <th style="text-align:left;"> <small>Loan/Advance</small> </th>
+                <th style="text-align:left;"> <small>Tot.Add</small> </th>
+                <th style="text-align:left;"> <small>Tot.Ded</small> </th>
+                <th style="text-align:left;"> <small>TDS</small> </th>
+                <th style="text-align:left;"> <small>Payable Salary</small> </th>
+            
+            </tr>
+
+            <?php
+                $salary_details = $obj->executequery("select * from salary_structure where emp_id='$keyvalue' order by month asc");
+                $i=1;
+                foreach ($salary_details as $row) {
+                    $month = $row['month'];
+                    $year  = $row['year'];
+                    $emp_id  = $row['emp_id'];
+
+                    $attendance = $obj->executequery("
+                        SELECT 
+                            SUM(CASE 
+                                WHEN attendance_status = 'Present' THEN 1 
+                                ELSE 0 
+                            END) AS total_present1,
+
+                            SUM(CASE 
+                                WHEN attendance_status = 'Half Day' THEN 1 
+                                ELSE 0 
+                            END) AS total_half1,
+
+                            SUM(CASE 
+                                WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave') THEN 1 
+                                ELSE 0 
+                            END) AS total_present,
+
+                            SUM(CASE 
+                                WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave') THEN 1 
+                                ELSE 0 
+                            END) AS total_half
+
+                        FROM attendance_entry
+                        WHERE emp_id = '$emp_id' 
+                        AND month = '$month' 
+                        AND year = '$year' AND unit_id='$unitid'
+                    ");
+
+                    $att = $attendance[0] ?? [];
+                                    
+                    $total_present1 = $att['total_present1'] ?? 0;
+                    $total_half1    = $att['total_half1'] ?? 0;
+
+                    $total_present  = $att['total_present'] ?? 0;
+                    $total_half     = $att['total_half'] ?? 0;
+
+                    $real_total_attandence = $total_present1 + ($total_half1 / 2);
+                    $total_attandence      = $total_present + ($total_half / 2);
+
+                    $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $allow_weekly_off);
+                    $earn_leave_present =  $real_total_attandence+$week_leave;
+                    $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
+                    $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+
+                    $result = $obj->calculateLeaveUsage(
+                        $daysInMonth,
+                        $total_attandence,
+                        $week_leave,
+                        $monthly_leave,
+                        $is_allow_c_off,
+                        $is_all_leave_add
+                    );
+                     $total_payable_days = $result['total_working_days'];
+            ?>
+                    <tr>
+                        <td><small><?= $i++; ?></small></td>
+
+                        <td>  <?= date("F", mktime(0, 0, 0, $row['month'], 1)) ?></td>
+                        <td>  <?= $row['year'] ?> </td>
+                        <td>  <?= $row['basic_salary'] ?> </td>
+                        <td>  <?= $row['increment'] ?> </td>
+                        <td>  <?= $row['revised_salary'] ?> </td> 
+                        <td> <?=$daysInMonth?>  </td> 
+                        <td> <?=$total_attandence?>  </td> 
+                        <td> <?=$week_leave?>  </td> 
+                        <td> <?=$monthly_leave?>  </td>  
+                        <td> <?=$total_payable_days?>  </td>   
+                        <td>  <?= $row['total_salary'] ?> </td>
+                        <td>  <?= $row['pf_emp'] ?> </td>
+                        <td>  <?= $row['esic_emp'] ?> </td>
+                        <td>  <?= $row['loan_amt'] ?> <?= $row['advance_amt'] ?> </td> 
+                        <td>  <?= $row['additional_payment'] ?> </td>
+                        <td>  <?= $row['other_deduction'] ?> </td>
+                        <td>  <?= $row['tds_deduction'] ?> </td>
+                        <td>  <?= $row['total_pay_sal_after_ded'] ?> </td>
+                    </tr>
+
+            <?php 
+            }
+            ?>
+
+
+        </table>
+
+
     </div>
 
 </body>
@@ -779,5 +904,6 @@ ob_start();
 
 <?php
 $html = ob_get_clean();
-$mpdf->WriteHTML($html);
+$mpdf->WriteHTML($html); 
+ 
 $mpdf->Output(); ?>

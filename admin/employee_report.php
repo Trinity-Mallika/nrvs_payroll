@@ -91,7 +91,7 @@ if ($dob != '') {
     $day   = date('d', strtotime($dob));
     $month = date('m', strtotime($dob));
 
-    $crit .= " AND DAY(dob) = '$day' AND MONTH(dob) = '$month'";
+    $crit .= " AND DAY(em.dob) = '$day' AND MONTH(em.dob) = '$month'";
 }
 
 $anniversary_date = $_GET['anniversary_date'] ?? '';
@@ -99,19 +99,19 @@ if ($anniversary_date != '') {
     $day   = date('d', strtotime($anniversary_date));
     $month = date('m', strtotime($anniversary_date));
 
-    $crit .= " AND DAY(anniversary_date) = '$day' AND MONTH(anniversary_date) = '$month'";
+    $crit .= " AND DAY(em.anniversary_date) = '$day' AND MONTH(em.anniversary_date) = '$month'";
 }
 
 $work_anniversary = $_GET['work_anniversary'] ?? '';
 if ($work_anniversary != '') {
     $day   = date('d', strtotime($work_anniversary));
     $month = date('m', strtotime($work_anniversary));
-    $crit .= " AND DAY(date_of_joining) = '$day' AND MONTH(date_of_joining) = '$month'";
+    $crit .= " AND DAY(em.date_of_joining) = '$day' AND MONTH(em.date_of_joining) = '$month'";
 }
 
 $sixty_plus_age = $_GET['sixty_plus_age'] ?? '0';
 if ($sixty_plus_age == 1) {
-    $crit .= " AND TIMESTAMPDIFF(YEAR, dob, CURDATE()) >= 60";
+    $crit .= " AND TIMESTAMPDIFF(YEAR, em.dob, CURDATE()) >= 60";
 }
 
 
@@ -160,16 +160,16 @@ $fieldMap = [
     42 => ['label' => 'Job Responsibilities',        'key' => 'job_responsibility'],
     43 => ['label' => 'Is PF',        'key' => 'is_pf'],
     44 => ['label' => 'Is ESI',        'key' => 'is_esic'],
-    45 => ['label' => 'PF NO.',        'key' => 'pf_uan'],
-    46 => ['label' => 'UAN NO.',        'key' => 'uan_no'],
-    47 => ['label' => 'ESIC Number',        'key' => 'esic_no'],
-    48 => ['label' => 'PF Joining Date',        'key' => 'pf_joining_date'],
-    49 => ['label' => 'ESIC Joining Date',        'key' => 'esic_joining_date'],
-    50 => ['label' => 'Bank Name',        'key' => 'bank_name'],
-    51 => ['label' => 'Acc Holder Name',  'key' => 'acc_holder_name'],
-    52 => ['label' => 'Account No.',      'key' => 'account_no'],
-    53 => ['label' => 'IFSC Code',        'key' => 'ifsc_code'],
-
+    45 => ['label' => 'Allow Weekly Off',        'key' => 'allow_weekly_off'],
+    46 => ['label' => 'PF NO.',        'key' => 'pf_uan'],
+    47 => ['label' => 'UAN NO.',        'key' => 'uan_no'],
+    48 => ['label' => 'ESIC Number',        'key' => 'esic_no'],
+    49 => ['label' => 'PF Joining Date',        'key' => 'pf_joining_date'],
+    50 => ['label' => 'ESIC Joining Date',        'key' => 'esic_joining_date'],
+    51 => ['label' => 'Bank Name',        'key' => 'bank_name'],
+    52 => ['label' => 'Acc Holder Name',  'key' => 'acc_holder_name'],
+    53 => ['label' => 'Account No.',      'key' => 'account_no'],
+    54 => ['label' => 'IFSC Code',        'key' => 'ifsc_code'],
 ];
 
 $showFields = isset($_GET['show_field']) ? array_map('intval', $_GET['show_field']) : [];
@@ -469,7 +469,9 @@ if (isset($_GET['submit'])) {
                                                                     $value = ($row['is_pf'] == '1') ? 'Yes' : 'No';
                                                                 } elseif ($key == 'is_esic') {
                                                                     $value = ($row['is_esic'] == '1') ? 'Yes' : 'No';
-                                                                } elseif ($key == 'age') {
+                                                                } elseif ($key == 'allow_weekly_off') {
+                                                                    $value = ($row['allow_weekly_off'] == '1') ? 'Yes' : 'No';
+                                                                } elseif ($key == 'age') { 
                                                                     if (!empty($row['dob'])) {
                                                                         $dob = new DateTime($row['dob']);
                                                                         $today = new DateTime();

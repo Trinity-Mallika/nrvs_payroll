@@ -162,7 +162,7 @@ $skipReasons = [];
             'year'    => $year,
             'unit_id' => $unitid
         ]);
-    }
+    } 
 
     foreach (array_chunk($insertRows, 500) as $chunk) {
         $obj->bulk_insert('attendance_entry', $chunk);

@@ -137,7 +137,7 @@ if(isset($_POST['save_all_leave'])){
                                                 <label for="emp_id" class="form-label">Employee Name<span
                                                         class="text-danger fw-bold"> </span></label>
                                                 <select class="form-select form-select-sm chosen-select" name="emp_id"
-                                                    id="emp_id">
+                                                    id="emp_id" onchange="get_department(this.value)">
                                                     <option value="">Select Employee</option>
                                                     <?php
                                                     
@@ -493,9 +493,7 @@ if(isset($_POST['save_all_leave'])){
                 $('#save_leave_btn').prop('disabled', true);
 
             },
-            success: function(response) {
-
-                console.log(response);
+            success: function(response) { 
 
               Swal.fire({
             icon: 'success',
@@ -508,6 +506,21 @@ if(isset($_POST['save_all_leave'])){
                 $('#save_leave_btn').html('Save Leave Opening');
                 $('#save_leave_btn').prop('disabled', false);
 
+            }
+        });
+
+    }
+
+    
+    function get_department(emp_id) {
+        $.ajax({
+            type: "POST",
+            url: 'get_depart_data.php',
+            data: {
+                emp_idd: emp_id,
+            },
+            success: function(data) {
+                $('#department_id').html(data).trigger("change.select2");
             }
         });
 

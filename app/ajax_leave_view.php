@@ -3,10 +3,21 @@ include("appsession.php");
 
 $id = $_POST['id'];
 
+// $data = $obj->executequery("
+//     SELECT * FROM leave_apply_detail 
+//     WHERE on_duty_id = '$id'
+// ");
+
 $data = $obj->executequery("
-    SELECT * FROM leave_apply_detail 
-    WHERE on_duty_id = '$id'
+    SELECT 
+        lad.*, 
+        u.fullname AS updated_by_name
+    FROM leave_apply_detail lad
+    LEFT JOIN user u 
+        ON lad.updatedby = u.userid
+    WHERE on_duty_id = '$id' 
 ");
+
 
 if (!empty($data)) {
 
@@ -30,6 +41,10 @@ if (!empty($data)) {
             $type = "Weekly Leave";
         } elseif ($row['leave_type'] == 'LWP') {
             $type = "Leave Without Pay";
+        }elseif ($row['leave_type'] == 'EO') {
+            $type = "Extra Off";
+        } elseif ($row['leave_type'] == 'L') {
+            $type = "Opening Leave";
         } else {
             $type = "-";
         }
@@ -62,13 +77,20 @@ if (!empty($data)) {
                     } else {
                         echo "<span class='text-warning'>Pending</span>";
                     }
+                    if ($row['status'] == 1 || $row['status'] == 2) {
                     ?>
+                        <br>
+                        <?=$row['updated_by_name']?> 
+                        Dt: <?=$obj->dateformatindia($row['lastupdated'])?>
+
+                    <?php } ?>
                 </div>
 
                 <div class="col-12 mt-2">
                     <b>Remark:</b><br>
                     <?= $row['remark'] ?: '-' ?>
                 </div>
+                
 
             </div>
         </div>

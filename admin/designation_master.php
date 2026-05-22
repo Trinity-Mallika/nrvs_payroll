@@ -102,7 +102,7 @@ if (isset($_GET[$tblpkey])) {
                                     <div class="row">
                                         <div class="col-lg-4 mb-3">
                                             <label for="grade_id" class="form-label">Grade Name<span
-                                                    class="text-danger fw-bold">*</span></label>
+                                                    class="text-danger fw-bold"> </span></label>
                                             <select class="form-select form-select-sm chosen-select"
                                                 name="grade_id" id="grade_id">
                                                 <option value="">Select</option>
@@ -147,7 +147,7 @@ if (isset($_GET[$tblpkey])) {
                                             <div class="col-lg-4 mb-3 mt-2">
                                                 <br>
                                                 <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
-                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('grade_id,designation')">
+                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('designation')">
                                                 <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
                                             </div>
                                         <?php } ?>

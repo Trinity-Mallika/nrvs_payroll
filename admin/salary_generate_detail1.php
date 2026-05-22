@@ -9,6 +9,9 @@ $btn_name = "Save";
 $crit = "";
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
+$unit_pf_rate = $obj->getvalfield("unit_master", "pf_rate", "unit_id='$unitid'");
+$unit_esic_rate = $obj->getvalfield("unit_master", "esic_rate", "unit_id='$unitid'");
+
 $today = new DateTime();
 if (isset($_GET['month'])) {
     $month = $_GET['month'];
@@ -18,6 +21,7 @@ if (isset($_GET['month'])) {
 } else {
     $month = (int)date('m');
 }
+
 if (isset($_GET['year'])) {
     $year = $_GET['year'];
     if ($year != '') {
@@ -59,6 +63,7 @@ if (isset($_GET['emp_id'])) {
     $emp_code = $emp_data['emp_code'];
     $mobile_no = $emp_data['mobile_no'];
     $department_id = $emp_data['department_id'];
+    $designation_id = $emp_data['designation_id'];
     $opening_balance_save = $emp_data['used_opening_balance'];
     $opening_balance_date = $emp_data['opening_date'];
 
@@ -84,15 +89,51 @@ if (isset($_GET['emp_id'])) {
 
     $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year) ?? 31;
 
-    $total_present1 = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$month' and year='$year' and attendance_status='Present'");
-    $total_half1 = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$month' and year='$year' and attendance_status='Half Day'");
 
-    $total_present = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$month' and year='$year' and attendance_status IN('Present','Weekly Leave','Earning Leave','C Off')");
-    $total_half = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$month' and year='$year' and attendance_status IN('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off')");
+        $att_res = $obj->executequery("
+        SELECT 
+            SUM(CASE 
+                WHEN attendance_status = 'Present' THEN 1 
+                ELSE 0 
+            END) AS total_present1,
 
-    $total_att_leave = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$month' and year='$year' and attendance_status IN('Leave')");
+            SUM(CASE 
+                WHEN attendance_status = 'Half Day' THEN 1 
+                ELSE 0 
+            END) AS total_half1,
 
-    $overtime_days = $obj->getvalfield("emp_overtime", "no_of_overtime", "emp_id='$emp_id' and month='$month' and year='$year'");
+            SUM(CASE 
+                WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off') THEN 1 
+                ELSE 0 
+            END) AS total_present,
+
+            SUM(CASE 
+                WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off') THEN 1 
+                ELSE 0 
+            END) AS total_half
+
+        FROM attendance_entry
+        WHERE emp_id = '$emp_id' 
+        AND month = '$month' 
+        AND year = '$year' AND unit_id='$unitid'
+    ");
+    $row = $att_res[0] ?? [];
+
+    $total_present1 = $row['total_present1'] ?? 0;
+    $total_half1    = $row['total_half1'] ?? 0;
+
+    $total_present  = $row['total_present'] ?? 0;
+    $total_half     = $row['total_half'] ?? 0;
+
+    // $total_present1 = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$month' and year='$year' and attendance_status='Present'");
+    // $total_half1 = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$month' and year='$year' and attendance_status='Half Day'");
+
+    // $total_present = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$month' and year='$year' and attendance_status IN('Present','Weekly Leave','Earning Leave','C Off')");
+    // $total_half = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$month' and year='$year' and attendance_status IN('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off')");
+
+    $total_att_leave = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$month' AND unit_id='$unitid' and year='$year' and attendance_status IN('Leave') ");
+
+    $overtime_days = $obj->getvalfield("emp_overtime", "no_of_overtime", "emp_id='$emp_id' and month='$month' and year='$year' AND unit_id='$unitid'");
 
     $total_working_day = $total_present + ($total_half / 2);
     $real_total_working_day = $total_present1 + ($total_half1 / 2);
@@ -157,10 +198,12 @@ if (isset($_POST['submit'])) {
     $additional_payment  = $obj->test_input($_POST['additional_payment'] ?? '');
     $total_pay_sal_after_ded  = $obj->test_input($_POST['total_pay_sal_after_ded'] ?? '');
     $other_deduction  = $obj->test_input($_POST['other_deduction'] ?? '');
+    $tds_deduction  = $obj->test_input($_POST['tds_deduction'] ?? '');
 
     $opening_leave_balance = $three_month_leave - $c_off_leave;
     $usedCOff = $c_off_leave;
 
+   
     $form_data = array(
         "emp_id"             => $emp_id,
         "department_id"             => $department_id,
@@ -207,6 +250,7 @@ if (isset($_POST['submit'])) {
         "additional_payment" => $additional_payment,
         "total_pay_sal_after_ded" => $total_pay_sal_after_ded,
         "other_deduction" => $other_deduction,
+        "tds_deduction" => $tds_deduction,
         "loan_amt" => $loan_amt,
         "advance_amt" => $advance_amt
     );
@@ -253,15 +297,7 @@ if (isset($_POST['submit'])) {
         $obj->update_record("loan_advance_details", ['loan_details_id' => $advance_details_id], ['is_paid' => 1, 'paid_date' => $createdate]);
 
         $lastid = $obj->insert_record_lastid($tblname, $form_data);
-
-        if ($increment > 0) {
-            $tot_sal = $increment + $basic_salary;
-            $obj->update_record(
-                "employee_master",
-                ['emp_id' => $emp_id],
-                ['basic_salary' => $tot_sal, 'last_increment_date' => $createdate, 'prev_salary' => $basic_salary]
-            );
-        }
+ 
 
 
         if ($overtimeDays > 0  && $is_allow_c_off == '1') {
@@ -344,6 +380,45 @@ if (isset($_POST['submit'])) {
             "sessionid" => $sessionid
         );
         $logactivity = $obj->insert_record("logactivity_master", $form_data1);
+
+         if($increment > 0){
+
+           $tot_sal = $increment + $basic_salary;
+            $obj->update_record(
+                "employee_master",
+                ['emp_id' => $emp_id],
+                ['basic_salary' => $tot_sal, 'last_increment_date' => $createdate, 'prev_salary' => $basic_salary]
+            );
+
+            $form_increment = array(
+            'emp_id' => $emp_id,
+            'unit_id' => $unitid,
+            'department_id' => $department_id,
+            'salary_struc_id' => $lastid,
+            'designation_id' => $designation_id,
+            'basic_salary' => $tot_sal,
+            'promotion_date' => $createdate,
+            'type' => 'increment',
+            'status' => '1',
+            "createdate" => $createdate,
+            "createdby" => $loginid,
+            "ipaddress" => $ipaddress,
+            "sessionid" => $sessionid
+        );
+        $lastid_inc =  $obj->insert_record_lastid("emp_promotion", $form_increment);
+        $form_data1 = array(
+            "primary_id" => $lastid_inc,
+            "flag" => "Employee Increment",
+            "activity_type" => 'Inserted',
+            "createdby" => $loginid,
+            "ipaddress" => $ipaddress,
+            "unit_id" => $unitid,
+            "created_date" => $createdate,
+            "created_time" => date("H:i:s"),
+            "sessionid" => $sessionid
+        );
+        $logactivity = $obj->insert_record("logactivity_master", $form_data1);
+    }
     } else {
         $form_data["lastupdated"] = $createdate;
         $form_data["updatedby"] = $loginid;
@@ -432,19 +507,17 @@ if ($keyvalue != 0) {
     $additional_payment = $edit_data['additional_payment'];
     $total_pay_sal_after_ded = $edit_data['total_pay_sal_after_ded'];
     $other_deduction = $edit_data['other_deduction'];
+    $tds_deduction = $edit_data['tds_deduction'];
 } else {
     $total_working_days = $total_working_day;
     $increment =  $basic_pf_rate =  $revised_salary =  $pf_esic_basic =  $basic_da =   $hra = $medical =  $conveyance =   $special_allow =   $total_salary = $pf_emp = $esic_emp =  $pf_employer =  $esic_employer = $pf_rate = $esic_rate = $basic_pf_rate = $pf_paid_basic = $esic_paid_basic =   $pf_rate =   $esic_rate = $pf_paid_basic =  $esic_paid_basic = "";
     $present_days = $paid_holiday =  $c_off_leave = $total_c_off = $total_payable_salary = "";
     $total_week_leave =  $total_earn_leave = $weekly_off = $leave_days = $pre_earn_leave = $used_overtime_days = '0';
-    $total_pay_sal_after_ded = $additional_payment = $other_deduction = '0';
-    $tds_amt = $obj->calculateMonthlyTDS($basic_salary);
+    $total_pay_sal_after_ded = $additional_payment = $other_deduction = $tds_deduction='0';
 }
 
 
 $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.basic_percent,ss.hra_percent,ss.medical_allow,ss.conve_allow,ss.pf_per,ss.esic_per,ss.pf_emp_per,ss.esic_emp_per FROM salary_slab sm JOIN salary_slab_master ss ON ss.slab_id = sm.slab_id ORDER BY sm.from_salary ASC");
-
-
 ?>
 <!doctype html>
 <html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
@@ -477,95 +550,105 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                 <?php include('inc/alert.php');
                 ?>
                 <div class="row">
-                    <div class="col-lg-12">
-                        <div class="card" id="customerList">
-                            <div class="card-header border-bottom-dashed">
-                                <div class="row g-4 align-items-center">
-                                    <div class="col-sm">
-                                        <div>
-                                            <h5 class="card-title mb-0"> <?= $module; ?></h5>
+                    <?php if (!isset($_GET['search'])) { ?>
+                        <div class="col-lg-12">
+                            <div class="card" id="customerList">
+                                <div class="card-header border-bottom-dashed">
+                                    <div class="row g-4 align-items-center">
+                                        <div class="col-sm">
+                                            <div>
+                                                <h5 class="card-title mb-0"> <?= $module; ?></h5>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="card-body">
-                                <form method="get">
-                                    <div class="row">
-                                        <div class="col-lg-3 col-12">
-                                            <label for="emp_id" class="form-label">Employee Name<span class="text-danger fw-bold">*</span></label>
-                                            <select class="form-select form-select-sm chosen-select" name="emp_id" id="emp_id">
-                                                <option value="">Select Employee</option>
-                                                <?php
-                                                //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
-                                                $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
-                                                foreach ($res as $key) { ?>
-                                                    <option value="<?= $key['emp_id']; ?>">
-                                                        <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?> <?= ucfirst($key['last_name'] ?? ''); ?></option>
-                                                <?php } ?>
-                                            </select>
-                                            <script>
-                                                document.getElementById('emp_id').value =
-                                                    '<?= $emp_id; ?>';
-                                            </script>
-                                        </div>
-                                        <!-- Month -->
-                                        <div class="col-lg-3 col-12">
-                                            <label for="month" class="form-label">Month<span class="text-danger fw-bold">*</span></label>
-                                            <select class="form-select chosen-select" name="month" id="month">
-                                                <option value="">Select</option>
-                                                <?php
-                                                $months = [
-                                                    1 => 'January',
-                                                    2 => 'February',
-                                                    3 => 'March',
-                                                    4 => 'April',
-                                                    5 => 'May',
-                                                    6 => 'June',
-                                                    7 => 'July',
-                                                    8 => 'August',
-                                                    9 => 'September',
-                                                    10 => 'October',
-                                                    11 => 'November',
-                                                    12 => 'December'
-                                                ];
-                                                foreach ($months as $value => $name) {
-                                                    echo "<option value=\"$value\">$name</option>";
-                                                }
-                                                ?>
-                                            </select>
-                                            <script>
-                                                document.getElementById('month').value = '<?php echo $month ?>'
-                                            </script>
-                                        </div>
+                                <div class="card-body">
+                                    <form method="get">
+                                        <div class="row">
+                                            <div class="col-lg-3 col-12">
+                                                <label for="emp_id" class="form-label">Employee Name<span class="text-danger fw-bold">*</span></label>
+                                                <select class="form-select form-select-sm chosen-select" name="emp_id" id="emp_id">
+                                                    <option value="">Select Employee</option>
+                                                    <?php
+                                                    //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
+                                                    $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
+                                                    foreach ($res as $key) { ?>
+                                                        <option value="<?= $key['emp_id']; ?>">
+                                                            <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?> <?= ucfirst($key['last_name'] ?? ''); ?></option>
+                                                    <?php } ?>
+                                                </select>
+                                                <script>
+                                                    document.getElementById('emp_id').value =
+                                                        '<?= $emp_id; ?>';
+                                                </script>
+                                            </div>
+                                            <!-- Month -->
+                                            <div class="col-lg-3 col-12">
+                                                <label for="month" class="form-label">Month<span class="text-danger fw-bold">*</span></label>
+                                                <select class="form-select chosen-select" name="month" id="month">
+                                                    <option value="">Select</option>
+                                                    <?php
+                                                    $months = [
+                                                        1 => 'January',
+                                                        2 => 'February',
+                                                        3 => 'March',
+                                                        4 => 'April',
+                                                        5 => 'May',
+                                                        6 => 'June',
+                                                        7 => 'July',
+                                                        8 => 'August',
+                                                        9 => 'September',
+                                                        10 => 'October',
+                                                        11 => 'November',
+                                                        12 => 'December'
+                                                    ];
+                                                    foreach ($months as $value => $name) {
+                                                        echo "<option value=\"$value\">$name</option>";
+                                                    }
+                                                    ?>
+                                                </select>
+                                                <script>
+                                                    document.getElementById('month').value = '<?php echo $month ?>'
+                                                </script>
+                                            </div>
 
-                                        <!-- Year -->
-                                        <div class="col-lg-3 col-12">
-                                            <label for="year" class="form-label">Year<span class="text-danger fw-bold">*</span></label>
-                                            <select class="form-select chosen-select" name="year" id="year">
-                                                <option value="">Select</option>
-                                                <?php
-                                                $startYear = 2025;
-                                                $endYear = 2100;
-                                                for ($year1 = $startYear; $year1 <= $endYear; $year1++) {
-                                                    echo "<option value=\"$year1\">$year1</option>";
-                                                } ?>
-                                            </select>
-                                            <script>
-                                                document.getElementById('year').value = '<?php echo $year ?>'
-                                            </script>
+                                            <!-- Year -->
+                                            <div class="col-lg-3 col-12">
+                                                <label for="year" class="form-label">Year<span class="text-danger fw-bold">*</span></label>
+                                                <select class="form-select chosen-select" name="year" id="year">
+                                                    <option value="">Select</option>
+                                                    <?php
+                                                    $startYear = 2025;
+                                                    $endYear = 2100;
+                                                    for ($year1 = $startYear; $year1 <= $endYear; $year1++) {
+                                                        echo "<option value=\"$year1\">$year1</option>";
+                                                    } ?>
+                                                </select>
+                                                <script>
+                                                    document.getElementById('year').value = '<?php echo $year ?>'
+                                                </script>
+                                            </div>
+                                            <div class="col-lg-3 col-12 mt-4">
+                                                <input type="submit" name="search" class="btn btn-sm btn-primary add-btn" value="Search" onClick="return checkinputmaster('emp_id,month,year')">
+                                                <a href="<?php echo $pagename ?>" class="btn btn-sm btn-danger add-btn">Reset</a>
+                                            </div>
+                                            <div class="col-lg-12">
+                                                <?php if ($msgtype != "") {
+                                                ?>
+                                                    <span><?php echo $msgtype . "<br>"  ?></span><?php } ?>
+                                            </div>
                                         </div>
-                                        <div class="col-lg-3 col-12 mt-4">
-                                            <input type="submit" name="search" class="btn btn-sm btn-primary add-btn" value="Search" onClick="return checkinputmaster('emp_id,month,year')">
-                                            <a href="<?php echo $pagename ?>" class="btn btn-sm btn-danger add-btn">Reset</a>
-                                        </div>
-                                        <div class="col-lg-12">
-                                            <?php if ($msgtype != "") {
-                                            ?>
-                                                <span><?php echo $msgtype . "<br>"  ?></span><?php } ?>
-                                        </div>
-                                    </div>
-                                </form>
+                                    </form>
+                                </div>
                             </div>
+                        </div>
+                    <?php } ?>
+                     <?php  if (isset($_GET['search'])) { ?>
+                    <div class="col-lg-12">
+                        <div class="mb-12 text-end">
+                            <a href="<?php echo $pagename; ?>" class="btn btn-primary btn-sm">
+                                Search Again
+                            </a>
                         </div>
                         <?php if ($emp_id > 0) { ?>
                             <div class="card card-body">
@@ -776,13 +859,13 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
 
                                             <div class="col-lg-2 col-12 mb-3">
                                                 <label for="" class="text-success">Total Gross Salary</label>
-                                                <input type="text" class="form-control form-control-sm border-green" value="<?= $total_payable_salary ?>" name="total_payable_salary" id="total_payable_salary" readonly>
+                                                <input type="text" class="form-control form-control-sm border-green" value="<?= $total_payable_salary ?>" name="total_payable_salary" id="total_payable_salary">
                                             </div>
-                                            <div class="col-lg-2 col-12 mb-3">
+                                            <div class="col-lg-1 col-12 mb-3">
                                                 <label for="loan_amt">Loan</label>
                                                 <input type="text" class="form-control form-control-sm" value="<?= $loan_amt ?>" name="loan_amt" id="loan_amt" readonly>
                                             </div>
-                                            <div class="col-lg-2 col-12 mb-3">
+                                            <div class="col-lg-1 col-12 mb-3">
                                                 <label for="advance_amt">Advance</label>
                                                 <input type="text" class="form-control form-control-sm" value="<?= $advance_amt ?>" name="advance_amt" id="advance_amt" readonly>
                                             </div>
@@ -790,19 +873,20 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                                 <label for="additional_payment">Additional</label>
                                                 <input type="text" class="form-control form-control-sm" value="<?= $additional_payment ?>" name="additional_payment" id="additional_payment" onkeyup="calculateForm()">
                                             </div>
+                                             
                                             <div class="col-lg-2 col-12 mb-3">
                                                 <label for="other_deduction">Other Deduction</label>
                                                 <input type="text" class="form-control form-control-sm" value="<?= $other_deduction ?>" name="other_deduction" id="other_deduction" onkeyup="calculateForm()">
                                             </div>
 
                                             <div class="col-lg-2 col-12 mb-3">
-                                                <label for="tds_amt">TDS</label>
-                                                <input type="text" class="form-control form-control-sm" value="<?= $tds_amt ?>" name="tds_amt" id="tds_amt" onkeyup="calculateForm()">
+                                                <label for="tds_deduction">TDS Deduction</label>
+                                                <input type="text" class="form-control form-control-sm" value="<?= $tds_deduction ?>" name="tds_deduction" id="tds_deduction" onkeyup="calculateForm()">
                                             </div>
 
                                             <div class="col-lg-2 col-12 mb-3">
                                                 <label for="total_pay_sal_after_ded" class="text-success"> Total Net Salary </label>
-                                                <input type="text" class="form-control form-control-sm border-green" value="<?= $total_pay_sal_after_ded ?>" name="total_pay_sal_after_ded" id="total_pay_sal_after_ded" readonly>
+                                                <input type="text" class="form-control form-control-sm border-green" value="<?= $total_pay_sal_after_ded ?>" name="total_pay_sal_after_ded" id="total_pay_sal_after_ded">
                                             </div>
 
                                             <div class="col-lg-12  text-center mt-4">
@@ -814,6 +898,7 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                             </div>
                         <?php } ?>
                     </div>
+                     <?php } ?>
                 </div>
             </div>
             <!--end col-->
@@ -852,6 +937,8 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
 
             const salarySlabs = <?= json_encode($slabs); ?>;
             const is_pf = '<?= $is_pf; ?>';
+            const unit_pf_rate = '<?= $unit_pf_rate; ?>';
+            const unit_esic_rate = '<?= $unit_esic_rate; ?>';
             const is_esic = '<?= $is_esic; ?>';
             const month = '<?= $month; ?>';
             const year = '<?= $year; ?>';
@@ -896,7 +983,8 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
             let total_pay_sal_after_ded_input = document.getElementById('total_pay_sal_after_ded');
             let additional_payment = parseFloat(document.getElementById('additional_payment').value) || 0;
             let other_deduction = parseFloat(document.getElementById('other_deduction').value) || 0;
-            let tds_amt = parseFloat($('#tds_amt').val()) || 0;
+            let tds_deduction = parseFloat(document.getElementById('tds_deduction').value) || 0;
+
             let totalRevisedSalary = presentSalary + incrementSalary;
             //let totalRevisedSalary = presentSalary;
             revisedSalaryInput.value = Math.round(totalRevisedSalary);
@@ -942,61 +1030,57 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
             // } else {
             //     pf_days = daysWorked;
             // }
+            // unit_pf_rate
+            // unit_esic_rate
             pf_basic_check = round(basicRate / totalDaysInMonth * daysWorked);
             if (is_pf == 1) {
 
-                pf_rate_val = 15000;
-                if (pf_basic_check <= 15000) {
+                pf_rate_val = unit_pf_rate;
+                if (pf_basic_check <= unit_pf_rate) {
 
                     pf_paid_basic_val = round(basicRate / totalDaysInMonth * daysWorked);
                     pf_val = round(pf_paid_basic_val * slab.pf_per / 100);
                     pf_emp_val = round(pf_paid_basic_val * slab.pf_emp_per / 100);
-
                 } else {
-
-                    pf_paid_basic_val = 15000;
+                    pf_paid_basic_val = unit_pf_rate;
                     pf_val = round(pf_paid_basic_val * slab.pf_per / 100);
                     pf_emp_val = round(pf_paid_basic_val * slab.pf_emp_per / 100);
                 }
             } else {
-                if (totalRevisedSalary <= 15000) {
-                    pf_rate_val = 15000;
-                    if (pf_basic_check <= 15000) {
+                if (totalRevisedSalary <= unit_pf_rate) {
+                    pf_rate_val = unit_pf_rate;
+                    if (pf_basic_check <= unit_pf_rate) {
                         pf_paid_basic_val = round(basicRate / totalDaysInMonth * daysWorked);
                         pf_val = round(pf_paid_basic_val * slab.pf_per / 100);
                         pf_emp_val = round(pf_paid_basic_val * slab.pf_emp_per / 100);
                     } else {
-                        pf_paid_basic_val = 15000;
+                        pf_paid_basic_val = unit_pf_rate;
                         pf_val = round(pf_paid_basic_val * slab.pf_per / 100);
                         pf_emp_val = round(pf_paid_basic_val * slab.pf_emp_per / 100);
                     }
-
                 } else {
                     pf_rate_val = '0';
                     //pf_rate_val = basicRate;
                     // pf_paid_basic_val = basicDA;
                     pf_paid_basic_val = '0';
                 }
-
             }
 
             esic_paid_basic_val = round(basicRate / totalDaysInMonth * daysWorked);
             if (is_esic == '1') {
 
-                if (basicRate <= 21000) {
+                //if (basicRate <= unit_esic_rate) {
+                esic_val = Math.ceil(esic_paid_basic_val * slab.esic_per / 100);
+                esic_emp_val = round(esic_paid_basic_val * slab.esic_emp_per / 100);
+                // }
+            } else {
+                // if (totalRevisedSalary <= unit_esic_rate) {
+                if (basicRate <= unit_esic_rate) {
                     esic_val = Math.ceil(esic_paid_basic_val * slab.esic_per / 100);
                     esic_emp_val = round(esic_paid_basic_val * slab.esic_emp_per / 100);
                 }
-            } else {
-                if (totalRevisedSalary <= 21000) {
-                    if (basicRate <= 21000) {
-                        esic_val = Math.ceil(esic_paid_basic_val * slab.esic_per / 100);
-                        esic_emp_val = round(esic_paid_basic_val * slab.esic_emp_per / 100);
-                    }
-                }
+                // }
             }
-
-
 
             esic_rate.value = basicRate;
             // esic_paid_basic.value = basicDA;
@@ -1019,13 +1103,12 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
 
             total_gross_salary = total_payable_amt - pf_val - esic_val;
             payable_salary = total_gross_salary + additional_payment;
-            payable_salary = payable_salary - other_deduction - loanAmt - advanceAmt - tds_amt;
+            payable_salary = payable_salary - other_deduction - loanAmt - advanceAmt-tds_deduction;
             // total_payable_salary.value = total_payable_amt - pf_val - esic_val;
             //total_net = total_payable_amt - pf_val - esic_val + additional_payment;
             // netGrossInput.value = total_gross_salary
             total_pay_sal_after_ded_input.value = payable_salary;
             total_payable_salary.value = total_gross_salary;
-
         }
     </script>
     <script>
@@ -1111,7 +1194,6 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
             );
             $('#total_working_days').val(totalWorkingDays);
         }
-
 
         function update_pf_esic_check(el) {
             let emp_id = el.dataset.empid;

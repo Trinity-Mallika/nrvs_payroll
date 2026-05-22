@@ -251,13 +251,13 @@ if (isset($_POST['upload_excel'])) {
                                         </div>
 
                                         <div class="col-lg-6 mb-3">
-                                            <label for="lpg_ded" class="form-label">LPG Deduction<span class="text-danger"></span></label>
-                                            <input type="text" id="lpg_ded" name="lpg_ded" class="form-control form-control-sm" placeholder="Enter LPG Deduction" value="<?= $lpg_ded ?>" autocomplete="off" onkeypress="numberOnly(event);" />
+                                            <label for="lpg_ded" class="form-label">Advance Deduction<span class="text-danger"></span></label>
+                                            <input type="text" id="lpg_ded" name="lpg_ded" class="form-control form-control-sm" placeholder="Enter Advance Deduction" value="<?= $lpg_ded ?>" autocomplete="off" onkeypress="numberOnly(event);" />
                                         </div>
 
                                         <div class="col-lg-6 mb-3">
-                                            <label for="shoes_ded" class="form-label">Shoes Deduction<span class="text-danger"></span></label>
-                                            <input type="text" id="shoes_ded" name="shoes_ded" class="form-control form-control-sm" placeholder="Enter Shoes Deduction" value="<?= $shoes_ded ?>" autocomplete="off" onkeypress="numberOnly(event);" />
+                                            <label for="shoes_ded" class="form-label">Safety Deduction<span class="text-danger"></span></label>
+                                            <input type="text" id="shoes_ded" name="shoes_ded" class="form-control form-control-sm" placeholder="Enter Safety Deduction" value="<?= $shoes_ded ?>" autocomplete="off" onkeypress="numberOnly(event);" />
                                         </div>
                                         <div class="col-lg-6 mb-3">
                                             <label for="other" class="form-label">Other Deduction<span class="text-danger"></span></label>

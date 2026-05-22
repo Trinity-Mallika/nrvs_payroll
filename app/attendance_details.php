@@ -57,19 +57,19 @@ $res = $obj->executequery("
         END) AS total_half1,
 
         SUM(CASE 
-            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off') THEN 1 
+            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave') THEN 1 
             ELSE 0 
         END) AS total_present,
 
         SUM(CASE 
-            WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off') THEN 1 
+            WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave') THEN 1 
             ELSE 0 
         END) AS total_half
 
     FROM attendance_entry
     WHERE emp_id = '$emp_id' 
     AND month = '$currentMonth' 
-    AND year = '$currentYear'
+    AND year = '$currentYear' AND unit_id='$unitid'
 ");
 
 $row = $res[0] ?? [];
@@ -85,8 +85,12 @@ $total_attandence      = $total_present + ($total_half / 2);
 
 $totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
 $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $allow_weekly_off);
-$monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $real_total_attandence, $unitid);
-$three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
+$earn_leave_present =  $real_total_attandence + $week_leave;
+$monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
+
+//$three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
+$extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear);
+$opening_leave_balance =$obj->get_opening_leave_balance($emp_id, $sessionid);
 $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
 $total_curr_week_leave = $obj->getCurrentWeekLeave($emp_id, $currentMonth, $currentYear);
 
@@ -109,7 +113,7 @@ $total_payable_days += $week_leave;
 if ($is_all_leave_add == 1) {
     $total_payable_days += $monthly_leave;
 }
-$total_payable_days += $three_month_leave;
+//$total_payable_days += $three_month_leave;
 if ($is_allow_c_off == 1) {
     $total_payable_days = min($total_payable_days, $totalDaysInMonth);
 }
@@ -152,7 +156,7 @@ if ($is_allow_c_off == 1) {
 
             <h6 class="text-center text-white mt-3 fs-5">Employee Wise Attendance List</h6>
 
-            <div class="scroll-container">
+            <div class="scroll-container mt-4">
                 <div class="box border-card-blue bg-light-blue">
                     <h3 class="mb-1"><?= $real_total_attandence; ?></h3>
                     <h6 class="mb-0 text-center">Total Present</h6>
@@ -187,20 +191,20 @@ if ($is_allow_c_off == 1) {
             <div class="card border-0 shadow-lg mb-2 today-date-card p-2 mt-4 bg-darkc">
                 <div class="row">
                     <div class="col-9 ">
-                        <small class="fw-bold text-white">Last three month pending Week Off </small>
+                        <small class="fw-bold text-white">Extra Off </small>
                     </div>
                     <div class="col-3 text-center">
-                        <h4 class="mb-0"><?= $three_month_leave ?></h4>
+                        <h4 class="mb-0"><?= $extra_off['balance'] ?></h4>
                     </div>
                 </div>
             </div>
             <div class="card border-0 shadow-lg today-date-card p-2 mb-2 bg-darkc">
                 <div class="row">
                     <div class="col-9 ">
-                        <small class="fw-bold text-white">Advance Week Off </small>
+                        <small class="fw-bold text-white">Opening Leave Balance </small>
                     </div>
                     <div class="col-3 text-center">
-                        <h4 class="mb-0"><?= $total_curr_week_leave ?></h4>
+                        <h4 class="mb-0"><?= $opening_leave_balance ?></h4>
                     </div>
                 </div>
             </div>

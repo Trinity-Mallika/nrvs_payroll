@@ -104,13 +104,7 @@ if (isset($_POST['month'], $_POST['year'])) {
 
             $depart_data  = $obj->select_record('department_master', array('department_id' => $depart_id));
             $is_allow_c_off = $depart_data['c_off_check'] ?? '0';
-
-            // $loan_data = $obj->select_record("loan_advance_details", ['emp_id' => $emp_id, 'month' => $month, 'year' => $year, 'status' => 1, 'type' => 'Loan']);
-            // $advance_data = $obj->select_record("loan_advance_details", ['emp_id' => $emp_id, 'month' => $month, 'year' => $year, 'status' => 1, 'type' => 'Advance']);
-            // $loan_amt  =  $loan_data['amount'] ?? 0;
-            // $loan_details_id  =  $loan_data['loan_details_id'] ?? 0;
-            // $advance_amt  =  $advance_data['amount'] ?? 0;
-            // $advance_details_id  =  $advance_data['loan_details_id'] ?? 0;
+ 
 
             $loan_amt = $loanMap[$emp_id]['Loan']['amount'] ?? 0;
             $loan_details_id = $loanMap[$emp_id]['Loan']['loan_details_id'] ?? 0;
@@ -130,9 +124,17 @@ if (isset($_POST['month'], $_POST['year'])) {
     SELECT
         SUM(attendance_status='Present') AS present,
         SUM(attendance_status='Half Day') AS half,
-        SUM(attendance_status IN('Weekly Leave','Earning Leave','C Off')) AS paid_leave,
-        SUM(attendance_status IN('Half Weekly Leave','Half Earning Leave','Half C Off')) AS tot_half,
-         SUM(attendance_status ='Leave') AS unpaid
+        SUM(attendance_status IN('Weekly Leave','Earning Leave','C Off','Leave','Extra Off')) AS paid_leave,
+        SUM(attendance_status IN('Half Weekly Leave','Half Earning Leave','Half C Off','Half Leave','Half Extra Off')) AS tot_half,
+        SUM(attendance_status ='Half Extra Off') AS half_extra_off,
+        SUM(attendance_status ='Extra Off') AS full_extra_off,
+        SUM(
+            CASE 
+                WHEN attendance_status = 'Leave' THEN 1
+                WHEN attendance_status = 'Half Leave' THEN 0.5
+                ELSE 0
+            END
+        ) AS total_opening_leave
     FROM attendance_entry
     WHERE emp_id='$emp_id' AND month='$month' AND year='$year' AND unit_id='$unitid'
 ");
@@ -143,7 +145,11 @@ if (isset($_POST['month'], $_POST['year'])) {
             $total_half1    = $a['half'] ?? 0;
             $total_present  = ($a['present'] ?? 0) + ($a['paid_leave'] ?? 0);
             $total_half     = ($a['tot_half'] ?? 0) + ($a['half'] ?? 0);
-            $total_att_leave = $a['unpaid'] ?? 0;
+            $half_extra_off = $a['full_extra_off'] ?? 0;
+            $full_extra_off = $a['full_extra_off'] ?? 0;
+            $total_opening_leave = $a['total_opening_leave'] ?? 0;
+
+            $used_extra_off = $full_extra_off+($half_extra_off/2);
 
             // $overtime_days = $obj->getvalfield("emp_overtime", "no_of_overtime", "emp_id='$emp_id' and month='$month' and year='$year'");
             $overtime_days = $overtimeMap[$emp_id] ?? 0;
@@ -158,9 +164,10 @@ if (isset($_POST['month'], $_POST['year'])) {
             $increment     = 0;
             $revisedSalary = roundVal($presentSalary + $increment);
             $daysWorked = $total_working_day ? $total_working_day : $totalDaysInMonth;
-
-            $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $real_total_working_day, $unitid);
             $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_working_day, $allow_weekly_off);
+            $earn_leave_present =  $real_total_working_day+$week_leave;
+            $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
+            
 
             $holidayData = $obj->getHolidayCountWithSandwichRule(
                 $emp_id,
@@ -169,18 +176,18 @@ if (isset($_POST['month'], $_POST['year'])) {
                 $year
             );
             $holiday     = $holidayData['total'] ?? 0;
-            $three_month_leave = $obj->getLeave($emp_id, $month, $year);
+           // $three_month_leave = $obj->getLeave($emp_id, $month, $year);
 
             $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
             $result = $obj->calculateWorkingDays([
                 'daysInMonth' => $totalDaysInMonth,
                 'present'     => $total_working_day,
                 'holiday'     => $holiday,
-                'advance'     => $total_att_leave,
+                //'advance'     => $total_att_leave,
                 'weekly'      => $week_leave,
                 'monthly'     => $monthly_leave,
-                'c_off'       => $three_month_leave,
-                'overtime'    => $overtime_days,
+                //'c_off'       => $three_month_leave,
+                'used_extra_off'    => $used_extra_off,
                 'allow_c_off' => $is_allow_c_off,
                 'add_all_leave' => $is_all_leave_add
             ]);
@@ -189,8 +196,7 @@ if (isset($_POST['month'], $_POST['year'])) {
             $usedCOff         = $result['used_c_off'];
             $usedWeekly       = $result['used_weekly'];
             $usedMonthly      = $result['used_monthly'];
-            $usedOvertime     = $result['used_overtime'];
-            $remainingCOff    = $result['remaining_c_off'];
+          
 
             $overtimeDays = $week_leave - $usedWeekly;
             $remining_earn_leave = $monthly_leave - $usedMonthly;
@@ -358,7 +364,7 @@ if (isset($_POST['month'], $_POST['year'])) {
                 "esic_paid_basic"      => $esic_paid_basic_val,
                 "overtime_days"      => $overtime_days,
                 "total_working_days" => $totalWorkingDays,
-                "advance_leave"      => $total_att_leave,
+                
                 "basic_da" => $basicDA,
                 "hra" => $hra,
                 "medical" => $medical,
@@ -385,7 +391,9 @@ if (isset($_POST['month'], $_POST['year'])) {
                 "total_earn_leave"  => $monthly_leave,
                 "pre_earn_leave"  => $total_earning_leave,
                 "c_off_leave" => $usedCOff,
-                "total_c_off" => $three_month_leave,
+                "used_extra_off" => $used_extra_off,
+                "total_opening_leave" => $total_opening_leave,
+                //"total_c_off" => $three_month_leave,
                 "loan_amt" => $loan_amt,
                 "total_pay_sal_after_ded" => $total_pay_sal_after_ded,
                 "advance_amt" => $advance_amt
@@ -398,49 +406,7 @@ if (isset($_POST['month'], $_POST['year'])) {
             $salaryRows[] = $form_data;
             //$obj->insert_record("salary_structure", $form_data);
 
-            if ($usedCOff > 0) {
-                $baseDate = date('Y-m-d', strtotime("$year-$month-01"));
-                $fromDate = date('Y-m-01', strtotime("-3 months", strtotime($baseDate)));
-                $toDate   = date('Y-m-t', strtotime("-1 month", strtotime($baseDate)));
-
-                $openingDate = date('Y-m-01', strtotime($opening_balance_date));
-                $start_date = $openingDate; // opening month
-                $end_date   = date('Y-m-t', strtotime("+2 months", strtotime($openingDate)));
-                $canUseOpening = (
-                    !empty($opening_balance_date)
-                    && $opening_balance_date >= $start_date
-                    && $opening_balance_date <= $end_date
-                    && $opening_balance_save > 0
-                );
-
-                $remainingToDeduct = $usedCOff;
-
-                if ($canUseOpening && $remainingToDeduct > 0) {
-                    $deductFromOpening = min($opening_balance_save, $remainingToDeduct);
-                    $obj->update_record(
-                        "employee_master",
-                        ['emp_id' => $emp_id],
-                        ['used_opening_balance' => $opening_balance_save - $deductFromOpening]
-                    );
-                    $remainingToDeduct -= $deductFromOpening;
-                }
-
-                $rows = $obj->executequery("SELECT month_leave_id, remining_leave FROM emp_monthly_leave WHERE emp_id = '$emp_id' AND STR_TO_DATE(CONCAT(year,'-',month,'-01'), '%Y-%m-%d') BETWEEN '$fromDate' AND '$toDate' AND remining_leave > 0 ORDER BY month_leave_id ASC");
-
-                foreach ($rows as $row) {
-                    if ($remainingToDeduct <= 0) break;
-
-                    $deduct = min($row['remining_leave'], $remainingToDeduct);
-
-                    $obj->update_record(
-                        "emp_monthly_leave",
-                        ['month_leave_id' => $row['month_leave_id']],
-                        ['remining_leave' => $row['remining_leave'] - $deduct]
-                    );
-
-                    $remainingToDeduct -= $deduct;
-                }
-            }
+            
 
             $count_generated++;
         }

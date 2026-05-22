@@ -54,7 +54,7 @@ if (!empty($emp_ids)) {
     $obj->executenonquery("
         DELETE FROM attendance_entry 
         WHERE emp_id IN ($emp_ids_final)
-        AND attendance_date BETWEEN '$from_date' AND '$to_date'
+        AND attendance_date BETWEEN '$from_date' AND '$to_date' and entry_type='machine'
         AND unit_id='$unitid'
         $deptCondition
     ");
@@ -63,7 +63,7 @@ if (!empty($emp_ids)) {
         "DELETE FROM attendance_log 
         WHERE emp_id IN ($emp_ids_final)
         AND attendance_date BETWEEN '$from_date' AND '$to_date'
-        AND unit_id='$unitid'
+        AND unit_id='$unitid' and entry_type='machine'
         $deptCondition "
     );
 } else {
@@ -74,12 +74,12 @@ if (!empty($emp_ids)) {
     // ✅ ALL employees case
     $obj->executenonquery("
         DELETE FROM attendance_entry 
-        WHERE attendance_date BETWEEN '$from_date' AND '$to_date' AND unit_id='$unitid'  $deptCondition
+        WHERE attendance_date BETWEEN '$from_date' AND '$to_date' AND unit_id='$unitid' and entry_type='machine'  $deptCondition
     ");
 
     $obj->executenonquery("
         DELETE FROM attendance_log 
-        WHERE attendance_date BETWEEN '$from_date' AND '$to_date' AND unit_id='$unitid'  $deptCondition
+        WHERE attendance_date BETWEEN '$from_date' AND '$to_date' and entry_type='machine' AND unit_id='$unitid'  $deptCondition
     ");
 }
 

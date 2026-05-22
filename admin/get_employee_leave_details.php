@@ -15,8 +15,10 @@ $app_year  = date('Y', strtotime($application_date));
 $is_esic = $obj->getvalfield("employee_master", "is_esic", "emp_id='$emp_id'");
 $setting_type = ($is_esic == 1) ? 'ESIC' : 'Non ESIC';
 
-$three_month_leave = $obj->getLeave($emp_id, $app_month, $app_year);
+//$three_month_leave = $obj->getLeave($emp_id, $app_month, $app_year);
 $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
+$extra_off =$obj->getExtraOffBalance($emp_id, $app_month, $app_year);
+$opening_leave_balance =$obj->get_opening_leave_balance($emp_id, $sessionid);
 
 $total_leave_taken = $obj->getvalfield(
     "attendance_entry",
@@ -34,8 +36,8 @@ $total_leave_taken = $obj->getvalfield(
 
 echo json_encode([
     "status" => "success",
-    "weekly_off" => $three_month_leave,
+    "extra_off" => $extra_off['balance'],
     "earning_leave" => $total_earning_leave,
-    "total_leave_taken" => $total_leave_taken
+    "opening_leave_balance" => $opening_leave_balance
 
 ]);

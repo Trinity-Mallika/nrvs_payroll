@@ -46,7 +46,6 @@ if (isset($_POST['updatess'])) {
     $basic_salary = $emp_data['basic_salary'];
 
 
-
     foreach ($updates as $row) {
         $id = $row['id'];
         $status = $row['status'];
@@ -93,6 +92,10 @@ if (isset($_POST['updatess'])) {
                     $punch_status = 'weekly_leave';
                 } elseif ($leave_type == 'EL') {
                     $punch_status = 'earn_leave';
+                } elseif ($leave_type == 'EO') {
+                    $punch_status = 'extra_off';
+                } elseif ($leave_type == 'L') {
+                    $punch_status = 'leave';
                 }
             } elseif ($leave_day == 'FHD' || $leave_day == 'SHD') {
 
@@ -100,6 +103,10 @@ if (isset($_POST['updatess'])) {
                     $punch_status = 'half_weekly_leave';
                 } elseif ($leave_type == 'EL') {
                     $punch_status = 'half_earn_leave';
+                } elseif ($leave_type == 'EO') {
+                    $punch_status = 'half_extra_off';
+                } elseif ($leave_type == 'L') {
+                    $punch_status = 'half_leave';
                 }
             }
 
@@ -142,39 +149,21 @@ if (isset($_POST['updatess'])) {
             ];
 
             if ($punch_status == 'weekly_leave') {
-                $form_date['attendance_status'] = 'Weekly Leave';
-                $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $date]);
-
-                $leave_data['total_leave'] = '-1';
-                $leave_data['remining_leave'] = '-1';
-                $leave_data['leave_type'] = 'weekly';
-                $leave_data['leave_date'] = $date;
-                $obj->insert_record("emp_monthly_leave", $leave_data);
-            } elseif ($punch_status == 'earn_leave') {
-                $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $date]);
-                $form_date['attendance_status'] = 'Earning Leave';
-                $leave_data['total_leave'] = '-1';
-                $leave_data['remining_leave'] = '-1';
-                $leave_data['leave_type'] = 'earning';
-                $leave_data['leave_date'] = $date;
-                $obj->insert_record("emp_monthly_leave", $leave_data);
-            } elseif ($punch_status == 'half_weekly_leave') {
-                $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $date]);
-
-                $form_date['attendance_status'] = 'Half Weekly Leave';
-                $leave_data['total_leave'] = '-0.5';
-                $leave_data['remining_leave'] = '-0.5';
-                $leave_data['leave_type'] = 'weekly';
-                $leave_data['leave_date'] = $date;
-                $obj->insert_record("emp_monthly_leave", $leave_data);
-            } elseif ($punch_status == 'half_earn_leave') {
-                $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $date]);
-                $form_date['attendance_status'] = 'Half Earning Leave';
-                $leave_data['total_leave'] = '-0.5';
-                $leave_data['remining_leave'] = '-0.5';
-                $leave_data['leave_type'] = 'earning';
-                $leave_data['leave_date'] = $date;
-                $obj->insert_record("emp_monthly_leave", $leave_data);
+                $form_date['attendance_status'] = 'Weekly Leave'; 
+            } elseif ($punch_status == 'earn_leave') { 
+                $form_date['attendance_status'] = 'Earning Leave'; 
+            } elseif ($punch_status == 'half_weekly_leave') { 
+                $form_date['attendance_status'] = 'Half Weekly Leave'; 
+            } elseif ($punch_status == 'half_earn_leave') { 
+                $form_date['attendance_status'] = 'Half Earning Leave'; 
+            }elseif ($punch_status == 'half_extra_off') { 
+                $form_date['attendance_status'] = 'Half Extra Off'; 
+            } elseif ($punch_status == 'extra_off') { 
+                $form_date['attendance_status'] = 'Extra Off'; 
+            }elseif ($punch_status == 'leave') { 
+                $form_date['attendance_status'] = 'Leave'; 
+            } elseif ($punch_status == 'half_leave') { 
+                $form_date['attendance_status'] = 'Half Leave'; 
             }
 
             $lastid = $obj->insert_record_lastid("attendance_entry", $form_date);
@@ -565,8 +554,12 @@ if (isset($_POST['updatess'])) {
                                     <td id="modalTotalDays"></td>
                                 </tr>
                                 <tr>
-                                    <td class="fw-semibold">Weekly Leave</td>
-                                    <td id="modalWeeklyLeave"></td>
+                                    <td class="fw-semibold">Opening Leave (As per application date)</td>
+                                    <td id="modalOpeningLeave"></td>
+                                </tr>
+                                  <tr>
+                                    <td class="fw-semibold">Extra Off</td>
+                                    <td id="modalExtraLeave"></td>
                                 </tr>
                             </table>
                         </div>
@@ -635,12 +628,19 @@ if (isset($_POST['updatess'])) {
 
         function openOnDutyModal(type, data) {
             let imgpath = '<?= $imgpath1 ?>';
-            $("#modalApplicationDate").text(data.application_date);
+            let appDate = new Date(data.application_date);
+
+            let formattedDate = String(appDate.getDate()).padStart(2, '0') + '-' +
+                    String(appDate.getMonth() + 1).padStart(2, '0') + '-' +
+                    appDate.getFullYear();
+
+            $("#modalApplicationDate").text(formattedDate);
             $("#modalTotalDays").text(data.total_day);
             $("#modalEmpId").val(data.emp_id);
-            $("#modalWeeklyLeave").text(data.weekly_leave);
+            $("#modalOpeningLeave").text(data.opening_leave_balance);
+            $("#modalExtraLeave").text(data.extra_off);
             $("#modalEarnLeave").text(data.earn_leave);
-
+           
             // $("#modalOnDutyType").text(data.on_duty_type.toUpperCase());
             $("#modalEmpName").text(data.first_name + " " + data.last_name);
             $("#modalEmpCode").text("(" + data.emp_code + ")");
@@ -771,8 +771,7 @@ if (isset($_POST['updatess'])) {
                     updatess: updates,
                     emp_id: emp_id
                 },
-                success: function(response) {
-                    console.log('response', response);
+                success: function(response) { 
                     Swal.fire({
                         title: "Success!",
                         text: "Updated Successfully",

@@ -45,7 +45,8 @@ $grade     = $empData['grade_name'] ?? '';
 $is_esic = $empData['is_esic'];
 
 $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
-$three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
+//$three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
+$extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear);
 
 $setting_type = ($is_esic == 1) ? 'ESIC' : 'Non ESIC';
 
@@ -464,16 +465,14 @@ $total_attandence      = $total_present + ($total_half / 2);
             <div class="row">
                 <div class="col-6 pe-1">
                     <div class="card shadow-lg mb-2 border-card-white bg-blue p-1 h-80">
-                        <h3 class="text-center"><?= $three_month_leave  ?></h3>
-                        <h6 class="text-center text-white">Week Off Balance</h6>
+                        <h3 class="text-center"><?= $extra_off['balance']  ?></h3>
+                        <h6 class="text-center text-white">Extra Off Balance</h6>
                     </div>
                 </div>
 
                 <div class="col-6 ps-1">
                     <div class="card shadow-lg mb-2 border-card-white bg-green p-1 h-80">
-                        <h3 class="text-center"><?=
-                                                $total_earning_leave
-                                                ?></h3>
+                        <h3 class="text-center"><?=  $total_earning_leave ?></h3>
                         <h6 class="text-center text-white">Earn Leave Balance</h6>
                     </div>
                 </div>

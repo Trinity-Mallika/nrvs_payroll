@@ -22,23 +22,11 @@ $app_year  = date('Y', strtotime($current_date));
 $is_esic = $obj->getvalfield("employee_master", "is_esic", "emp_id='$emp_id'");
 $setting_type = ($is_esic == 1) ? 'ESIC' : 'Non ESIC';
 
-$three_month_leave = $obj->getLeave($emp_id, $app_month, $app_year);
+//$three_month_leave = $obj->getLeave($emp_id, $app_month, $app_year);
 $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
-
-$total_leave_taken = $obj->getvalfield(
-    "attendance_entry",
-    "SUM(
-        CASE 
-            WHEN attendance_status IN ('Weekly Leave','Earning Leave','C Off') THEN 1
-            WHEN attendance_status IN ('Half Weekly Leave','Half Earning Leave','Half C Off') THEN 0.5
-            ELSE 0
-        END
-    )",
-    "month='$app_month' 
-    AND year='$app_year' 
-    AND emp_id='$emp_id'"
-);
-
+$extra_off =$obj->getExtraOffBalance($emp_id, $app_month, $app_year);
+$opening_leave_balance =$obj->get_opening_leave_balance($emp_id, $sessionid);
+ 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $application_date  = $obj->test_input($_POST['application_date']);
     $reason = $obj->test_input($_POST['reason']);
@@ -57,8 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $form_data = array(
         "emp_id" => $emp_id,
-        "type" => 'leave',
-        "weekly_leave" => $three_month_leave,
+        "type" => 'leave', 
+        "opening_leave_balance" => $opening_leave_balance,
+        "extra_off" => $extra_off['balance'],
         "earn_leave" => $total_earning_leave,
         "application_date" => $application_date,
         "reason" => $reason,
@@ -183,7 +172,6 @@ $total_day  = $obj->getvalfield(
         END
     )",
     "on_duty_id='$keyvalue' and unit_id='$unitid' and emp_id='$emp_id'"
-
 );
 
 ?>
@@ -304,8 +292,8 @@ $total_day  = $obj->getvalfield(
 
                         <div class="col-6">
                             <div class="p-3 rounded bg-light shadow-sm">
-                                <div class="fw-bold text-success" style="font-size:18px;" id="weekly_leave"><?= $three_month_leave  ?></div>
-                                <small class="text-muted">Week Off</small>
+                                <div class="fw-bold text-success" style="font-size:18px;" id="weekly_leave"><?= $opening_leave_balance  ?></div>
+                                <small class="text-muted">Opening Leave</small>
                             </div>
                         </div>
 
@@ -317,8 +305,8 @@ $total_day  = $obj->getvalfield(
                         </div>
                         <div class="col-6">
                             <div class="p-3 rounded bg-light shadow-sm">
-                                <div class="fw-bold text-primary" style="font-size:18px;" id="earning_leave"><?= $total_leave_taken  ?></div>
-                                <small class="text-muted">Taken Leave</small>
+                                <div class="fw-bold text-primary" style="font-size:18px;" id="earning_leave"><?= $extra_off['balance']  ?></div>
+                                <small class="text-muted">Extra Off</small>
                             </div>
                         </div>
                     </div>
@@ -348,7 +336,9 @@ $total_day  = $obj->getvalfield(
                             <label for="" class="form-label">Leave Type</label>
                             <select class="form-control" id="leave_type">
                                 <option value="EL">EARNED LEAVE</option>
-                                <option value="WL">WEEKLY LEAVE</option>
+                                <!-- <option value="WL">WEEKLY LEAVE</option> -->
+                                <option value="EO">EXTRA OFF</option>
+                                <option value="L">OPENING LEAVE</option>
                                 <option value="LWP">LEAVE WITHOUT PAY</option>
                             </select>
                         </div>

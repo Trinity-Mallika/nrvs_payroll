@@ -41,7 +41,7 @@ $fields = [
     'pf_employer',
     'esic_employer',
     'total_c_off',
-    'c_off_leave',
+    //'c_off_leave',
     'loan_amt',
     'advance_amt',
     'additional_payment',
@@ -281,15 +281,34 @@ $html = '<!DOCTYPE html>
             <td style="border-left:1px solid #000;"></td>
             <td ></td>
         </tr>
-        <tr>  <td colspan="2"><b>GROSS SALARY</b></td>
+        <tr>  
+            <td colspan="2"><b>BASIC SALARY</b></td>
+            <td ><b>' . $basic_salary . '</b></td>
+
+            <td style="border-left:1px solid #000;"><b> </b></td>
+            <td ><b> </b></td>
+          
+        </tr>
+ 
+        <tr> 
+            <td colspan="2"><b>INCREMENT</b></td>
+            <td ><b>' . $increment . '</b></td>
+
+            <td style="border-left:1px solid #000;"><b> </b></td>
+            <td ><b> </b></td>
+          
+        </tr>
+
+         
+        <tr>  <td colspan="2"><b>REVISED SALARY</b></td>
             <td ><b>' . $revised_salary . '</b></td>
-           
-            <td style="border-left:1px solid #000;"><b>TOTAL EARNINGS</b></td>
-            <td ><b>' . $total_salary . '</b></td>
+ 
+            <td style="border-left:1px solid #000;"><b> TOTAL DEDUCTIONS</b></td>
+            <td ><b>' . $total_deduction . '</b></td>
         </tr>
         <tr>
-             <td colspan="2"><b>TOTAL DEDUCTIONS</b></td>
-            <td ><b>' . $total_deduction . '</b></td>
+             <td colspan="2"><b>GROSS SALARY</b></td>
+            <td ><b>' . $total_salary . '</b></td>
             <td style="border-left:1px solid #000;"><b>NET SALARY</b></td>
             <td ><b>' . $total_net_salary . '</b></td>
         </tr>   <tr>
@@ -303,9 +322,9 @@ $html = '<!DOCTYPE html>
             <td colspan="5" style="border: 1px solid black;"><b>Rs. ' . $total_salary_words . '</b></td>
         </tr>
         <tr>
-            <td colspan="2">LEAVE OPB: ' . $total_c_off . '</td>
-            <td colspan="2" >LEAVE TAKEN: ' . $c_off_leave . '</td>
-            <td colspan="2" >LEAVE CLS: ' . $total_c_off - $c_off_leave . '</td>
+            
+          
+           
         </tr>
     </table>
     <p style="text-align: center;">This is computer generated pay-slip and do not require any Signature. ' . $current_date_time . '</p>
