@@ -23,16 +23,18 @@ if (isset($_POST['submit'])) {
     $w5 = $obj->test_input($_POST['w5']);
 
 
-    $keyvalue = $obj->getvalfield(
+    $keyvalue = (int)$obj->getvalfield(
         $tblname,
         $tblpkey,
         "setting_type='$setting_type' AND unit_id='$unitid'"
     );
 
 
-    if (empty($keyvalue)) {
-        $keyvalue = 0; // No record exists for this type
-    }
+
+
+    // if (empty($keyvalue)) {
+    //     $keyvalue = 0; // No record exists for this type
+    // }
 
     $form_data = [
         // 'week_off_Setting_r' => $week_off_Setting_r,
@@ -51,11 +53,24 @@ if (isset($_POST['submit'])) {
         'createdate' => $createdate
     ];
 
-    if ($keyvalue == 0) {
-        $obj->insert_record($tblname, $form_data);
-    } else {
+
+    // if ($keyvalue == 0) {
+    //     print_r($form_data);
+
+    //     $obj->insert_record($tblname, $form_data);
+    //     die;
+    // } else {
+    //     $where = [$tblpkey => $keyvalue];
+    //     $obj->update_record($tblname, $where, $form_data);
+    // }
+
+    if ($keyvalue > 0) {
+        // UPDATE
         $where = [$tblpkey => $keyvalue];
         $obj->update_record($tblname, $where, $form_data);
+    } else {
+        // INSERT
+        $obj->insert_record($tblname, $form_data);
     }
 
     echo "<script>location='$pagename'</script>";
@@ -163,12 +178,16 @@ $w5 = $sqledit['w5'] ?? '';
 
 
                                     </div>
-                                    <div class="col-lg-12">
-                                        <div class="hstack gap-2 justify-content-center">
-                                            <button type="submit" name="submit" class="btn btn-sm btn-primary" onclick="return checkinputmaster('weekweek_off_Setting_r');">Update</button>
+                                    <?php
+                                    $chkedit = $obj->check_editBtn($pagename, $loginid);
+                                    if ($chkedit == 1) {
+                                    ?>
+                                        <div class="col-lg-12">
+                                            <div class="hstack gap-2 justify-content-center">
+                                                <button type="submit" name="submit" class="btn btn-sm btn-primary" onclick="return checkinputmaster('weekweek_off_Setting_r');">Update</button>
+                                            </div>
                                         </div>
-                                    </div>
-
+                                    <?php } ?>
                                 </div>
                             </div>
                         </div>

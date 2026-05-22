@@ -44,12 +44,12 @@ if (isset($_GET['attendance_date'])) {
 if (isset($_GET['att_action'])) {
     $att_action = $obj->test_input($_GET['att_action']);
 
-    if ($att_action == 'Half Day' || $att_action == 'Leave' || $att_action == 'Incomplete') {
+    if ($att_action == 'Half Day' || $att_action == 'Weekly Leave' || $att_action == 'Earning Leave' || $att_action == 'Incomplete') {
         $crit .= " AND ae.attendance_status='$att_action'";
     } elseif ($att_action == 'Present') {
-        $crit .= " AND attendance_status IN ('Present', 'Incomplete','Half Day')";
+        $crit .= " AND attendance_status ='Present'";
     } elseif ($att_action == 'Absent') {
-        $crit2 .= " AND ae.emp_id IS NULL";
+        $crit2 .= " AND (ae.attendance_status='Absent' OR ae.emp_id IS NULL)";
     }
 } else {
     $att_action = "";
@@ -124,7 +124,8 @@ if (isset($_GET['att_action'])) {
                                                 <option value="">All</option>
                                                 <option value="Incomplete">Incomplete</option>
                                                 <option value="Present">Present</option>
-                                                <option value="Leave">Leave</option>
+                                                <option value="Earning Leave">Earning Leave</option>
+                                                <option value="Weekly Leave">Weekly Leave</option>
                                                 <option value="Half Day">Half Day</option>
 
                                             </select>
@@ -163,10 +164,15 @@ if (isset($_GET['att_action'])) {
                                             <thead>
                                                 <tr class="table-primary">
                                                     <th>Sr No.</th>
-                                                    <th style="text-align: center;">Employee </th>
+                                                    <th style="text-align: center;">Employee Code </th>
+                                                    <th style="text-align: center;">Employee Name </th>
                                                     <th style="text-align: center;">Date</th>
                                                     <th style="text-align: center;">In Time</th>
                                                     <th style="text-align: center;">Out Time</th>
+                                                    <th style="text-align: center;">Machine Id</th>
+                                                    <th style="text-align: center;">Shift</th>
+                                                    <th style="text-align: center;">Department</th>
+                                                    <th style="text-align: center;">Designation</th>
                                                     <th style="text-align: center;">Action</th>
                                                     <th style="text-align: center;">Working Hours</th>
                                                 </tr>
@@ -176,9 +182,9 @@ if (isset($_GET['att_action'])) {
                                                 $slno = 1;
 
                                                 if ($att_action == 'Absent') {
-                                                    $res = $obj->executequery("SELECT em.*, ae.*FROM employee_master em LEFT JOIN attendance_entry ae ON em.emp_id = ae.emp_id AND ae.attendance_date = '$attendance_date' WHERE em.unit_id = '$unitid' $crit2 ORDER BY em.emp_id DESC");
+                                                    $res = $obj->executequery("SELECT em.*, ae.*,sm.shift_name,dem.designation,dm.department_name FROM employee_master em LEFT JOIN attendance_entry ae ON em.emp_id = ae.emp_id AND ae.attendance_date = '$attendance_date' LEFT JOIN shift_master sm ON ae.shift_id=sm.shift_id LEFT JOIN department_master dm ON em.department_id=dm.department_id LEFT JOIN designation_master dem ON em.designation_id=dem.designation_id WHERE em.unit_id = '$unitid' $crit2 AND (em.resign_status != '1' OR (em.resign_status = '1' AND em.last_working_date >= CURDATE())) ORDER BY em.emp_id DESC");
                                                 } else {
-                                                    $res = $obj->executequery("SELECT ae.*, em.first_name, em.last_name,em.emp_code FROM $tblname ae LEFT JOIN employee_master em ON ae.emp_id = em.emp_id WHERE ae.unit_id = '$unitid' $crit ORDER BY ae.$tblpkey DESC");
+                                                    $res = $obj->executequery("SELECT ae.*,sm.shift_name,dm.department_name, em.first_name, em.last_name, em.designation_id,dem.designation,em.emp_code ,em.resign_status,em.last_working_date FROM $tblname ae LEFT JOIN employee_master em ON ae.emp_id = em.emp_id LEFT JOIN shift_master sm ON ae.shift_id=sm.shift_id LEFT JOIN department_master dm ON ae.department_id=dm.department_id LEFT JOIN designation_master dem ON em.designation_id=dem.designation_id WHERE ae.unit_id = '$unitid' $crit AND (em.resign_status != '1' OR (em.resign_status = '1' AND em.last_working_date >= CURDATE())) ORDER BY ae.$tblpkey DESC");
                                                 }
 
 
@@ -187,17 +193,31 @@ if (isset($_GET['att_action'])) {
                                                 ?>
                                                     <tr>
                                                         <td><?php echo $slno++; ?></td>
-                                                        <td> <?= $row['emp_code']; ?>-<?= ucfirst($row['first_name'] ?? ''); ?> <?= ucfirst($row['last_name'] ?? ''); ?> </td>
+                                                        <td> <?= $row['emp_code']; ?> </td>
+                                                        <td> <?= ucfirst($row['first_name'] ?? ''); ?> <?= ucfirst($row['last_name'] ?? ''); ?> </td>
                                                         <td> <?php
                                                                 echo !empty($row["attendance_date"])
                                                                     ? $obj->dateformatindia($row["attendance_date"])
                                                                     : $obj->dateformatindia($attendance_date);
                                                                 ?></td>
                                                         <td>
-                                                            <?= !empty($row["intime"]) ? date("h:i A", strtotime($row["intime"])) : "-" ?>
+
+                                                            <?= !empty($row["intime"]) ? date("h:i:s A", strtotime($row["intime"])) : "-" ?>
                                                         </td>
                                                         <td>
-                                                            <?= !empty($row["outtime"]) ? date("h:i A", strtotime($row["outtime"])) : "-" ?>
+                                                            <?= !empty($row["outtime"]) ? date("h:i:s A", strtotime($row["outtime"])) : "-" ?>
+                                                        </td>
+                                                        <td>
+                                                            <?= $row['machineid']; ?>
+                                                        </td>
+                                                        <td>
+                                                            <?= $row['shift_name']; ?>
+                                                        </td>
+                                                        <td>
+                                                            <?= $row['department_name']; ?>
+                                                        </td>
+                                                        <td>
+                                                            <?= $row['designation']; ?>
                                                         </td>
                                                         <td>
                                                             <?php if (!empty($row['attendance_status'])) { ?>
@@ -233,36 +253,13 @@ if (isset($_GET['att_action'])) {
     <?php include('inc/footer.php') ?>
     <script>
         $(document).ready(function() {
-            $('#example').DataTable();
+            // $('#example').DataTable();
             $(".chosen-select").select2({
                 width: '100%',
                 search_contains: true
             });
-
         });
 
-        function funDel(id) {
-            $('#deleteRecordModal').modal('show');
-            tblname = '<?php echo $tblname; ?>';
-            tblpkey = '<?php echo $tblpkey; ?>';
-            imgpath = '<?php echo $imgpath; ?>';
-            pagename = '<?php echo $pagename; ?>';
-            submodule = '<?php echo $submodule; ?>';
-
-            $('#delete-record').click(function() {
-                $.ajax({
-                    type: 'POST',
-                    url: 'ajax/delete_master_emp.php',
-                    data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&imgpath=' + imgpath + '&submodule=' + submodule + '&pagename=' + pagename,
-                    dataType: 'html',
-                    success: function(data) {
-                        // alert(data);
-                        location = '<?php echo $pagename; ?>';
-                    }
-                });
-                $('#deleteRecordModal').modal('hide');
-            });
-        };
 
         function numberOnly(evt) {
             var theEvent = evt || window.event;

@@ -32,3 +32,55 @@
 
     <!-- form wizard init -->
     <script src="assets/js/pages/form-wizard.init.js"></script>
+
+    <!-- scroll bar -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+
+            document.querySelectorAll(".auto-scroll-wrapper").forEach(function(wrapper) {
+
+                let tableResponsive = wrapper.querySelector(".table-responsive");
+                let table = wrapper.querySelector("table");
+
+                // Hide original scrollbar via JS
+                tableResponsive.style.overflowX = "hidden";
+
+                // Create floating scrollbar
+                let scrollbar = document.createElement("div");
+                let inner = document.createElement("div");
+
+                // Apply styles directly via JS (no CSS file needed)
+                scrollbar.style.position = "sticky";
+                scrollbar.style.bottom = "0";
+                scrollbar.style.height = "14px";
+                scrollbar.style.overflowX = "auto";
+                scrollbar.style.overflowY = "hidden";
+                scrollbar.style.width = "100%";
+
+                inner.style.height = "1px";
+
+                scrollbar.appendChild(inner);
+                wrapper.appendChild(scrollbar);
+
+                function updateWidth() {
+                    inner.style.width = table.scrollWidth + "px";
+                }
+
+                updateWidth();
+
+                // Sync scroll
+                scrollbar.addEventListener("scroll", function() {
+                    tableResponsive.scrollLeft = scrollbar.scrollLeft;
+                });
+
+                tableResponsive.addEventListener("scroll", function() {
+                    scrollbar.scrollLeft = tableResponsive.scrollLeft;
+                });
+
+                // Resize support
+                window.addEventListener("resize", updateWidth);
+
+            });
+
+        });
+    </script>

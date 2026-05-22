@@ -1,6 +1,6 @@
 <?php
-ini_set('max_execution_time', 600); // 10 minutes
-set_time_limit(600);
+ini_set('max_execution_time', 3600);
+set_time_limit(3600);
 include("../adminsession.php");
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -16,169 +16,172 @@ $btn_name = "Save";
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 require_once __DIR__ . '/src/SimpleXLSX.php';
 
+$empMap = [];
+$empRows = $obj->executequery("
+    SELECT emp_id, emp_code, department_id, basic_salary, shift_id
+    FROM employee_master
+    WHERE unit_id='$unitid'
+");
+
+foreach ($empRows as $e) {
+    $empMap[trim($e['emp_code'])] = $e;
+}
+
+$shiftMap = [];
+$shiftRows = $obj->executequery("
+    SELECT shift_id, in_time, out_time, working_hour
+    FROM shift_master
+    WHERE unit_id='$unitid'
+");
+
+foreach ($shiftRows as $s) {
+    // KEY = working_hour (08:00:00, 12:00:00 etc.)
+    $key = trim($s['working_hour']);
+    $shiftMap[$key] = $s;
+}
+
+
+foreach ($shiftRows as $s) {
+    $shiftMap[$s['shift_id']] = $s;
+}
+ 
+
 if (isset($_POST['submit'])) {
-    $totalRecords = 0;
-    $insertedCount = 0;
-    $skippedCount = 0;
-    $skippedEpicNumbers = array();
-    $insertedEmployees = [];   // emp_id based
-    $skippedEmployees  = [];
+ $skipEmpCodes = [];
+$skipReasons = [];
+    $month = $obj->test_input($_POST['file_month']);
+    $year  = $obj->test_input($_POST['file_year']);
 
-    if (isset($_FILES['upload_excel']['tmp_name']) && $_FILES['upload_excel']['error'] == UPLOAD_ERR_OK) {
-        $fileType = pathinfo($_FILES['upload_excel']['name'], PATHINFO_EXTENSION);
-        $month  = $obj->test_input($_POST['file_month']);
-        $year = $obj->test_input($_POST['file_year']);
-        $firstRow = true;
+    $totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+    $endDay = ($year == date('Y') && $month == date('m')) ? date('d') : $totalDaysInMonth;
 
-        if ($fileType === 'xlsx') {
-            if ($xlsx = SimpleXLSX::parse($_FILES['upload_excel']['tmp_name'])) {
-                foreach ($xlsx->rows() as $k => $data) {
-                    if ($firstRow) {
-                        $firstRow = false;
-                        continue;
-                    }
+    $insertRows = [];
+    $processedEmpIds = [];
+
+    if ($xlsx = SimpleXLSX::parse($_FILES['upload_excel']['tmp_name'])) {
+
+        foreach ($xlsx->rows() as $k => $data) {
 
 
-                    $totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+            if ($k == 0) continue; // header
 
-                    $endDay = $totalDaysInMonth;
-                    if ($year == date('Y') && $month == date('m')) {
-                        $endDay = date('d'); // today date (15)
-                    }
+            $emp_code = strtoupper(trim((string)$data[0]));
 
-                    list($emp_code, $date1, $date2, $date3, $date4, $date5, $date6, $date7, $date8, $date9, $date10, $date11, $date12, $date12, $date14, $date15, $date16, $date17, $date18, $date19, $date20, $date21, $date22, $date23,  $date24,  $date25, $date26, $date27,  $date28, $date29, $date30,  $date31) = $data;
-                    // print_r($emp_code);
-                    // die;
-                    if (empty($emp_code)) {
-                        continue;
-                    }
-                    $emp_id = 0;
+            if (!$emp_code) {
+                continue;
+            }
 
+            if (!isset($empMap[$emp_code])) {
 
-                    if (!empty(trim($emp_code))) {
-                        $emp_id = $obj->getvalfield(
-                            "employee_master",
-                            "emp_id",
-                            "emp_code='$emp_code' AND unit_id='$unitid'"
+                $skipEmpCodes[] = $emp_code;
+                $skipReasons[] = $emp_code . " - Employee Not Found";
 
-                        );
-                    }
+                continue;
+            }
+           // if (!$emp_code || !isset($empMap[$emp_code])) continue;
 
-                    $where1 = array(
-                        'emp_id' => $emp_id,
-                        'year'   => $year,
-                        'month'   => $month,
-                        'unit_id'   => $unitid
+            $emp = $empMap[$emp_code];
+            $emp_id = $emp['emp_id'];
+
+            $processedEmpIds[$emp_id] = true;
+
+            $shift_wh_key = trim($emp['shift_id']);
+
+            if (!isset($shiftMap[$shift_wh_key])) continue;
+            // print_r($shift_wh_key);
+            // die;
+            $shift = $shiftMap[$shift_wh_key];
+            $shift_id   = $shift['shift_id'];
+            $office_in  = $shift['in_time'];
+            $office_out = $shift['out_time'];
+            $shift_wh   = $shift['working_hour'];
+
+            for ($day = 1; $day <= $endDay; $day++) {
+
+                $status = strtoupper(trim((string)($data[$day] ?? '')));
+                if ($status === '' || $status === 'A') continue;
+
+                $attendance_date = sprintf('%04d-%02d-%02d', $year, $month, $day);
+
+                $row = [
+                    'emp_id' => $emp_id,
+                    'department_id' => $emp['department_id'],
+                    'attendance_date' => $attendance_date,
+                    'attendance_stamp' => $attendance_date . ' ' . $office_in,
+                    'month' => $month,
+                    'year' => $year,
+                    'createdate' => date('Y-m-d'),
+                    'createtime' => $office_in,
+                    'ipaddress' => $ipaddress,
+                    'basic_salary' => $emp['basic_salary'],
+                    'shift_id' => $shift_id,
+                    'in_status' => 'IN',
+                    'out_status' => 'OUT',
+                    'entry_type' => 'manual',
+                    'entry_type_out' => 'manual',
+                    'unit_id' => $unitid,
+                    'sessionid' => $sessionid
+                ];
+
+                if ($status === 'P') {
+                    $row['attendance_status'] = 'Present';
+                    $row['intime'] = $office_in;
+                    $row['outtime'] = $office_out;
+                    $row['working_hours'] = $shift_wh;
+                } elseif ($status === 'HD') {
+                    $row['attendance_status'] = 'Half Day';
+                    $row['working_hours'] = $obj->hoursToTime(
+                        $obj->timeToHours($shift_wh) / 2
                     );
-
-                    $obj->delete_record('attendance_entry', $where1);
-
-                    $totalRecords++;
-                    $shift_id = 0;
-                    $emp_data = $obj->select_record("employee_master", ['emp_id' => $emp_id]);
-                    $department_id = $emp_data['department_id'];
-                    $basic_salary = $emp_data['basic_salary'];
-                    $shift_hrs = $emp_data['shift_id'];
-
-                    $shift_id = $obj->getvalfield("shift_master", "shift_id", "working_hour  LIKE '%$shift_hrs%' and unit_id='$unitid' order by shift_id desc limit 1");
-
-                    $shift_data = $obj->select_record("shift_master", ['shift_id' => $shift_id]);
-                    $office_in = $shift_data['in_time'];
-                    $office_out = $shift_data['out_time'];
-                    $shift_wh = $shift_data['working_hour'];
-
-
-                    for ($day = 1; $day <= $endDay; $day++) {
-                        $punchtime = date('H:i:s',);
-                        if (!isset($data[$day])) continue;
-                        $status = strtoupper(trim($data[$day]));
-                        if ($status == '') continue;
-
-                        $attendance_date = sprintf('%04d-%02d-%02d', $year, $month, $day);
-                        if ($status == 'A' || $status == 'a') {
-                            $where = array(
-                                'emp_id' => $emp_id,
-                                'attendance_date'  => $attendance_date,
-                                'year'   => $year,
-                                'month'   => $month,
-                                'unit_id'   => $unitid
-                            );
-                            $obj->delete_record('attendance_entry', $where);
-                        } else {
-                            $form_data = array(
-                                'emp_id' => $emp_id,
-                                'department_id' => $department_id,
-                                'attendance_date' => $attendance_date,
-                                'attendance_stamp' => $attendance_date . ' ' . $punchtime,
-                                'month' => $month,
-                                'year' => $year,
-                                'createdate' => date('Y-m-d'),
-                                'createtime' => $punchtime,
-                                'ipaddress' => $ipaddress,
-                                'basic_salary' => $basic_salary,
-                                'shift_id' => $shift_id,
-                                'in_status' => 'IN',
-                                'out_status' => 'OUT',
-                                'entry_type' => 'manual',
-                                'entry_type_out' => 'manual',
-                                'unit_id' => $unitid,
-                                'sessionid' => $sessionid
-                            );
-
-                            $shiftStart = new DateTime($attendance_date . ' ' . $office_in);
-                            $shiftEnd   = new DateTime($attendance_date . ' ' . $office_out);
-                            $interval = $shiftStart->diff($shiftEnd);
-                            if ($shiftEnd <= $shiftStart) {
-                                $shiftEnd->modify('+1 day');
-                            }
-
-
-                            $totalMinutes =
-                                ($interval->days * 24 * 60) +
-                                ($interval->h * 60) +
-                                $interval->i;
-
-                            $halfMinutes = $totalMinutes / 2;
-                            $firstHalfStart  = clone $shiftStart;
-                            $firstHalfEnd    = (clone $shiftStart)->modify("+{$halfMinutes} minutes");
-
-                            $secondHalfStart = clone $firstHalfEnd;
-                            $secondHalfEnd   = clone $shiftEnd;
-
-                            if ($status == 'P' || $status == 'p') {
-                                $form_data['intime'] = $shiftStart->format('H:i:s');
-                                $form_data['outtime'] = $shiftEnd->format('H:i:s');
-                                $form_data['attendance_status'] = 'Present';
-                                $form_data['attheadid'] = '1';
-                                $form_data['working_hours'] = $shift_wh;
-                            } elseif ($status == 'HD' || $status == 'hd' || $status == 'Hd' || $status == 'hD') {
-
-                                $form_data['intime'] = $firstHalfStart->format('H:i:s');
-                                $form_data['outtime'] = $firstHalfEnd->format('H:i:s');
-                                $form_data['attendance_status'] = 'Half Day';
-                                $form_data['attheadid'] = '3';
-                                $halfHours = $obj->timeToHours($shift_wh) / 2;
-                                $halfTime  =  $obj->hoursToTime($halfHours);
-
-                                $form_data['working_hours'] =   $halfTime;
-                            } elseif ($status == 'L' || $status == 'l') {
-                                $form_data['attendance_status'] = 'Leave';
-                            }
-
-                            $obj->insert_record("attendance_entry", $form_data);
-                            $insertedEmployees[$emp_id] = true;
-                        }
-                    }
-                    $insertedCount = count($insertedEmployees);
+                } elseif ($status === 'L') {
+                    $row['attendance_status'] = 'Earning Leave';
+                } elseif ($status === 'C') {
+                    $row['attendance_status'] = 'C Off';
+                } elseif ($status === 'HL') {
+                    $row['attendance_status'] = 'Half Earning Leave';
+                } elseif ($status === 'HC') {
+                    $row['attendance_status'] = 'Half C Off';
                 }
+
+                $insertRows[] = $row;
             }
         }
     }
 
+    if (!empty($processedEmpIds)) {
+        $empIdStr = implode(',', array_keys($processedEmpIds));
+        $obj->bulk_delete('attendance_entry', [
+            'emp_id'  => array_keys($processedEmpIds),
+            'month'   => $month,
+            'year'    => $year,
+            'unit_id' => $unitid
+        ]);
+        $obj->bulk_delete('attendance_log', [
+            'emp_id'  => array_keys($processedEmpIds),
+            'month'   => $month,
+            'year'    => $year,
+            'unit_id' => $unitid
+        ]);
+    }
+
+    foreach (array_chunk($insertRows, 500) as $chunk) {
+        $obj->bulk_insert('attendance_entry', $chunk);
+    }
+
+    $insertedCount = count(array_unique(array_column($insertRows, 'emp_id')));
+    $skipCount = count($skipEmpCodes);
+
+$skipEmpStr = urlencode(implode(', ', $skipReasons));
+    //die;
+    // echo "<script>
+    //     location='$pagename?action=1&total=$insertedCount&inserted=$insertedCount';
+    // </script>";
+
     echo "<script>
-location = '$pagename?action=1&total=$totalRecords&inserted=$insertedCount';
+location='$pagename?action=1&total=$insertedCount&inserted=$insertedCount&skip_count=$skipCount&skip_emp=$skipEmpStr';
 </script>";
 }
+
 ?>
 
 <!doctype html>
@@ -289,6 +292,17 @@ location = '$pagename?action=1&total=$totalRecords&inserted=$insertedCount';
                         ?>
                     </div>
                 <?php endif; ?>
+                <?php
+if (isset($_GET['skip_count']) && $_GET['skip_count'] > 0) {
+?>
+    <div class="alert alert-danger">
+        <b>Skipped Employees:</b>
+        <?= $_GET['skip_count'] ?><br>
+
+        <b>Reason:</b><br>
+        <?= urldecode($_GET['skip_emp']) ?>
+    </div>
+<?php } ?>
             </div>
         </div>
     </div>
@@ -305,5 +319,5 @@ location = '$pagename?action=1&total=$totalRecords&inserted=$insertedCount';
         });
     </script>
 </body>
-
+ 
 </html>

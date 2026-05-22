@@ -10,6 +10,7 @@ $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 
 if (isset($_POST['submit'])) {
+    // $category_id = $obj->test_input($_POST['category_id']);
     $subdivision_id  = $obj->test_input($_POST['subdivision_id']);
     $department_name  = $obj->test_input($_POST['department_name']);
     $c_off_check = isset($_POST['c_off_check']) ? 1 : 0;
@@ -17,6 +18,7 @@ if (isset($_POST['submit'])) {
     $count = $obj->getvalfield($tblname, "count(*)", "department_name='$department_name' and subdivision_id='$subdivision_id' and unit_id='$unitid' and $tblpkey!='$keyvalue'");
 
     $form_data = array(
+        // "category_id" => $category_id,
         "subdivision_id" => $subdivision_id,
         "department_name" => $department_name,
         "c_off_check"   => $c_off_check,
@@ -36,6 +38,7 @@ if (isset($_POST['submit'])) {
             $process = "insert";
         } else {
             $form_data["lastupdated"] = $createdate;
+            $form_data["updatedby"] = $loginid;
             $where = array($tblpkey => $keyvalue);
             $obj->update_record($tblname, $where, $form_data);
             $action = 2;
@@ -50,10 +53,12 @@ if (isset($_GET[$tblpkey])) {
     $btn_name = "Update";
     $where = array($tblpkey => $keyvalue);
     $sqledit = $obj->select_record($tblname, $where);
+    // $category_id = $sqledit['category_id'];
     $subdivision_id =  $sqledit['subdivision_id'];
     $department_name =  $sqledit['department_name'];
     $c_off_check   = $sqledit['c_off_check'];
 } else {
+    // $category_id = "";
     $subdivision_id = "";
     $department_name = "";
     $c_off_check   = 0;
@@ -93,15 +98,15 @@ if (isset($_GET[$tblpkey])) {
                                     <div class="row g-4 align-items-center">
                                         <div class="col-sm">
                                             <div>
-                                                <h5 class="card-title mb-0"> <?= $module; ?></h5>
+                                                <h5 class="card-title mb-0"> <?= $module; ?><a href="department_master_list.php" class="float-end btn btn-primary btn-sm">Department List</a></h5>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
-
-                                        <div class="col-lg-4 mb-3">
+                                        
+                                        <div class="col-lg-3 mb-3">
                                             <label for="subdivision_id" class="form-label">Sub Division Name<span
                                                     class="text-danger fw-bold">*</span></label>
                                             <select class="form-select form-select-sm chosen-select"
@@ -119,11 +124,11 @@ if (isset($_GET[$tblpkey])) {
                                                     '<?= $subdivision_id; ?>';
                                             </script>
                                         </div>
-                                        <div class="col-lg-4 mb-3">
+                                        <div class="col-lg-3 mb-3">
                                             <label for="department_name" class="form-label">Department Name<span class="text-danger fw-bold">*</span></label>
                                             <input type="text" id="department_name" name="department_name" class="form-control form-control-sm" placeholder="Enter Department Name" value="<?php echo $department_name ?>" autocomplete="off" />
                                         </div>
-                                        <div class="col-lg-4 mb-3 mt-4">
+                                        <div class="col-lg-3 mb-3 mt-4">
                                             <div class="form-check">
                                                 <input class="form-check-input"
                                                     type="checkbox"
@@ -139,78 +144,21 @@ if (isset($_GET[$tblpkey])) {
                                                 Click to allow C-Off for this department.
                                             </small>
                                         </div>
-
-                                        <div class="col-lg-4 mb-3 mt-2">
-                                            <br>
-                                            <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
-                                            <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('subdivision_id,department_name')">
-                                            <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
-                                        </div>
+                                        <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
+                                        if ($chkadd == 1) {  ?>
+                                            <div class="col-lg-4 mb-3 mt-2">
+                                                <br>
+                                                <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
+                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('subdivision_id,department_name')">
+                                                <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
+                                            </div>
+                                        <?php } ?>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </form>
-                    <div class="col-lg-12">
-                        <div class="card" id="customerList">
-                            <div class="card-header border-bottom-dashed">
-                                <div class="row g-4 align-items-center">
-                                    <div class="col-sm">
-                                        <div>
-                                            <h5 class="card-title mb-0"><?php echo $submodule; ?> <span class="text-danger"></span></h5>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table id="buttons-datatables" class="display table table-sm table-bordered" style="width:100%">
-                                        <thead>
-                                            <tr class="table-primary">
-                                                <th>Sr No.</th>
-                                                <th>Sub Division</th>
-                                                <th>Department Name</th>
-                                                <th>C-Off</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody><?php
-                                                $slno = 1;
-                                                //$res = $obj->executequery("select * from $tblname where unit_id='$unitid' order by $tblpkey desc");
-                                                $res = $obj->executequery("select * from $tblname order by $tblpkey desc");
-                                                foreach ($res as $row) {
-                                                    $subdivision_name = $obj->getvalfield("subdivision_master", "sub_division_name", "subdivision_id=' $row[subdivision_id]'");
-                                                ?>
-                                                <tr>
-                                                    <td><?php echo $slno++ ?></td>
-                                                    <td><?php echo $subdivision_name; ?></td>
-                                                    <td><?php echo $row["department_name"]; ?></td>
-                                                    <td>
-                                                        <?= ($row['c_off_check'] == 1) ? 'Allowed' : 'Not Allowed' ?>
-                                                    </td>
-
-                                                    <td>
-                                                        <ul class="list-inline hstack gap-2 mb-0">
-                                                            <li class="list-inline-item " data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Edit">
-                                                                <a href="<?php echo $pagename ?>?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>" class="edit-item-btn"><i class="ri-pencil-fill align-bottom text-success"></i></a>
-                                                            </li>
-                                                            <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
-                                                                <a class="remove-item-btn" type="button" onclick="funDel(<?php echo $row[$tblpkey]; ?>);">
-                                                                    <i class="ri-delete-bin-fill align-bottom text-danger"></i>
-                                                                </a>
-                                                            </li>
-                                                        </ul>
-                                                    </td>
-                                                </tr>
-                                            <?php } ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
                 </div>
                 <!--end col-->
             </div>

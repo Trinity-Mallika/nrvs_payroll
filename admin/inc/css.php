@@ -15,13 +15,6 @@
 
 
     <style>
-        table,
-        tr,
-        td {
-            padding: 5px 10px 3px 10px !important;
-            white-space: nowrap;
-        }
-
         .ri-pencil-fill {
             font-size: 1rem !important;
         }
@@ -32,5 +25,20 @@
 
         .ri-eye-fill {
             font-size: 1rem !important;
+        }
+
+        .table-responsive {
+            max-height: 800px;
+            height: auto;
+        }
+
+        .table thead {
+            background: white;
+        }
+
+        .table thead {
+            position: sticky !important;
+            top: 0;
+            z-index: 10;
         }
     </style>

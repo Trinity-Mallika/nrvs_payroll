@@ -156,12 +156,12 @@ $expired = $obj->software_expire();
                                 <div class="p-lg-5 p-4">
                                     <div>
                                         <h5 class="text-primary">Welcome Back !</h5>
-                                        <p class="text-muted">Sign in to continue to Velzon.</p>
+                                        <p class="text-muted">Sign in to continue to NRVS.</p>
                                     </div>
 
                                     <div class="mt-4">
                                         <form action="checklogin.php" method="post">
-
+                                            <?php echo $message; ?>
                                             <div class="mb-3">
                                                 <label for="unit_id" class="form-label">Unit Name</label>
                                                 <select type="text" class="form-control" name="unit_id" id="unit_id">

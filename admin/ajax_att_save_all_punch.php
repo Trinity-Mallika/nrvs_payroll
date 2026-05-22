@@ -8,6 +8,12 @@ $punch_status   = $_POST['punch_status'];
 $punch_remark   = $_POST['punch_remark'];
 $punch_shift_id = $_POST['punch_shift_id'];
 $punch_all_type = $_POST['punch_all_type'];
+$current_time = date('H:i:s');
+
+// $prevDate = date('Y-m', timestamp: strtotime("$currentYear-$currentMonth-01 -1 month"));
+
+// $prevYear  = date('Y', strtotime($prevDate));
+// $prevMonth = date('n', strtotime($prevDate));
 
 $total_days = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
 
@@ -35,6 +41,20 @@ $where1 = array(
 );
 
 $obj->delete_record('attendance_entry', $where1);
+//$obj->delete_record('attendance_log', $where1);
+
+$leave_data = array(
+    "emp_id" => $emp_id,
+    "department_id" => $department_id,
+    "month" => (int)$currentMonth,
+    "year" => (int)$currentYear,
+    "basic_salary" => $emp_salary,
+    "unit_id" => $unitid,
+    "createdby" => $loginid,
+    "ipaddress" => $ipaddress,
+    "sessionid" => $sessionid,
+    "createdate" => date("Y-m-d H:i:s")
+);
 
 $holidayRows = $obj->executequery("SELECT date FROM holiday_entry WHERE is_deleted = 0 AND FIND_IN_SET('$unitid', unit_id) AND YEAR(date) = '$currentYear' AND MONTH(date) = '$currentMonth'");
 $holidayDates = [];
@@ -62,18 +82,19 @@ for ($day = 1; $day <= $endDay; $day++) {
             'month'   => $currentMonth,
             'unit_id'   => $unitid
         );
-
+        $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
         $obj->delete_record('attendance_entry', $where);
+       // $obj->delete_record('attendance_log', $where);
         echo 3;
     } else {
         $shiftStart = new DateTime("$attendance_date $office_in_time");
         $shiftEnd   = new DateTime("$attendance_date $office_out_time");
 
-        $interval = $shiftStart->diff($shiftEnd);
+
         if ($shiftEnd <= $shiftStart) {
             $shiftEnd->modify('+1 day');
         }
-
+        $interval = $shiftStart->diff($shiftEnd);
 
         $totalMinutes =
             ($interval->days * 24 * 60) +
@@ -103,7 +124,13 @@ for ($day = 1; $day <= $endDay; $day++) {
             'unit_id' => $unitid,
             'sessionid' => $sessionid,
             'in_remark' => $punch_remark,
-            'basic_salary' => $emp_salary
+            'basic_salary' => $emp_salary,
+            'createdate' => date('Y-m-d'),
+            'createtime' => $current_time,
+            'createdby' => $loginid,
+            'updateby' => $loginid,
+            'lastupdated' => date('Y-m-d'),
+            'ipaddress' => $ipaddress,
         ];
 
         /* ================= STATUS WISE LOGIC ================= */
@@ -120,9 +147,8 @@ for ($day = 1; $day <= $endDay; $day++) {
                 $totalMinutes % 60,
                 0
             );
-        }
-
-        if ($punch_status == 'first_half') {
+            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
+        } elseif ($punch_status == 'first_half') {
             $form_date['intime'] = $firstHalfStart->format('H:i:s');
             $form_date['outtime'] = $firstHalfEnd->format('H:i:s');
             $form_date['attendance_status'] = 'Half Day';
@@ -134,9 +160,8 @@ for ($day = 1; $day <= $endDay; $day++) {
                 $halfMinutes % 60,
                 0
             );
-        }
-
-        if ($punch_status == 'second_half') {
+            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
+        } elseif ($punch_status == 'second_half') {
             $form_date['intime'] = $secondHalfStart->format('H:i:s');
             $form_date['outtime'] = $secondHalfEnd->format('H:i:s');
             $form_date['attendance_status'] = 'Half Day';
@@ -148,13 +173,65 @@ for ($day = 1; $day <= $endDay; $day++) {
                 $halfMinutes % 60,
                 0
             );
+            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
+        } elseif ($punch_status == 'weekly_leave') {
+            $form_date['attendance_status'] = 'Weekly Leave';
+            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
+
+            $leave_data['total_leave'] = '-1';
+            $leave_data['remining_leave'] = '-1';
+            $leave_data['leave_type'] = 'weekly';
+            $leave_data['leave_date'] = $attendance_date;
+            $obj->insert_record("emp_monthly_leave", $leave_data);
+        } elseif ($punch_status == 'earn_leave') {
+            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
+            $form_date['attendance_status'] = 'Earning Leave';
+            $leave_data['total_leave'] = '-1';
+            $leave_data['remining_leave'] = '-1';
+            $leave_data['leave_type'] = 'earning';
+            $leave_data['leave_date'] = $attendance_date;
+            $obj->insert_record("emp_monthly_leave", $leave_data);
+        } elseif ($punch_status == 'half_weekly_leave') {
+            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
+
+            $form_date['attendance_status'] = 'Half Weekly Leave';
+            $leave_data['total_leave'] = '-0.5';
+            $leave_data['remining_leave'] = '-0.5';
+            $leave_data['leave_type'] = 'weekly';
+            $leave_data['leave_date'] = $attendance_date;
+            $obj->insert_record("emp_monthly_leave", $leave_data);
+        } elseif ($punch_status == 'half_earn_leave') {
+            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
+
+            $form_date['attendance_status'] = 'Half Earning Leave';
+            $leave_data['total_leave'] = '-0.5';
+            $leave_data['remining_leave'] = '-0.5';
+            $leave_data['leave_type'] = 'earning';
+            $leave_data['leave_date'] = $attendance_date;
+            $obj->insert_record("emp_monthly_leave", $leave_data);
+        } elseif ($punch_status == 'c_off') {
+            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
+            $form_date['attendance_status'] = 'C Off';
+        } elseif ($punch_status == 'half_c_off') {
+            $obj->delete_record('emp_monthly_leave', ['emp_id' => $emp_id, 'leave_date' => $attendance_date]);
+            $form_date['attendance_status'] = 'Half C Off';
         }
 
-        if ($punch_status == 'Leave') {
-            $form_date['attendance_status'] = 'Leave';
-        }
+        $lastid = $obj->insert_record_lastid("attendance_entry", $form_date);
 
-        $obj->insert_record("attendance_entry", $form_date);
+        $form_data1 = array(
+            "primary_id" => $lastid,
+            "flag" => 'Punch IN and OUT Attendence',
+            "activity_type" => 'Attendence IN/OUT',
+            "createdby" => $loginid,
+            "pagename" => 'employee_wise_attendance.php',
+            "created_date" => $createdate,
+            "created_time" => date('H:i:s'),
+            "unit_id" => $unitid,
+            'ipaddress' => $ipaddress,
+            "sessionid" => $sessionid
+        );
+        $logactivity = $obj->insert_record("logactivity_master", $form_data1);
         echo 1;
     }
 }

@@ -6,7 +6,7 @@ class Database
 	public function __construct()
 	{
 		// echo $_SERVER["SERVER_NAME"];
-		if ($_SERVER["SERVER_NAME"] == "localhost"  || $_SERVER["SERVER_NAME"] == "trinity") {
+		if ($_SERVER["SERVER_NAME"] == "localhost"  || $_SERVER["SERVER_NAME"] == "trinity" || $_SERVER["SERVER_NAME"] == "192.168.1.8") {
 			//echo "asdfasd";die;
 			$dbhost = "localhost";
 			$dbuser = "root";

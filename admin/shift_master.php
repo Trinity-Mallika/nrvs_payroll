@@ -14,9 +14,13 @@ if (isset($_POST['submit'])) {
     $shift_name     = $obj->test_input($_POST['shift_name']);
     $in_time         = $_POST['in_time'];
     $out_time        = $_POST['out_time'];
+    $lunch_time        = $_POST['lunch_time'];
     $grace_time_in  = intval($_POST['grace_time_in']);
     $grace_time_out = intval($_POST['grace_time_out']);
     $working_hour    = $_POST['working_hour'];
+    $total_working_hour    = $_POST['total_working_hour'];
+    $min_working_hrs    = $_POST['min_working_hrs'] ?? '';
+    $max_working_hrs    = $_POST['max_working_hrs'] ?? '';
     $is_cross_day = isset($_POST['is_cross_day']) ? 1 : 0;
     $count = $obj->getvalfield($tblname, "count(*)", "shift_name='$shift_name' and unit_id='$unitid' and $tblpkey!='$keyvalue'");
 
@@ -25,9 +29,13 @@ if (isset($_POST['submit'])) {
         'is_cross_day'     => $is_cross_day,
         'in_time'         => $in_time,
         'out_time'        => $out_time,
+        'lunch_time'        => $lunch_time,
         'grace_time_in'        => $grace_time_in,
         'grace_time_out'        => $grace_time_out,
         'working_hour'  => $working_hour,
+        'total_working_hour'  => $total_working_hour,
+        'min_working_hrs'  => $min_working_hrs,
+        'max_working_hrs'  => $max_working_hrs,
         'ipaddress'       => $ipaddress,
         "sessionid"   => $sessionid,
         "unit_id" => $unitid,
@@ -44,13 +52,14 @@ if (isset($_POST['submit'])) {
             $process = "insert";
         } else {
             $form_data["lastupdated"] = $createdate;
+            $form_data["updatedby"] = $loginid;
             $where = array($tblpkey => $keyvalue);
             $obj->update_record($tblname, $where, $form_data);
             $action = 2;
             $process = "updated";
         }
     }
-    // die;
+
     echo "<script>location='$pagename?action=$action'</script>";
 }
 
@@ -62,17 +71,26 @@ if (isset($_GET[$tblpkey])) {
     $shift_name     = $sqledit['shift_name'];
     $in_time         = $sqledit['in_time'];
     $out_time        = $sqledit['out_time'];
+    $lunch_time        = $sqledit['lunch_time'];
     $grace_time_in        = $sqledit['grace_time_in'];
     $grace_time_out        = $sqledit['grace_time_out'];
     $working_hour    = $sqledit['working_hour'];
+    $total_working_hour    = $sqledit['total_working_hour'];
+    $min_working_hrs    = $sqledit['min_working_hrs'];
+    $max_working_hrs    = $sqledit['max_working_hrs'];
     $is_cross_day    = $sqledit['is_cross_day'];
 } else {
     $shift_name = "";
     $in_time = "";
     $out_time = "";
+    $lunch_time = "";
     $grace_time_in = "";
     $grace_time_out = "";
     $working_hour = "";
+    $total_working_hour = "";
+    $max_working_hrs = "";
+    $max_working_hrs = "";
+    $min_working_hrs = "";
     $is_cross_day = "0";
 }
 ?>
@@ -110,7 +128,7 @@ if (isset($_GET[$tblpkey])) {
                                     <div class="row g-4 align-items-center">
                                         <div class="col-sm">
                                             <div>
-                                                <h5 class="card-title mb-0"> <?= $module; ?></h5>
+                                                <h5 class="card-title mb-0"> <?= $module; ?><a href="shift_master_list.php" class="float-end btn btn-primary btn-sm">Shift List</a></h5>
                                             </div>
                                         </div>
                                     </div>
@@ -137,25 +155,70 @@ if (isset($_GET[$tblpkey])) {
                                                 value="<?php echo $out_time; ?>" />
                                         </div>
 
+
+
                                         <div class="col-lg-3 mb-3">
-                                            <strong><label for="working_hour">Working Hour<span class="text-danger">*</span></label></strong>
+                                            <strong><label for="working_hour">Actual Working Hour<span class="text-danger">*</span></label></strong>
                                             <input type="text" name="working_hour" id="working_hour"
                                                 class="form-control form-control-sm "
                                                 value="<?php echo $working_hour; ?>" readonly />
                                         </div>
+
+                                        <div class="col-lg-3 mb-3">
+                                            <strong><label>Lunch Time (Minutes)<span class="text-danger"> </span></label></strong>
+                                            <input type="number" name="lunch_time" id="lunch_time"
+                                                class="form-control form-control-sm" min="0" step="1"
+                                                value="<?php echo $lunch_time; ?>" oninput="limitTwoDigits(this); calculateWorkingHour();" />
+                                        </div>
+
+                                        <div class="col-lg-3 mb-3">
+                                            <strong><label for="total_working_hour">Total Working Hour<span class="text-danger">*</span></label></strong>
+                                            <input type="text" name="total_working_hour" id="total_working_hour"
+                                                class="form-control form-control-sm"
+                                                value="<?php echo $total_working_hour; ?>" readonly />
+                                        </div>
+
+
+
                                         <div class="col-lg-3 mb-3">
                                             <strong><label>Grace Time In (Minutes)<span class="text-danger">*</span></label></strong>
                                             <input type="number" name="grace_time_in" id="grace_time_in"
                                                 class="form-control form-control-sm" min="0" step="1"
-                                                value="<?php echo $grace_time_in; ?>" oninput="limitTwoDigits(this)" />
+                                                value="<?php echo $grace_time_in; ?>" oninput="limitTwoDigits(this); calculateWorkingHour();" />
                                         </div>
 
                                         <div class="col-lg-3 mb-3">
                                             <strong><label>Grace Time Out (Minutes)<span class="text-danger">*</span></label></strong>
                                             <input type="number" name="grace_time_out" id="grace_time_out"
                                                 class="form-control form-control-sm" min="0" step="1"
-                                                value="<?php echo $grace_time_out; ?>" oninput="limitTwoDigits(this)" />
+                                                value="<?php echo $grace_time_out; ?>" oninput="limitTwoDigits(this);calculateWorkingHour();" />
                                         </div>
+
+
+
+                                        <div class="col-lg-3 mb-3">
+                                            <strong>
+                                                <label for="max_working_hrs">Full Day Working Hour<span class="text-danger">*</span></label>
+                                            </strong>
+                                            <input type="text" name="max_working_hrs" id="max_working_hrs"
+                                                class="form-control form-control-sm"
+                                                placeholder="HH:MM:SS"
+                                                value="<?php echo $max_working_hrs; ?>"
+                                                readonly>
+                                        </div>
+
+
+                                        <div class="col-lg-3 mb-3">
+                                            <strong>
+                                                <label for="min_working_hrs">Half Day Working Hour<span class="text-danger">*</span></label>
+                                            </strong>
+                                            <input type="text" name="min_working_hrs" id="min_working_hrs"
+                                                class="form-control form-control-sm"
+                                                placeholder="HH:MM:SS"
+                                                value="<?php echo $min_working_hrs; ?>"
+                                                onkeypress="return timeFormat(event, this)">
+                                        </div>
+
                                         <div class="col-lg-3 mb-3">
                                             <strong><label>Cross Day Shift<span class="text-danger">*</span></label></strong><br>
                                             <input type="checkbox"
@@ -163,88 +226,21 @@ if (isset($_GET[$tblpkey])) {
                                                 id="is_cross_day"
                                                 value="1" <?php if ($is_cross_day == 1) echo "checked"; ?>> <strong><label for="is_cross_day">Is Cross Day Shift</label></strong><br>
                                         </div>
-                                        <div class="col-lg-3 mb-3">
-                                            <br>
-                                            <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
-                                            <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('shift_name,in_time,out_time')">
-                                            <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
-                                        </div>
+                                        <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
+                                        if ($chkadd == 1) {  ?>
+                                            <div class="col-lg-3 mb-3">
+                                                <br>
+                                                <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
+                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('shift_name,in_time,out_time,min_working_hrs')">
+                                                <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
+                                            </div>
+                                        <?php } ?>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </form>
-                    <div class="col-lg-12">
-                        <div class="card" id="customerList">
-                            <div class="card-header border-bottom-dashed">
-                                <div class="row g-4 align-items-center">
-                                    <div class="col-sm">
-                                        <div>
-                                            <h5 class="card-title mb-0"><?php echo $submodule; ?> <span class="text-danger"></span></h5>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table id="buttons-datatables" class="display table table-sm table-bordered" style="width:100%">
-                                        <thead>
-                                            <tr class="table-primary">
-                                                <th>Sr No.</th>
-                                                <th>Shift Name</th>
-                                                <th>In Time</th>
-                                                <th>Out Time</th>
-                                                <th>Working Hour</th>
-                                                <th>Grace Time In</th>
-                                                <th>Grace Time Out</th>
-                                                <th>Is Cross Day</th>
-                                                <th>Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody><?php
-                                                $slno = 1;
-                                                $res = $obj->executequery("select * from $tblname where unit_id='$unitid' order by $tblpkey desc");
-                                                foreach ($res as $row) {  ?>
-                                                <tr>
-                                                    <td><?php echo $slno++; ?></td>
-                                                    <td><?php echo $row['shift_name']; ?></td>
-                                                    <td>
-                                                        <?= !empty($row['in_time']) && $row['in_time'] != '00:00:00'
-                                                            ? date("h:i A", strtotime($row['in_time']))
-                                                            : '-' ?>
-                                                    </td>
-
-                                                    <td>
-                                                        <?= !empty($row['out_time']) && $row['out_time'] != '00:00:00'
-                                                            ? date("h:i A", strtotime($row['out_time']))
-                                                            : '-' ?>
-                                                    </td>
-                                                    <td><?php echo $row['working_hour']; ?> Hrs</td>
-                                                    <td><?php echo $row['grace_time_in']; ?></td>
-                                                    <td><?php echo $row['grace_time_out']; ?></td>
-                                                    <td><?php echo $row['is_cross_day'] == 1 ? 'Yes' : 'No'; ?></td>
-                                                    <td>
-                                                        <ul class="list-inline hstack gap-2 mb-0">
-                                                            <li class="list-inline-item " data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Edit">
-                                                                <a href="<?php echo $pagename ?>?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>" class="edit-item-btn"><i class="ri-pencil-fill align-bottom text-success"></i></a>
-                                                            </li>
-                                                            <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
-                                                                <a class="remove-item-btn" type="button" onclick="funDel(<?php echo $row[$tblpkey]; ?>);">
-                                                                    <i class="ri-delete-bin-fill align-bottom text-danger"></i>
-                                                                </a>
-                                                            </li>
-                                                        </ul>
-                                                    </td>
-                                                </tr>
-                                            <?php } ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
                 </div>
                 <!--end col-->
             </div>
@@ -264,6 +260,8 @@ if (isset($_GET[$tblpkey])) {
                 width: '100%',
                 search_contains: true
             });
+
+            calculateWorkingHour();
 
             function calcWorkingHours() {
 
@@ -298,6 +296,9 @@ if (isset($_GET[$tblpkey])) {
                 let minutes = diff % 60;
 
                 $("#working_hour").val(
+                    String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0')
+                );
+                $("#total_working_hour").val(
                     String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0')
                 );
             }
@@ -346,9 +347,83 @@ if (isset($_GET[$tblpkey])) {
     </script>
     <script>
         function limitTwoDigits(el) {
-            if (el.value.length > 2) {
-                el.value = el.value.slice(0, 2);
+            if (el.value.length > 3) {
+                el.value = el.value.slice(0, 3);
             }
+        }
+
+        function calculateWorkingHour() {
+
+            let workingHour = document.getElementById("working_hour").value;
+            let lunchMinutes = parseInt(document.getElementById("lunch_time").value) || 0;
+            let graceIn = parseInt(document.getElementById("grace_time_in").value) || 0;
+            let graceOut = parseInt(document.getElementById("grace_time_out").value) || 0;
+
+            if (!workingHour) return;
+
+            let parts = workingHour.split(":");
+            let hours = parseInt(parts[0]) || 0;
+            let minutes = parseInt(parts[1]) || 0;
+            let seconds = parts[2] ? parseInt(parts[2]) : 0;
+
+            // =========================
+            // ✅ STEP 1: Working - Lunch
+            // =========================
+            let totalMinutes = (hours * 60) + minutes;
+
+            let afterLunchMinutes = totalMinutes - lunchMinutes;
+            if (afterLunchMinutes < 0) afterLunchMinutes = 0;
+
+            let tHours = Math.floor(afterLunchMinutes / 60);
+            let tMins = afterLunchMinutes % 60;
+
+            let totalWorking =
+                String(tHours).padStart(2, '0') + ":" +
+                String(tMins).padStart(2, '0') + ":" +
+                String(seconds).padStart(2, '0');
+
+            // 👉 Total Working Hour set
+            document.getElementById("total_working_hour").value = totalWorking;
+
+            // =========================
+            // ✅ STEP 2: Total - Grace
+            // =========================
+            let finalMinutes = afterLunchMinutes - (graceIn + graceOut);
+            if (finalMinutes < 0) finalMinutes = 0;
+
+            let fHours = Math.floor(finalMinutes / 60);
+            let fMins = finalMinutes % 60;
+
+            let fullDayWorking =
+                String(fHours).padStart(2, '0') + ":" +
+                String(fMins).padStart(2, '0') + ":" +
+                String(seconds).padStart(2, '0');
+
+            // 👉 Full Day Working Hour set
+            document.getElementById("max_working_hrs").value = fullDayWorking;
+        }
+
+        function timeFormat(e, input) {
+            let char = String.fromCharCode(e.which);
+
+            // Allow only numbers
+            if (!/[0-9]/.test(char)) {
+                return false;
+            }
+
+            let value = input.value;
+
+            // Auto add colon
+            if (value.length === 2 || value.length === 5) {
+                input.value = value + ":";
+            }
+
+            // Max length 8 (HH:MM:SS)
+            if (value.length >= 8) {
+                return false;
+            }
+
+            return true;
         }
     </script>
 </body>

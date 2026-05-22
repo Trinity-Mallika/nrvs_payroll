@@ -42,6 +42,10 @@ $fields = [
     'esic_employer',
     'total_c_off',
     'c_off_leave',
+    'loan_amt',
+    'advance_amt',
+    'additional_payment',
+    'other_deduction',
     'unit_id',
     'createdby',
     'ipaddress',
@@ -65,11 +69,11 @@ if (isset($_GET[$tblpkey])) {
     $shoes_ded = $obj->getvalfield("emp_deduction", "shoes_ded", "emp_id='$emp_id' and month='$month' and year='$year'");
     $other = $obj->getvalfield("emp_deduction", "other", "emp_id='$emp_id' and month='$month' and year='$year'");
 
-    $loan = $obj->getvalfield("emi_setting_details", "amount_detail", "emp_id='$emp_id' and month_detail='$month' and year_detail='$year'") ?? 0;
     $unit_logo = $obj->getvalfield("unit_master", "logo_image", "unit_id='$unit_id'");
 
 
     $total_deduction = $lpg_ded + $shoes_ded + $other + $pf_emp + $esic_emp;
+
 
     // If $month is like "January", "Feb", etc.
     if (!is_numeric($month)) {
@@ -91,6 +95,7 @@ if (isset($_GET[$tblpkey])) {
         $checkedDocs = explode(',', $document_checked_ids);
     }
 }
+
 if (!empty($emp_id)) {
     $emp_data = $obj->select_record("employee_master", array("emp_id" => $emp_id));
     $first_name       = $emp_data['first_name'];
@@ -135,7 +140,7 @@ $mpdf->SetHTMLHeader('
 ', 'O'); // 'O' = apply on all pages
 
 // IMAGE watermark
-$mpdf->SetWatermarkImage(__DIR__ . '/assets/images/water-mark.png', 0.2, "", [50, 70]);
+$mpdf->SetWatermarkImage(__DIR__ . '/assets/images/water-mark.png', 0.2, "", [65, 40]);
 $mpdf->showWatermarkImage = true;
 
 $html = '<!DOCTYPE html>
@@ -261,14 +266,14 @@ $html = '<!DOCTYPE html>
         <tr>
             <td colspan="2">CONVEYANCE ALLOWANCE</td>
             <td >' . $conveyance . '</td>
-            <td style="border-left:1px solid #000;">LOAN & ADVANCE</td>
-            <td >' . $loan . '</td>
+            <td style="border-left:1px solid #000;">LOAN AMT</td>
+            <td >' . $loan_amt . '</td>
         </tr>
         <tr>
             <td colspan="2">MEDICAL ALLOWANCE</td>
             <td >' . $medical . '</td>
-            <td style="border-left:1px solid #000;"></td>
-            <td ></td>
+          <td style="border-left:1px solid #000;">ADVANCE AMT</td> 
+            <td >' . $advance_amt . '</td>
         </tr>
         <tr>
             <td colspan="2">SPECIAL ALLOWANCE</td>
@@ -276,18 +281,24 @@ $html = '<!DOCTYPE html>
             <td style="border-left:1px solid #000;"></td>
             <td ></td>
         </tr>
-        <tr>
-            <td colspan="2"><b>TOTAL EARNINGS</b></td>
+        <tr>  <td colspan="2"><b>GROSS SALARY</b></td>
+            <td ><b>' . $revised_salary . '</b></td>
+           
+            <td style="border-left:1px solid #000;"><b>TOTAL EARNINGS</b></td>
             <td ><b>' . $total_salary . '</b></td>
-            <td style="border-left:1px solid #000;"><b>TOTAL DEDUCTIONS</b></td>
-            <td ><b>' . $total_deduction . '</b></td>
         </tr>
         <tr>
-            <td colspan="2"><b>GROSS SALARY</b></td>
-            <td ><b>' . $revised_salary . '</b></td>
+             <td colspan="2"><b>TOTAL DEDUCTIONS</b></td>
+            <td ><b>' . $total_deduction . '</b></td>
             <td style="border-left:1px solid #000;"><b>NET SALARY</b></td>
             <td ><b>' . $total_net_salary . '</b></td>
+        </tr>   <tr>
+            <td colspan="2"><b>ADDITIONAL PAYMENT</b></td>
+            <td ><b>' . $additional_payment . '</b></td>
+            <td style="border-left:1px solid #000;"><b>TOTAL NET SALARY</b></td>
+            <td ><b>' . $additional_payment + $total_net_salary - $loan_amt - $advance_amt - $other_deduction . '</b></td>
         </tr>
+      
         <tr>
             <td colspan="5" style="border: 1px solid black;"><b>Rs. ' . $total_salary_words . '</b></td>
         </tr>

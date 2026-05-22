@@ -16,16 +16,18 @@ if (isset($_POST['submit'])) {
 
     $holiday_tittle  = $obj->test_input($_POST['holiday_tittle']);
     $date = $obj->test_input($_POST['date']);
+    $holiday_type = $obj->test_input($_POST['holiday_type']);
     $unit_id = implode(',', $_POST['unit_id'] ?? []);
     $count = $obj->getvalfield($tblname, "count(*)", "holiday_tittle='$holiday_tittle' and $tblpkey!='$keyvalue'");
 
     $form_data = array(
-        "holiday_tittle" => $holiday_tittle,
-        "sessionid"   => $sessionid,
-        "unit_id"   => $unit_id,
-        "date"           => $date,
-        "createdby"      => $loginid,
-        "ipaddress"      => $ipaddress
+        'holiday_tittle' => $holiday_tittle,
+        'sessionid'   => $sessionid,
+        'unit_id'   => $unit_id,
+        'holiday_type'   => $holiday_type,
+        'date'           => $date,
+        'createdby'      => $loginid,
+        'ipaddress'      => $ipaddress
     );
     if ($count > 0) {
         $action = 4;
@@ -38,6 +40,7 @@ if (isset($_POST['submit'])) {
             $process = "insert";
         } else {
             $form_data["lastupdated"] = $createdate;
+            $form_data["updatedby"] = $loginid;
             $where = array($tblpkey => $keyvalue);
             $obj->update_record($tblname, $where, $form_data);
             $action  = 2;
@@ -54,9 +57,10 @@ if (isset($_GET[$tblpkey])) {
     $sqledit = $obj->select_record($tblname, $where);
     $holiday_tittle =  $sqledit['holiday_tittle'];
     $unit_id =  $sqledit['unit_id'];
+    $holiday_type =  $sqledit['holiday_type'];
     $date = $sqledit['date'];
 } else {
-    $holiday_tittle =  $unit_id =   "";
+    $holiday_tittle =  $unit_id = $holiday_type =  "";
     $is_all_unit = true;
 }
 $treeLevels = [
@@ -105,7 +109,7 @@ $tree = $obj->buildSiteTree($treeLevels);
                                     <div class="row g-4 align-items-center">
                                         <div class="col-sm">
                                             <div>
-                                                <h5 class="card-title mb-0"> <?= $module; ?></h5>
+                                                <h5 class="card-title mb-0"> <?= $module; ?><a href="holiday_entry_list.php" class="float-end btn btn-primary btn-sm">Holiday List</a></h5>
                                             </div>
                                         </div>
                                     </div>
@@ -120,8 +124,20 @@ $tree = $obj->buildSiteTree($treeLevels);
                                             <label for="date" class="form-label">Date<span class="text-danger fw-bold">*</span></label>
                                             <input type="date" id="date" name="date" class="form-control form-control-sm" value="<?php echo $date ?>" autocomplete="off" />
                                         </div>
-
-                                        <div class="col-lg-6 mb-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Holiday Type</label>
+                                            <select class="form-select form-select-sm chosen-select" name="holiday_type"
+                                                id="holiday_type">
+                                                <option value="">Select</option>
+                                                <option value="National">National</option>
+                                                <option value="Seasonal">Seasonal</option>
+                                                <option value="Religion">Religion</option>
+                                            </select>
+                                            <script>
+                                                document.getElementById('holiday_type').value = '<?php echo ucfirst(strtolower($holiday_type)); ?>';
+                                            </script>
+                                        </div>
+                                        <div class="col-lg-3 mb-3">
                                             <label class="form-label">Unit List<span class="text-danger fw-bold">*</span></label>
                                             <div class="p-2 border">
                                                 <div class="tree-dropdown dropdown" style="width: 50%; max-height: 15%;">
@@ -142,13 +158,15 @@ $tree = $obj->buildSiteTree($treeLevels);
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <div class="col-md-3 mb-3 mt-2">
-                                            <br>
-                                            <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
-                                            <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return validateForm();">
-                                            <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
-                                        </div>
+                                        <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
+                                        if ($chkadd == 1) {  ?>
+                                            <div class="col-md-3 mb-3 mt-2">
+                                                <br>
+                                                <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
+                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return validateForm();">
+                                                <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
+                                            </div>
+                                        <?php } ?>
                                     </div>
                                 </div>
                             </div>
@@ -156,71 +174,6 @@ $tree = $obj->buildSiteTree($treeLevels);
                         </div>
 
                     </form>
-                    <div class="col-lg-12">
-                        <div class="card" id="customerList">
-                            <div class="card-header border-bottom-dashed">
-                                <div class="row g-4 align-items-center">
-                                    <div class="col-sm">
-                                        <div>
-                                            <h5 class="card-title mb-0"><?php echo $submodule; ?> <span class="text-danger"></span></h5>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table id="buttons-datatables" class="display table table-sm table-bordered" style="width:100%">
-                                        <thead>
-                                            <tr class="table-primary">
-                                                <th>Sr No.</th>
-                                                <th>Holiday Title</th>
-                                                <th>Unit</th>
-                                                <th style="font-weight: bold;">Start Date</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody><?php
-                                                $slno = 1;
-                                                $res = $obj->executequery("select * from $tblname  order by $tblpkey desc");
-                                                foreach ($res as $row) {
-                                                    if (!empty($row['unit_id'])) {
-                                                        $unit_name = $obj->getvalfield(
-                                                            "unit_master",
-                                                            "GROUP_CONCAT(unit_name)",
-                                                            "unit_id IN ({$row['unit_id']})"
-                                                        );
-                                                    } else {
-                                                        $unit_name = '';
-                                                    }
-
-                                                ?>
-                                                <tr>
-                                                    <td><?php echo $slno++ ?></td>
-                                                    <td><?php echo $row["holiday_tittle"]; ?></td>
-                                                    <td><?php echo $unit_name ?></td>
-                                                    <td><?php echo $obj->dateformatindia($row['date']); ?></td>
-                                                    <td>
-                                                        <ul class="list-inline hstack gap-2 mb-0">
-                                                            <li class="list-inline-item " data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Edit">
-                                                                <a href="<?php echo $pagename ?>?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>" class="edit-item-btn"><i class="ri-pencil-fill align-bottom text-success"></i></a>
-                                                            </li>
-                                                            <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
-                                                                <a class="remove-item-btn" type="button" onclick="funDel(<?php echo $row[$tblpkey]; ?>);">
-                                                                    <i class="ri-delete-bin-fill align-bottom text-danger"></i>
-                                                                </a>
-                                                            </li>
-                                                        </ul>
-                                                    </td>
-                                                </tr>
-                                            <?php } ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
                 </div>
                 <!--end col-->
             </div>
@@ -238,7 +191,7 @@ $tree = $obj->buildSiteTree($treeLevels);
     <script>
         $(document).ready(function() {
             $('#example').DataTable();
-            $(".chosen-select").chosen({
+            $(".chosen-select").select2({
                 width: '100%',
                 search_contains: true
             });
@@ -266,7 +219,6 @@ $tree = $obj->buildSiteTree($treeLevels);
                 $('#deleteRecordModal').modal('hide');
             });
         };
-
 
         function numberOnly(evt) {
             var theEvent = evt || window.event;

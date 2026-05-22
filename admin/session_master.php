@@ -120,11 +120,15 @@ if (isset($_GET[$tblpkey])) {
                                             <label for="amount" class="form-label">Session<span class="text-danger fw-bold">*</span></label>
                                             <input type="text" class="form-control form-control-sm" name="session_name" id="session_name" value="<?php echo $session_name; ?>" autocomplete="off" placeholder="yyyy-yy">
                                         </div>
-                                        <div class="col-12 col-lg-3 mt-4 ">
-                                            <input type="submit" class="btn btn-sm btn-success" name="submit" value="<?php echo $btn_name; ?>" onClick="return checkinputmaster('fromdate,todate,session_name');">
-                                            <input type="hidden" name="<?php echo $tblpkey; ?>" id="<?php echo $tblpkey; ?>" value="<?php echo $keyvalue; ?>">
-                                            <a href="<?php echo $pagename; ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
-                                        </div>
+
+                                        <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
+                                        if ($chkadd == 1) {  ?>
+                                            <div class="col-12 col-lg-3 mt-4 ">
+                                                <input type="submit" class="btn btn-sm btn-success" name="submit" value="<?php echo $btn_name; ?>" onClick="return checkinputmaster('fromdate,todate,session_name');">
+                                                <input type="hidden" name="<?php echo $tblpkey; ?>" id="<?php echo $tblpkey; ?>" value="<?php echo $keyvalue; ?>">
+                                                <a href="<?php echo $pagename; ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
+                                            </div>
+                                        <?php } ?>
                                     </div>
                                 </form>
                             </div>
@@ -173,14 +177,20 @@ if (isset($_GET[$tblpkey])) {
                                                 </td>
                                                 <td>
                                                     <ul class="list-inline hstack gap-2 mb-0">
-                                                        <li class="list-inline-item edit" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Edit">
-                                                            <a href="session_master.php?sessionid=<?php echo $row_get['sessionid']; ?>" class="edit-item-btn"><i class="ri-pencil-fill align-bottom text-primary"></i></a>
-                                                        </li>
-                                                        <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
-                                                            <a class="remove-item-btn" onclick="funDel(<?php echo $row_get['sessionid']; ?>);">
-                                                                <i class="ri-delete-bin-fill align-bottom text-danger"></i>
-                                                            </a>
-                                                        </li>
+                                                        <?php $chkedit = $obj->check_editBtn($pagename, $loginid);
+                                                        if ($chkedit == 1) {  ?>
+                                                            <li class="list-inline-item edit" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Edit">
+                                                                <a href="session_master.php?sessionid=<?php echo $row_get['sessionid']; ?>" class="edit-item-btn"><i class="ri-pencil-fill align-bottom text-primary"></i></a>
+                                                            </li>
+                                                        <?php }
+                                                        $chkdel = $obj->check_delBtn($pagename, $loginid);
+                                                        if ($chkdel == 1) {  ?>
+                                                            <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
+                                                                <a class="remove-item-btn" onclick="funDel(<?php echo $row_get['sessionid']; ?>);">
+                                                                    <i class="ri-delete-bin-fill align-bottom text-danger"></i>
+                                                                </a>
+                                                            </li>
+                                                        <?php  } ?>
                                                     </ul>
                                                 </td>
                                             </tr>

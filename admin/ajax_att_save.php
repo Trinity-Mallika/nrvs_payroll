@@ -14,10 +14,17 @@ if (isset($_POST['status']) && $_POST['status'] == 'punchinout') {
     $emp_salary =  $obj->getvalfield("employee_master", "basic_salary", "emp_id='$emp_id'");
     $department_id =  $obj->getvalfield("employee_master", "department_id", "emp_id='$emp_id'");
 
-
     $count = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$currentYear' and month ='$currentMonth'");
 
     if ($count == 0) {
+        $shift_data = $obj->select_record("shift_master", ['shift_id' => $punch_shift_id]);
+        $in_margin = $shift_data['grace_time_in'];
+        $out_margin = $shift_data['grace_time_out'];
+        $office_in_time = $shift_data['in_time'];
+        $office_out_time = $shift_data['out_time'];
+        $is_cross_day = $shift_data['is_cross_day'];
+        $office_working_hour = $shift_data['total_working_hour'];
+        $late_in = $obj->calculateLateIn($office_in_time, $punchtime, $in_margin);
         $form_date = array(
             $punchtype => $punchtime,
             'emp_id' => $emp_id,
@@ -29,38 +36,56 @@ if (isset($_POST['status']) && $_POST['status'] == 'punchinout') {
             'createdate' => date('Y-m-d'),
             'createtime' => $current_time,
             'attendance_status' => 'Incomplete',
+            'prev_attendance_status' => 'Incomplete',
             'ipaddress' => $ipaddress,
+            'late_in' => $late_in,
             'basic_salary' => $emp_salary,
             'in_remark' => $punch_remark,
             'shift_id' => $punch_shift_id,
             'in_status' => 'IN',
             'entry_type' => 'manual',
             'attheadid' => 5,
+            'createdby' => $loginid,
             'unit_id' => $unitid,
             'sessionid' => $sessionid
         );
-        $obj->insert_record("attendance_entry", $form_date);
+        $lastid = $obj->insert_record_lastid("attendance_entry", $form_date);
+
+        $form_data1 = array(
+            "primary_id" => $lastid,
+            "flag" => 'Punch IN Attendence',
+            "activity_type" => 'Attendence IN',
+            "createdby" => $loginid,
+            "pagename" => 'employee_wise_attendance.php',
+            "created_date" => $createdate,
+            "created_time" => date('H:i:s'),
+            "unit_id" => $unitid,
+            'ipaddress' => $ipaddress,
+            "sessionid" => $sessionid
+        );
+        $logactivity = $obj->insert_record("logactivity_master", $form_data1);
+
         echo 1;
     } else {
         $attendance_id = $obj->getvalfield("attendance_entry", "attendance_id", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$currentYear' and month ='$currentMonth' ");
         $shift_id = $obj->getvalfield("attendance_entry", "shift_id", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$currentYear' and month ='$currentMonth' ");
 
-        $in_margin = $obj->getvalfield("shift_master", "grace_time_in", "shift_id='$shift_id'");
-        $out_margin = $obj->getvalfield("shift_master", "grace_time_out", "shift_id='$shift_id'");
-        $office_in_time = $obj->getvalfield("shift_master", "in_time", "shift_id='$shift_id'");
-        $office_out_time = $obj->getvalfield("shift_master", "out_time", "shift_id='$shift_id'");
-        $is_cross_day = $obj->getvalfield("shift_master", "is_cross_day", "shift_id='$shift_id'");
-
-        $intime = $obj->getvalfield("attendance_entry", "intime", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$currentYear' and month ='$currentMonth' ");
-
-        $office_working_hour = $obj->getvalfield("shift_master", "working_hour", "shift_id='$shift_id'");
+        $shift_data = $obj->select_record("shift_master", ['shift_id' => $shift_id]);
+        $in_margin = $shift_data['grace_time_in'];
+        $out_margin = $shift_data['grace_time_out'];
+        $office_in_time = $shift_data['in_time'];
+        $office_out_time = $shift_data['out_time'];
+        $is_cross_day = $shift_data['is_cross_day'];
+        //$office_working_hour = $shift_data['working_hour'];
+        $office_working_hour = $shift_data['total_working_hour'];
+        $early_out = $obj->calculateEarlyOut($office_out_time, $punchtime, $out_margin);
+        $intime = $obj->getvalfield("attendance_entry", "intime", "emp_id='$emp_id' and attendance_date='$attendance_date' and year='$currentYear' and month ='$currentMonth'");
 
         $existing_outtime = $obj->getvalfield(
             "attendance_entry",
             "outtime",
             "attendance_id='$attendance_id'"
         );
-
 
         $shiftStart = new DateTime($attendance_date . ' ' . $office_in_time);
         $shiftEnd = new DateTime($attendance_date . ' ' . $office_out_time);
@@ -96,7 +121,6 @@ if (isset($_POST['status']) && $_POST['status'] == 'punchinout') {
         }
 
         $interval = $start_time->diff($end_time);
-
         $working_hours = sprintf(
             '%02d:%02d:%02d',
             ($interval->days * 24) + $interval->h,
@@ -104,9 +128,7 @@ if (isset($_POST['status']) && $_POST['status'] == 'punchinout') {
             $interval->s
         );
         $total_hours = ($interval->days * 24) + $interval->h + ($interval->i / 60);
-
         $overtimeMinutes = $obj->calculateOvertimeTime($working_hours, $office_working_hour);
-        
 
         if ($punchtype == 'intime') {
             $existing_intime = $obj->getvalfield(
@@ -114,15 +136,17 @@ if (isset($_POST['status']) && $_POST['status'] == 'punchinout') {
                 "intime",
                 "attendance_id='$attendance_id'"
             );
-
+            $late_in = $obj->calculateLateIn($office_in_time, $punchtime, $in_margin);
             $form_date = array(
                 $punchtype => $punchtime,
                 'department_id' => $department_id,
                 'previous_in_time' => $existing_intime,
                 'in_remark' => $punch_remark,
                 'ipaddress' => $ipaddress,
+                'late_in' => $late_in,
                 'lastupdated' => date('Y-m-d'),
                 'attheadid' => $attheadid,
+                'updateby' => $loginid,
                 'attendance_status' => $attendance_status,
                 'out_status' => 'OUT',
             );
@@ -135,12 +159,14 @@ if (isset($_POST['status']) && $_POST['status'] == 'punchinout') {
                 'department_id' => $department_id,
                 'working_hours' => $working_hours,
                 'ipaddress' => $ipaddress,
+                'early_out' => $early_out,
                 'lastupdated' => date('Y-m-d'),
                 'entry_type_out' => 'manual',
                 'basic_salary' => $emp_salary,
                 'out_remark' => $punch_remark,
                 'attheadid' => $attheadid,
                 'shift_id' => $shift_id,
+                'updateby' => $loginid,
                 'attendance_status' => $attendance_status,
                 'overtime' => $overtimeMinutes,
                 'out_status' => 'OUT',
@@ -148,8 +174,21 @@ if (isset($_POST['status']) && $_POST['status'] == 'punchinout') {
             if (!empty($existing_outtime) && $existing_outtime != '00:00:00') {
                 $form_date['previous_out_time'] = $existing_outtime;
             }
-            print_r($form_date);
             $obj->update_record("attendance_entry", $where, $form_date);
+
+            $form_data1 = array(
+                "primary_id" => $attendance_id,
+                "flag" => 'Punch OUT Attendence',
+                "activity_type" => 'Attendence OUT',
+                "createdby" => $loginid,
+                "pagename" => 'employee_wise_attendance.php',
+                "created_date" => $createdate,
+                "created_time" => date('H:i:s'),
+                "unit_id" => $unitid,
+                "ipaddress" => $ipaddress,
+                "sessionid" => $sessionid
+            );
+            $logactivity = $obj->insert_record("logactivity_master", $form_data1);
         }
     }
 }

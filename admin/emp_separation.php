@@ -6,8 +6,10 @@ $tblpkey = "exit_id";
 $module = "Employee Separation Master";
 $submodule = "Employee Separation Master List";
 $btn_name = "Save";
+$created_time = date('H:i:s');
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
+$emp_id = (isset($_GET['emp_id'])) ? $obj->test_input($_GET['emp_id']) : '';
 
 if (isset($_POST['submit'])) {
 
@@ -17,17 +19,22 @@ if (isset($_POST['submit'])) {
     $last_working_date  = $obj->test_input($_POST['last_working_date']);
     $notice_period  = $obj->test_input($_POST['notice_period']);
     $reason_for_leaving  = $obj->test_input($_POST['reason_for_leaving']);
+    $is_blacklist  =  $exit_type == 'Blacklist' ? '1' : '0';
+    //$reason_for_blacklist  = $obj->test_input($_POST['reason_for_blacklist']);
     $is_approved  = '0';
-
+    $department_id = $obj->getvalfield("employee_master", "department_id", "emp_id='$emp_id'");
     $count = $obj->getvalfield($tblname, "count(*)", "emp_id='$emp_id' and unit_id='$unitid' and is_approved='$is_approved' and $tblpkey!='$keyvalue'");
 
     $form_data = array(
         "emp_id" => $emp_id,
+        "department_id" => $department_id,
         "exit_type" => $exit_type,
+        "is_blacklist" => $is_blacklist,
         "resignation_date" => $resignation_date,
         "last_working_date" => $last_working_date,
         "notice_period" => $notice_period,
         "reason_for_leaving" => $reason_for_leaving,
+        //"reason_for_blacklist" => $reason_for_blacklist,
         "createdby" => $loginid,
         "unit_id" => $unitid,
         "sessionid" => $sessionid,
@@ -39,17 +46,68 @@ if (isset($_POST['submit'])) {
     } else {
         if ($keyvalue == 0) {
             $form_data["createdate"] = $createdate;
-            $obj->insert_record($tblname, $form_data);
+
+            $lastid = $obj->insert_record_lastid($tblname, $form_data);
+            if ($exit_type == "Blacklist") {
+                $obj->update_record(
+                    "employee_master",
+                    ["emp_id" => $emp_id],
+                    [
+                        "is_blacklist" => 1,
+                    ]
+                );
+            }
+
             $action = 1;
             $process = "insert";
+
+            $form_data1 = array(
+                "primary_id" => $lastid,
+                "flag" => $title,
+                "activity_type" => 'Inserted',
+                "createdby" => $loginid,
+                "pagename" => $pagename,
+                "created_date" => $createdate,
+                "created_time" => $created_time,
+                "unit_id" => $unitid,
+                'ipaddress' => $ipaddress,
+                "sessionid" => $sessionid
+            );
+            $logactivity = $obj->insert_record("logactivity_master", $form_data1);
         } else {
             $form_data["lastupdated"] = $createdate;
+            $form_data["updatedby"] = $loginid;
             $where = array($tblpkey => $keyvalue);
             $obj->update_record($tblname, $where, $form_data);
+
+            if ($exit_type == "Blacklist") {
+                $obj->update_record(
+                    "employee_master",
+                    ["emp_id" => $emp_id],
+                    [
+                        "is_blacklist" => 1,
+                    ]
+                );
+            }
+
+            $form_data1 = array(
+                "primary_id" => $keyvalue,
+                "flag" => $title,
+                "activity_type" => 'Updated',
+                "createdby" => $loginid,
+                "pagename" => $pagename,
+                "created_date" => $createdate,
+                "created_time" => $created_time,
+                "unit_id" => $unitid,
+                'ipaddress' => $ipaddress,
+                "sessionid" => $sessionid
+            );
+            $logactivity = $obj->insert_record("logactivity_master", $form_data1);
             $action = 2;
             $process = "updated";
         }
     }
+
     echo "<script>location='$pagename?action=$action'</script>";
 }
 
@@ -67,10 +125,11 @@ if (isset($_GET[$tblpkey])) {
 } else {
     $reason_for_leaving = "";
     $notice_period = "";
-    $last_working_date = "";
-    $resignation_date = "";
+    $last_working_date = date("Y-m-d");
+    $resignation_date = date("Y-m-d");
     $noticeexit_type_period = "";
-    $emp_id = "";
+   
+    $exit_type = "Resignation";
 }
 ?>
 
@@ -135,13 +194,14 @@ if (isset($_GET[$tblpkey])) {
                                         <div class="col-lg-3 mb-3">
                                             <label for="exit_type" class="form-label">Employee Exit Type<span
                                                     class="text-danger fw-bold">*</span></label>
-                                            <select class="form-select form-select-sm chosen-select" name="exit_type" id="exit_type">
+                                            <select class="form-select form-select-sm chosen-select" name="exit_type" id="exit_type" onchange="toggleFields();">
                                                 <option value="">Select</option>
                                                 <option value="Resignation">Resignation</option>
                                                 <option value="Termination">Termination</option>
                                                 <option value="Absconded">Absconded</option>
                                                 <option value="Contract End">Contract End</option>
                                                 <option value="Retirement">Retirement</option>
+                                                <option value="Blacklist">Blacklist</option>
                                             </select>
                                             <script>
                                                 document.getElementById('exit_type').value =
@@ -149,32 +209,33 @@ if (isset($_GET[$tblpkey])) {
                                             </script>
                                         </div>
 
-                                        <div class="col-lg-3 mb-3">
+                                        <div class="col-lg-3 mb-3" id="rd_div">
                                             <label for="resignation_date" class="form-label">Resignation Date<span class="text-danger fw-bold">*</span></label>
                                             <input type="date" id="resignation_date" name="resignation_date" class="form-control form-control-sm" value="<?php echo $resignation_date ?>" autocomplete="off" />
                                         </div>
-                                        <div class="col-lg-3 mb-3">
+                                        <div class="col-lg-3 mb-3" id="lwd_div">
                                             <label for="last_working_date" class="form-label">Last Working Date (LWD)<span class="text-danger fw-bold">*</span></label>
                                             <input type="date" id="last_working_date" name="last_working_date" class="form-control form-control-sm" value="<?php echo $last_working_date ?>" autocomplete="off" />
                                         </div>
 
-                                        <div class="col-lg-3 mb-3">
+                                        <div class="col-lg-3 mb-3" id="notice_div">
                                             <label for="notice_period" class="form-label">Notice Period (Days)<span class="text-danger fw-bold">*</span></label>
                                             <input type="text" id="notice_period" name="notice_period" class="form-control form-control-sm" value="<?php echo $notice_period ?>" autocomplete="off" onkeypress="numberOnly(event);" />
                                         </div>
 
                                         <div class="col-lg-6 mb-3">
-                                            <label for="reason_for_leaving" class="form-label">Reason for Leaving<span class="text-danger fw-bold"> </span></label>
+                                            <label for="reason_for_leaving" class="form-label">Reason<span class="text-danger fw-bold"> </span></label>
                                             <textarea type="text" id="reason_for_leaving" name="reason_for_leaving" class="form-control form-control-sm" autocomplete="off"><?php echo $reason_for_leaving ?></textarea>
                                         </div>
-
-
-                                        <div class="col-lg-3 mb-3 mt-2">
-                                            <br>
-                                            <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
-                                            <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('emp_id,exit_type,resignation_date,last_working_date,notice_period')">
-                                            <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
-                                        </div>
+                                        <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
+                                        if ($chkadd == 1) {  ?>
+                                            <div class="col-lg-3 mb-3 mt-2">
+                                                <br>
+                                                <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
+                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onclick="return validateForm()">
+                                                <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
+                                            </div>
+                                        <?php } ?>
                                     </div>
                                 </div>
                             </div>
@@ -201,7 +262,20 @@ if (isset($_GET[$tblpkey])) {
                 width: '100%',
                 search_contains: true
             });
+            toggleFields()
         });
+
+        function toggleFields() {
+            var exitType = document.getElementById('exit_type').value;
+
+            if (exitType === 'Blacklist') {
+                document.getElementById('notice_div').style.display = 'none';
+                document.getElementById('rd_div').style.display = 'none';
+            } else {
+                document.getElementById('notice_div').style.display = 'block';
+                document.getElementById('rd_div').style.display = 'block';
+            }
+        }
 
         function funDel(id) {
             $('#deleteRecordModal').modal('show');
@@ -240,6 +314,54 @@ if (isset($_GET[$tblpkey])) {
                 theEvent.returnValue = false;
                 if (theEvent.preventDefault) theEvent.preventDefault();
             }
+        }
+    </script>
+    <script>
+        function validateForm() {
+
+            var emp = document.getElementById('emp_id').value;
+            var exitType = document.getElementById('exit_type').value;
+            var rd = document.getElementById('resignation_date').value;
+            var lwd = document.getElementById('last_working_date').value;
+            var notice = document.getElementById('notice_period').value;
+
+            // Employee check
+            if (emp === '') {
+                alert('Please select Employee Name');
+                document.getElementById('emp_id').focus();
+                return false;
+            }
+
+            // Exit type check
+            if (exitType === '') {
+                alert('Please select Exit Type');
+                document.getElementById('exit_type').focus();
+                return false;
+            }
+
+            // If NOT Blacklist
+            if (exitType !== 'Blacklist') {
+
+                if (rd === '') {
+                    alert('Please select Resignation Date');
+                    document.getElementById('resignation_date').focus();
+                    return false;
+                }
+
+                if (lwd === '') {
+                    alert('Please select Last Working Date');
+                    document.getElementById('last_working_date').focus();
+                    return false;
+                }
+
+                if (notice === '') {
+                    alert('Please enter Notice Period');
+                    document.getElementById('notice_period').focus();
+                    return false;
+                }
+            }
+
+            return true;
         }
     </script>
 </body>

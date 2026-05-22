@@ -1,5 +1,5 @@
 <?php include("../adminsession.php");
-$pagename = "salary_generate_report.php";
+$pagename = "salary_hold_report.php";
 $title = "Salary Generate Report";
 $tblname = "salary_structure";
 $tblpkey = "salary_struc_id";
@@ -7,6 +7,7 @@ $module = "Salary Generate";
 $submodule = "Salary Generate List";
 $btn_name = "Save";
 $crit = " and 1=1";
+
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 
@@ -19,7 +20,6 @@ if (isset($_GET['from_date']) && isset($_GET['to_date'])) {
 }
 
 $crit .= " and ss.createdate between '$from_date' and '$to_date'";
-
 
 if (isset($_GET['unit_id'])) {
     $unit_id = $obj->test_input($_GET['unit_id']);
@@ -52,11 +52,25 @@ if (isset($_REQUEST['payment_statuss'])) {
     $salary_id = $obj->test_input($_REQUEST['salary_id']);
     if ($status == '1') {
         $pay_status = '0';
+        $actionText = 'Hold';
     } else {
         $pay_status = '1';
+        $actionText = 'Release';
     }
     $obj->update_record("salary_structure", array("salary_struc_id" => $salary_id), array('payment_status' => $pay_status));
-
+    $form_data1 = array(
+        "primary_id" => $salary_id,
+        "flag" => $actionText . ' Salary',
+        "activity_type" => 'Updated',
+        "createdby" => $loginid,
+        "pagename" => $pagename,
+        "created_date" => $createdate,
+        "created_time" => date('H:i:s'),
+        "unit_id" => $unitid,
+        'ipaddress' => $ipaddress,
+        "sessionid" => $sessionid
+    );
+    $logactivity = $obj->insert_record("logactivity_master", $form_data1);
     echo 1;
     exit();
 }
@@ -169,6 +183,7 @@ if (isset($_REQUEST['payment_statuss'])) {
                                         <thead class="table-light">
                                             <tr>
                                                 <th>S No</th>
+                                                <th>Actions</th>
                                                 <th>Payment Status</th>
                                                 <th>Code</th>
                                                 <th>Name</th>
@@ -191,27 +206,104 @@ if (isset($_REQUEST['payment_statuss'])) {
                                                 <th>ESIC Emp Share</th>
                                                 <th>PF Employer Share</th>
                                                 <th>ESIC Employer Share</th>
-                                                <th>Actions</th>
+                                                <th>Net Salary</th>
+                                                <th>Loan Amt</th>
+                                                <th>Advance Amt</th>
+                                                <th>Additional Payment</th>
+                                                <th>Other Deduction</th>
+                                                <th>Total Salary</th>
+
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <?php
                                             $slno = 1;
                                             $total_net = 0;
+                                            $total_loan_amt = 0;
+                                            $total_advance_amt = 0;
+                                            $total_add_amt = 0;
+                                            $total_other_amt = 0;
+                                            $total_pay_salary = 0;
+                                            $total_net_salary = 0;
+
+                                            $total_basic_salary = 0;
+                                            $total_gross_salary = 0;
+                                            $total_pf_paid_basic = 0;
+                                            $total_esic_paid_basic = 0;
+                                            $total_working_days = 0;
+                                            $total_basic_da = 0;
+                                            $total_hra = 0;
+                                            $total_medical = 0;
+                                            $total_conveyance = 0;
+                                            $total_special = 0;
+                                            $total_salary_sum = 0;
+
+                                            $total_pf_emp = 0;
+                                            $total_esic_emp = 0;
+                                            $total_pf_employer = 0;
+                                            $total_esic_employer = 0;
                                             $res = $obj->executequery(" SELECT ss.*,um.unit_name, em.first_name,em.department_id, em.emp_code, em.last_name FROM $tblname ss LEFT JOIN employee_master em ON ss.emp_id = em.emp_id LEFT JOIN unit_master um ON ss.unit_id = um.unit_id WHERE ss.unit_id = '$unitid' and ss.payment_status = '0' $crit ORDER BY ss.salary_struc_id DESC");
 
                                             foreach ($res as $row) {
                                                 $department = $obj->getvalfield("department_master", "department_name", "department_id='$row[department_id]'");
                                                 $total_net += $row['total_salary'];
+                                                $total_loan_amt += $row['loan_amt'];
+                                                $total_advance_amt += $row['advance_amt'];
+                                                $total_add_amt += $row['additional_payment'];
+                                                $total_other_amt += $row['other_deduction'];
+                                                $total_pay_salary += $row['total_pay_sal_after_ded'];
+                                                $total_net_salary += $row['total_net_salary'];
+
+                                                $total_basic_salary += $row['basic_salary'];
+                                                $total_gross_salary += $row['revised_salary'];
+                                                $total_pf_paid_basic += $row['pf_paid_basic'];
+                                                $total_esic_paid_basic += $row['esic_paid_basic'];
+                                                $total_working_days += $row['total_working_days'];
+                                                $total_basic_da += $row['basic_da'];
+                                                $total_hra += $row['hra'];
+                                                $total_medical += $row['medical'];
+                                                $total_conveyance += $row['conveyance'];
+                                                $total_special += $row['special_allow'];
+                                                $total_salary_sum += $row['total_salary'];
+
+                                                $total_pf_emp += $row['pf_emp'];
+                                                $total_esic_emp += $row['esic_emp'];
+                                                $total_pf_employer += $row['pf_employer'];
+                                                $total_esic_employer += $row['esic_employer'];
                                             ?>
                                                 <tr>
                                                     <td><?= $slno++; ?></td>
                                                     <td>
-                                                        <button
-                                                            class="btn btn-danger btn-sm"
-                                                            onclick="updatePaymentStatus('<?= $row['payment_status'] ?>', '<?= $row['salary_struc_id'] ?>')">
-                                                            <?= $row['payment_status'] == 1 ? 'Release' : 'Hold' ?>
-                                                        </button>
+                                                        <ul class="list-inline hstack gap-2 mb-0">
+                                                            <?php
+                                                            $chkedit = $obj->check_editBtn($pagename, $loginid);
+                                                            if ($chkedit == 1) {
+                                                            ?>
+                                                                <li class="list-inline-item " data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Edit">
+                                                                    <a href="salary_generate_detail.php?emp_id=<?= $row['emp_id'] ?>&month=<?= $row['month'] ?>&year=<?= $row['year'] ?>&<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>" class="edit-item-btn"><i class="ri-pencil-fill align-bottom text-success"></i></a>
+                                                                </li>
+                                                            <?php }
+                                                            $chkdel = $obj->check_delBtn($pagename, $loginid);
+                                                            if ($chkdel == 1) {  ?>
+                                                                <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
+                                                                    <a class="remove-item-btn" type="button" onclick="funDel(<?php echo $row[$tblpkey]; ?>);">
+                                                                        <i class="ri-delete-bin-fill align-bottom text-danger"></i>
+                                                                    </a>
+                                                                </li>
+                                                            <?php } ?>
+                                                        </ul>
+                                                    </td>
+                                                    <td>
+                                                        <?php
+                                                        $chkapr = $obj->check_aprBtn($pagename, $loginid);
+                                                        if ($chkapr == 1) {
+                                                        ?>
+                                                            <button
+                                                                class="btn btn-danger btn-sm"
+                                                                onclick="updatePaymentStatus('<?= $row['payment_status'] ?>', '<?= $row['salary_struc_id'] ?>')">
+                                                                <?= $row['payment_status'] == 1 ? 'Release' : 'Hold' ?>
+                                                            </button>
+                                                        <?php } ?>
                                                     </td>
                                                     <td><?= $row['emp_code']; ?></td>
                                                     <td><?= $row['first_name'] . " " . $row['last_name']; ?></td>
@@ -234,19 +326,13 @@ if (isset($_REQUEST['payment_statuss'])) {
                                                     <td class="text-end"><?= $row['esic_emp']; ?></td>
                                                     <td class="text-end"><?= $row['pf_employer']; ?></td>
                                                     <td class="text-end"><?= $row['esic_employer']; ?></td>
-                                                    <td>
-                                                        <ul class="list-inline hstack gap-2 mb-0">
-                                                            <li class="list-inline-item " data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Edit">
-                                                                <a href="salary_generate_detail.php?emp_id=<?= $row['emp_id'] ?>&month=<?= $row['month'] ?>&year=<?= $row['year'] ?>&<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>" class="edit-item-btn"><i class="ri-pencil-fill align-bottom text-success"></i></a>
-                                                            </li>
-                                                            <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
-                                                                <a class="remove-item-btn" type="button" onclick="funDel(<?php echo $row[$tblpkey]; ?>);">
-                                                                    <i class="ri-delete-bin-fill align-bottom text-danger"></i>
-                                                                </a>
-                                                            </li>
+                                                    <td class="text-end"><?= $row['total_net_salary']; ?></td>
+                                                    <td class="text-end"><?= $row['loan_amt']; ?></td>
+                                                    <td class="text-end"><?= $row['advance_amt']; ?></td>
+                                                    <td class="text-end"><?= $row['additional_payment']; ?></td>
+                                                    <td class="text-end"><?= $row['other_deduction']; ?></td>
+                                                    <td class="text-end"><?= $row['total_pay_sal_after_ded']; ?></td>
 
-                                                        </ul>
-                                                    </td>
                                                 </tr>
                                             <?php
                                             }
@@ -254,10 +340,42 @@ if (isset($_REQUEST['payment_statuss'])) {
                                         </tbody>
 
                                         <tfoot class="table-light">
-                                            <tr>
-                                                <th colspan="18">Total Net Pay</th>
-                                                <th class="text-end"><?= number_format($total_net, 2); ?></th>
-                                                <th colspan="6"></th>
+                                            <tr style="font-weight:bold;">
+
+                                                <th colspan="7" class="text-end">Total</th>
+
+                                                <th class="text-end"><?= number_format($total_basic_salary, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_gross_salary, 2) ?></th>
+
+                                                <th></th>
+                                                <th></th>
+
+                                                <th class="text-end"><?= number_format($total_pf_paid_basic, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_esic_paid_basic, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_working_days, 2) ?></th>
+
+                                                <th class="text-end"><?= number_format($total_basic_da, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_hra, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_medical, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_conveyance, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_special, 2) ?></th>
+
+                                                <th class="text-end"><?= number_format($total_salary_sum, 2) ?></th>
+
+                                                <th class="text-end"><?= number_format($total_pf_emp, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_esic_emp, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_pf_employer, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_esic_employer, 2) ?></th>
+
+                                                <th class="text-end"><?= number_format($total_net_salary, 2) ?></th>
+
+                                                <th class="text-end"><?= number_format($total_loan_amt, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_advance_amt, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_add_amt, 2) ?></th>
+                                                <th class="text-end"><?= number_format($total_other_amt, 2) ?></th>
+
+                                                <th class="text-end"><?= number_format($total_pay_salary, 2) ?></th>
+
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -352,7 +470,8 @@ if (isset($_REQUEST['payment_statuss'])) {
                         url: "",
                         data: {
                             payment_statuss: status,
-                            salary_id: salaryId
+                            salary_id: salaryId,
+                            actionText: actionText
                         },
                         success: function(response) {
                             Swal.fire({

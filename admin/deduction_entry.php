@@ -263,13 +263,15 @@ if (isset($_POST['upload_excel'])) {
                                             <label for="other" class="form-label">Other Deduction<span class="text-danger"></span></label>
                                             <input type="text" id="other" name="other" class="form-control form-control-sm" placeholder="Enter Other Deduction" value="<?= $other ?>" autocomplete="off" onkeypress="numberOnly(event);" />
                                         </div>
-
-                                        <div class="col-lg-4 mb-3">
-                                            <br>
-                                            <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
-                                            <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?>" onClick="return checkinputmaster('emp_id,month,year')">
-                                            <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
-                                        </div>
+                                        <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
+                                        if ($chkadd == 1) {  ?>
+                                            <div class="col-lg-4 mb-3">
+                                                <br>
+                                                <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
+                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?>" onClick="return checkinputmaster('emp_id,month,year')">
+                                                <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
+                                            </div>
+                                        <?php } ?>
                                     </div>
                                 </div>
                             </div>
@@ -328,11 +330,13 @@ if (isset($_POST['upload_excel'])) {
                                             <label for="file_upload" class="form-label">File Upload<span class="text-danger fw-bold">*</span></label>
                                             <input type="file" id="file_upload" name="file_upload" class="form-control form-control-sm" value="" autocomplete="off" />
                                         </div>
-                                        <div class="col-lg-4 mb-3">
-                                            <br>
-                                            <input type="submit" name="upload_excel" class="btn btn-sm btn-primary add-btn" value="Upload" onClick="return checkinputmaster('file_month,file_year,file_upload')">
-
-                                        </div>
+                                        <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
+                                        if ($chkadd == 1) {  ?>
+                                            <div class="col-lg-4 mb-3">
+                                                <br>
+                                                <input type="submit" name="upload_excel" class="btn btn-sm btn-primary add-btn" value="Upload" onClick="return checkinputmaster('file_month,file_year,file_upload')">
+                                            </div>
+                                        <?php } ?>
                                     </div>
                                 </div>
                             </div>

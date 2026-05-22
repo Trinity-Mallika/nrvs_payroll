@@ -1,5 +1,5 @@
 <?php include("../adminsession.php");
-$title = "Month Wise Attendance Report";
+$title = "Month Wise Attendance Report";// purana sahi wala hai
 $pagename = "month_wise_attendance_report.php";
 $module = "Search Attendance";
 $submodule = "Month Wise Attendance List";
@@ -13,10 +13,16 @@ $crit2 = " and 1=1";
 if (isset($_GET['department_id'])) {
     $department_id = $obj->test_input($_GET['department_id']);
     if ($department_id != '') {
-        $crit2 .= " and department_id = '$department_id'";
+        $crit2 .= " and e.department_id = '$department_id'";
     }
+    $department_name = $obj->getvalfield(
+        "department_master",
+        "department_name",
+        "department_id='$department_id'"
+    );
 } else {
     $department_id = "";
+    $department_name = "All";
 };
 
 if (isset($_GET['action'])) {
@@ -32,9 +38,44 @@ if (isset($_GET['month']) && isset($_GET['year'])) {
     $month = $obj->test_input($_GET['month']);
 
     $year = $obj->test_input($_GET['year']);
+    $month_name = date("F", mktime(0, 0, 0, $_GET['month'], 10));
+} else {
+    $month_name = '';
 }
+$lastDateOfMonth = date("Y-m-t", strtotime("$year-$month-01"));
 $get_days = $obj->getDaysArray($month, $year);
 $length = count($get_days);
+
+$showFields = [];
+
+if (isset($_REQUEST['show_field_encoded'])) {
+
+    if ($_REQUEST['show_field_encoded'] !== '') {
+        $showFields = array_map(
+            'intval',
+            explode(',', $_REQUEST['show_field_encoded'])
+        );
+    } else {
+        $showFields = [];
+    }
+} else {
+    $showFields = [2, 3, 7, 8, 9];
+}
+
+
+$fieldMap = [
+    // 1 => ['label' => 'Mobile Number',     'key' => 'mobile_no'],
+    2 => ['label' => 'Emp Code',         'key' => 'emp_code'],
+    3 => ['label' => 'Emp Name',         'key' => 'first_name'],
+    4 => ['label' => 'Aadhaar No',         'key' => 'aadhar_no'],
+    5 => ['label' => 'Present Salary',    'key' => 'basic_salary'],
+    6 => ['label' => 'Grade',             'key' => 'grade_name'],
+    7 => ['label' => 'Department',        'key' => 'department_name'],
+    8 => ['label' => 'Designation',       'key' => 'designation'],
+    9 => ['label' => 'Date of Joining',   'key' => 'date_of_joining'],
+    10 => ['label' => 'Job Location',       'key' => 'job_location'],
+    11 => ['label' => 'Shift Hours',        'key' => 'shift_hours'],
+];
 
 
 if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
@@ -66,11 +107,18 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
     <meta charset="utf-8" />
     <title><?php echo $title; ?></title>
     <?php include('inc/css.php') ?>
+
+
 </head>
 <style>
-    .table-borderless tr td {
-        border: 0px !important;
-        padding-bottom: 0px;
+    table.dataTable>thead>tr>th:not(.sorting_disabled),
+    table.dataTable>thead>tr>td:not(.sorting_disabled) {
+        padding-right: 5px !important;
+    }
+
+    table.dataTable>thead>tr>th:last-child:not(.sorting_disabled),
+    table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
+        padding-right: 20px !important;
     }
 </style>
 
@@ -79,141 +127,299 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
     <?php include('inc/sidebar.php') ?>
     <!-- end auth-page-wrapper -->
     <div class="main-content">
-
         <div class="page-content">
             <div class="container-fluid">
-                <?php include('inc/bredcrum.php') ?>
                 <div class="row">
                     <div class="col-lg-12">
                         <fieldset class="mt-2">
-                            <form action="<?php echo $pagename; ?>" method="get">
-                                <div class="card">
-                                    <div class="card-header border-bottom-dashed">
-                                        <div class="row g-4 align-items-center">
-                                            <div class="col-sm">
-                                                <div>
-                                                    <h5 class="card-title mb-0"> <?= $module; ?></h5>
+                            <?php if (!isset($_GET['search'])) { ?>
+                                <form action="<?php echo $pagename; ?>" method="get">
+                                    <div class="card">
+                                        <div class="card-header border-bottom-dashed">
+                                            <div class="row g-4 align-items-center">
+                                                <div class="col-sm">
+                                                    <div>
+                                                        <h5 class="card-title mb-0"> <?= $module; ?></h5>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-lg-3 mb-3">
+                                                    <label for="department_id" class="form-label">Department Name<span class="text-danger fw-bold"></span></label>
+                                                    <select class="form-select chosen-select" name="department_id" id="department_id">
+                                                        <option value="">All</option>
+                                                        <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_name asc");
+                                                        foreach ($res as $key) {
+                                                            echo "<option value='" . $key['department_id'] . "'>" . $key['department_name'] . "</option>";
+                                                        } ?>
+                                                    </select>
+                                                    <script>
+                                                        document.getElementById('department_id').value = '<?= $department_id; ?>';
+                                                    </script>
+                                                </div>
+                                                <div class="col-lg-3 col-12">
+                                                    <label for="year" class="form-label">Year<span class="text-danger fw-bold">*</span></label>
+                                                    <select class="form-select chosen-select" name="year" id="year">
+                                                        <option value="">Select</option>
+                                                        <?php
+                                                        $startYear = 2025;
+                                                        $endYear = 2100;
+                                                        for ($year1 = $startYear; $year1 <= $endYear; $year1++) {
+                                                            echo "<option value=\"$year1\">$year1</option>";
+                                                        } ?>
+                                                    </select>
+                                                    <script>
+                                                        document.getElementById('year').value = '<?php echo $year ?>'
+                                                    </script>
+                                                </div>
+                                                <div class="col-md-3 md-2">
+                                                    <strong><label for="Month">Month<span class="text-danger fw-bold">*</span></label></strong></br>
+                                                    <select name="month" class="chosen-select form-control form-control" id="month">
+                                                        <option value="">--Select Month--</option>
+                                                        <?php for ($iM = 1; $iM <= 12; $iM++) {
+                                                        ?>
+                                                            <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>"><?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?></option>
+
+                                                        <?php
+                                                        } ?>
+                                                    </select>
+                                                    <script>
+                                                        document.getElementById('month').value = '<?php echo $month; ?>';
+                                                    </script>
+                                                </div>
+                                                <div class="col-md-3 md-2">
+                                                    <strong><label for="Fields">Fields<span class="text-danger fw-bold"></span></label></strong>
+                                                    <select id="show_field" class="form-control" multiple>
+                                                        <!-- <option value="1">Mobile Number</option> -->
+                                                        <option value="2">Emp Code</option>
+                                                        <option value="3">Emp Name</option>
+                                                        <option value="4">Aadhaar No</option>
+                                                        <option value="5">Present Salary</option>
+                                                        <option value="6">Grade</option>
+                                                        <option value="7">Department</option>
+                                                        <option value="8">Designation</option>
+                                                        <option value="9">Date of Joining</option>
+                                                        <option value="10">Job Location</option>
+                                                        <option value="11">Shift Hours</option>
+                                                    </select>
+                                                </div>
+                                                <input type="hidden" name="show_field_encoded" id="show_field_encoded">
+
+                                                <div class="col-md-3 mt-4 ">
+                                                    <input type="submit" class="btn btn-primary add-btn" onclick="return checkinputmaster('year,month')" name="search" value="Search">
+                                                    <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset" id="reset">Reset</a>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="card-body">
-                                        <div class="row">
-
-                                            <div class="col-lg-3 mb-3">
-                                                <label for="department_id" class="form-label">Department Name<span class="text-danger fw-bold">*</span></label>
-                                                <select class="form-select chosen-select" name="department_id" id="department_id">
-                                                    <option value="">All</option>
-                                                    <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_name asc");
-                                                    foreach ($res as $key) {
-                                                        echo "<option value='" . $key['department_id'] . "'>" . $key['department_name'] . "</option>";
-                                                    } ?>
-                                                </select>
-                                                <script>
-                                                    document.getElementById('department_id').value = '<?= $department_id; ?>';
-                                                </script>
-                                            </div>
-                                            <div class="col-lg-3 col-12">
-                                                <label for="year" class="form-label">Year<span class="text-danger fw-bold">*</span></label>
-                                                <select class="form-select chosen-select" name="year" id="year">
-                                                    <option value="">Select</option>
-                                                    <?php
-                                                    $startYear = 2025;
-                                                    $endYear = 2100;
-                                                    for ($year1 = $startYear; $year1 <= $endYear; $year1++) {
-                                                        echo "<option value=\"$year1\">$year1</option>";
-                                                    } ?>
-                                                </select>
-                                                <script>
-                                                    document.getElementById('year').value = '<?php echo $year ?>'
-                                                </script>
-                                            </div>
-                                            <div class="col-md-3 md-2">
-                                                <strong><label for="Month">Month<span class="text-danger fw-bold">*</span></label></strong></br>
-                                                <select name="month" class="chosen-select form-control form-control" id="month">
-                                                    <option value="">--Select Month--</option>
-                                                    <?php for ($iM = 1; $iM <= 12; $iM++) {
-                                                    ?>
-                                                        <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>"><?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?></option>
-
-                                                    <?php
-                                                    } ?>
-                                                </select>
-                                                <script>
-                                                    document.getElementById('month').value = '<?php echo $month; ?>';
-                                                </script>
-                                            </div>
-
-                                            <div class="col-md-3 mt-4 ">
-                                                <input type="submit" class="btn btn-primary add-btn" onclick="return checkinputmaster('department_id,year,month')" name="search" value="Search">
-                                                <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset" id="reset">Reset</a>
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
+                                </form>
+                            <?php } ?>
                         </fieldset>
                     </div>
                 </div>
-                <?php
-
-                if (isset($_GET['search'])) {
-
-
-
-                ?>
-
-
-
-                    <div class="row mt-4 mb-4">
+                <?php if (isset($_GET['search'])) {   ?>
+                    <div class="row">
                         <div class="col-lg-12">
-                            <div class="card">
-                                <div class="card-header border-bottom-dashed">
+                            <div class="card mb-1">
+                                <div class="card-header border-bottom-dashed" style="margin-bottom: 0px; padding-bottom: 0px;">
                                     <div class="row g-4 align-items-center">
-                                        <div class="col-sm">
-                                            <div class="d-flex justify-content-between">
-                                                <h5 class="card-title mb-0"> <?= $submodule; ?></h5>
-                                                <a onclick="exportTableToExcel('example')" class="btn btn-primary btn-sm">Export Excel File</a>
+                                        <div class="col-sm" style="margin-top: 8px;">
+                                            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                                <h5 class="card-title mb-0">
+                                                    <?= $submodule; ?>
+                                                </h5>
+                                                <div class="ms-2 card-title mb-0"><b>
+                                                        <?php if (!empty($_GET['year'])) { ?>
+                                                            Year: <?= $_GET['year']; ?>
+                                                        <?php } ?>
+                                                        <?php if (!empty($month_name)) { ?>
+                                                            | Month: <?= $month_name; ?>
+                                                        <?php } ?>
+
+                                                        <?php if (!empty($department_name)) { ?>
+                                                            | Dept: <?= $department_name; ?>
+                                                        <?php } ?></b>
+                                                </div>
+                                                <div>
+                                                    <a href="<?php echo $pagename; ?>" class="btn btn-sm btn-primary">
+                                                        Search Again
+                                                    </a>
+                                                </div>
                                             </div>
+
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card-body">
-                                    <?php
-                                    $employees = $obj->executequery("SELECT emp_id,emp_code , first_name , last_name FROM employee_master where unit_id='$unitid' $crit2");
-                                    // if (!$employees) {
-                                    //     echo "<p class='text-danger'>No employees found for this Deaprtment.</p>";
-                                    //     return;
-                                    // }
+                            </div>
+       <div class="card-header border-bottom">
+                        <div class="d-flex flex-wrap gap-3 align-items-center">
 
-                                    if (empty($employees)) {
-                                        // No employees → no attendance
-                                        $attendances = [];
-                                    } else {
-                                        $empIds = array_column($employees, 'emp_id');
-                                        $empIdsStr = implode(",", $empIds);
+                            <span class="badge bg-success">
+                                P = Present
+                            </span>
 
-                                        $attendances = $obj->executequery("SELECT emp_id, attendance_date, in_status,attendance_status FROM $tblname WHERE emp_id IN ($empIdsStr) AND MONTH(attendance_date) = '$month' AND YEAR(attendance_date) = '$year'");
-                                    }
+                            <span class="badge bg-danger">
+                                A = Absent
+                            </span>
 
-                                    $attendanceMap = [];
-                                    foreach ($attendances as $att) {
-                                        $attendanceMap[$att['emp_id']][$att['attendance_date']] = $att['attendance_status'];
-                                    }
-                                    $currentDate = date("Y-m-d");
-                                    ?>
+                            <span class="badge bg-warning text-dark">
+                                HD = Half Day
+                            </span>
 
-                                    <div class="table-responsive" id="example1">
-                                        <table id="example" class="table table-bordered table-hover align-middle">
-                                            <thead class="table-light text-center">
+                            <span class="badge" style="background:rgb(229,204,255);color:#000;">
+                                WL = Weekly Leave
+                            </span>
+
+                            <span class="badge" style="background:rgb(121,170,248);">
+                                L = Earn Leave
+                            </span>
+
+                            <span class="badge" style="background:rgb(121, 246, 248);color:#000;">
+                                HL = Half Earn Leave
+                            </span>
+
+                            <span class="badge" style="background:rgb(226, 237, 109);color:#000;">
+                                HW = Half Weekly Leave
+                            </span>
+
+                            <!-- <span class="badge" style="background:#f7b1f2;color:#000;">
+                                M = Miss Punch
+                            </span> -->
+
+                            <span class="badge" style="background:rgb(121, 246, 248);color:#000;">
+                                C = C Off
+                            </span>
+
+                            <span class="badge" style="background:rgb(226, 237, 109);color:#000;">
+                                HC = Half C Off
+                            </span>
+
+                            <span class="badge" style="background:rgb(180,210,255);color:#000;">
+                                PL = Paid Holiday
+                            </span>
+
+                            <span class="badge" style="background:rgb(233,61,61);">
+                                I = Incomplete
+                            </span>
+
+                        </div>
+                    </div>
+                            <div class="card-body">
+                                <?php
+                                $employees = $obj->executequery("SELECT e.emp_id,e.allow_weekly_off,e.department_id,e.is_esic,e.emp_code,e.first_name,e.last_name,e.mobile_no,e.aadhar_no,e.shift_id,
+                                                        e.basic_salary,e.date_of_joining,e.job_location,g.grade_name,d.department_name,des.designation,s.working_hour AS shift_hours  FROM employee_master e
+
+                                                    LEFT JOIN grade_master g 
+                                                        ON g.grade_id = e.grade_id
+
+                                                    LEFT JOIN department_master d 
+                                                        ON d.department_id = e.department_id
+
+                                                    LEFT JOIN designation_master des 
+                                                        ON des.designation_id = e.designation_id
+
+                                                    LEFT JOIN shift_master s 
+                                                        ON s.working_hour = e.shift_id 
+
+                                                    WHERE e.unit_id = '$unitid' AND e.date_of_joining <= '$lastDateOfMonth' AND (e.resign_status != '1' OR (e.resign_status = '1' AND e.last_working_date >= CURDATE())) $crit2 group by e.emp_id order by e.emp_code
+                                                ");
+
+                                if (empty($employees)) {
+                                    $employees = [];
+                                }
+                                $empIds = array_column($employees, 'emp_id');
+                                $empIdsStr = implode(',', $empIds);
+
+                                $fromDate = "$year-$month-01";
+                                $toDate   = date("Y-m-t", strtotime($fromDate));
+
+                                $attendanceRows = $obj->executequery("
+                                                SELECT emp_id, attendance_date, attendance_status, intime, in_remark, shift_id
+                                                FROM attendance_entry
+                                                WHERE emp_id IN ($empIdsStr)
+                                                AND attendance_date BETWEEN '$fromDate' AND '$toDate' AND unit_id='$unitid'
+                                            ");
+
+                                $attendanceMap = [];
+                                foreach ($attendanceRows as $row) {
+                                    $attendanceMap[$row['emp_id']][$row['attendance_date']] = $row;
+                                }
+
+                                $currentDate = date("Y-m-d");
+
+                                $summaryRows = $obj->executequery("
+                                                        SELECT emp_id,
+                                                            SUM(attendance_status='Present') AS present,
+                                                            SUM(attendance_status='Half Day') AS halfday,
+                                                            SUM(attendance_status='Weekly Leave') AS leavecnt,
+                                                            SUM(attendance_status='Earning Leave') AS leavecnt2,
+                                                            SUM(attendance_status='Half Earning Leave') AS halfearn,
+                                                            SUM(attendance_status='Half Weekly Leave') AS halfweek,
+                                                            SUM(attendance_status='C Off') AS coff,
+                                                            SUM(attendance_status='Half C Off') AS halfcoff
+                                                        FROM attendance_entry
+                                                        WHERE emp_id IN ($empIdsStr)
+                                                        AND attendance_date BETWEEN '$fromDate' AND '$toDate' AND unit_id='$unitid'
+                                                        GROUP BY emp_id
+                                                    ");
+
+                                $summary = [];
+                                foreach ($summaryRows as $row) {
+                                    $summary[$row['emp_id']] = $row;
+                                }
+
+
+                                $holidayRows = $obj->executequery("
+                                                                SELECT date
+                                                                FROM holiday_entry
+                                                                WHERE FIND_IN_SET('$unitid', unit_id)
+                                                                AND date BETWEEN '$fromDate' AND '$toDate'
+                                                            ");
+
+                                $holidays = [];
+                                foreach ($holidayRows as $h) {
+                                    $holidays[$h['date']] = true;
+                                }
+
+                                $salaryRows = $obj->executequery("
+                                                                    SELECT emp_id, COUNT(*) cnt
+                                                                    FROM salary_structure
+                                                                    WHERE emp_id IN ($empIdsStr)
+                                                                    AND month='$month' AND year='$year' AND unit_id='$unitid'
+                                                                    GROUP BY emp_id
+                                                                ");
+
+                                $salaryGenerated = [];
+                                foreach ($salaryRows as $s) {
+                                    $salaryGenerated[$s['emp_id']] = $s['cnt'];
+                                }
+
+                                ?>
+                                <!-- floating scrollbar -->
+                                <div class="auto-scroll-wrapper">
+                                    <div class="table-responsive">
+                                        <table id="buttons-datatables" class="table table-sm table-bordered table-hover align-middle display ">
+                                            <thead class="table-light">
                                                 <tr>
-                                                    <th style="width: 50px;">S.No.</th>
-                                                    <th style="min-width: 180px;">Employee Name</th>
-                                                    <th>Present Days</th>
-                                                    <th>Punch All</th>
+                                                    <th>S.No.</th>
+                                                    <?php
+                                                    foreach ($showFields as $fid) {
+                                                        if (!isset($fieldMap[$fid])) continue;
+                                                        echo "<th>{$fieldMap[$fid]['label']}</th>";
+                                                    }
+                                                    ?>
+                                                    <th>Present <br> Days</th>
+                                                    <th>Total <br> Week <br> Off</th>
+                                                    <th>Total <br>Payable <br>Day</th>
+                                            
+                                                    <th>Total <br> Earn <br> Leave</th>
+                                                    <th>C-OFF</th>
+                                                    <th>Punch <br> All</th>
+
                                                     <?php for ($i = 1; $i <= $length; $i++) { ?>
-                                                        <th style="width: 35px;"><?php echo $i; ?></th>
+                                                        <th class="text-center">D<?php echo $i; ?></th>
                                                     <?php } ?>
 
                                                 </tr>
@@ -221,126 +427,186 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                             <tbody>
                                                 <?php
                                                 $slno = 1;
+                                                $currentDate = date("Y-m-d");
+                                                $totalPresentDays = 0;
+                                                $totalWeekOff = 0;
+                                                $totalEarnLEave = 0;
+                                                $chkedit = $obj->check_editBtn($pagename, $loginid);
                                                 foreach ($employees as $emp) {
+                                                    $empId = $emp['emp_id'];
+                                                    $department_id = $emp['department_id'];
+                                                    $allow_weekly_off = $emp['allow_weekly_off'];
 
-                                                    $salary_generate_count = $obj->getvalfield("salary_structure", "count(*)", "emp_id='$emp[emp_id]' and month='$month' and year='$year'");
-                                                    $emp_shift_hrs =  $obj->getvalfield("employee_master", "shift_id", "emp_id='$emp[emp_id]'");
-                                                    $emp_shift_ids = $obj->getvalfield("attendance_entry", "shift_id", "emp_id='$emp[emp_id]' and month='$month' and year='$year' order by attendance_id desc limit 1") ?? '';
-                                                    $total_present = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp[emp_id]' and month='$month' and year='$year' and attendance_status='Present'");
+                                                    $is_esic = $emp['is_esic'];
+                                                    $setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
 
-                                                    $total_half = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp[emp_id]' and month='$month' and year='$year' and attendance_status='Half Day'");
+                                                    $sum   = $summary[$empId] ?? ['present' => 0, 'halfday' => 0, 'leavecnt' => 0, 'leavecnt2' => 0, 'halfearn' => 0, 'halfweek' => 0, 'coff' => 0, 'halfcoff' => 0];
 
-                                                    $total_att_leave = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp[emp_id]' and month='$month' and year='$year' and attendance_status='Leave'");
+                                                    $totalAttendance = $sum['present'] + ($sum['halfday'] / 2) + $sum['leavecnt'] + $sum['leavecnt2'] + ($sum['halfearn'] / 2) + ($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2);
 
-                                                    $total_attandence = $total_present + ($total_half / 2) + $total_att_leave;
+                                                    $real_total_att = $sum['present'] + ($sum['halfday'] / 2);
+
+                                                    $salaryCount = $salaryGenerated[$empId] ?? 0;
+
+                                                    $totalPresentDays +=  $totalAttendance;
+                                                    $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $real_total_att, $unitid);
+                                                    $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_att, $allow_weekly_off);
+                                                    $totalWeekOff += $week_leave;
+                                                    $totalEarnLEave += $monthly_leave;
+                                                    $tpd=$totalAttendance+$week_leave;
+                                                    $tpd = $totalAttendance + $week_leave;
+
+                                                    $extra_coff = 0;
+                                                    if ($tpd > $length) {
+                                                        $extra_coff = $tpd - $length;
+                                                        $tpd = $length;
+                                                    }
+
                                                     echo "<tr>";
                                                     echo "<td>" . $slno++ . "</td>";
-                                                    echo "<td> {$emp['emp_code']} - {$emp['first_name']} {$emp['last_name']}</td>";
-                                                    echo "<td style='font-weight:bold; color:#6f42c1; background:#f3e8ff; text-align:center;'>";
-                                                    echo number_format($total_attandence, 1);
-                                                    echo "</td>";
-                                                    echo "<td style='font-weight:bold; color:#28a745;text-align:center;'>";
-                                                    echo "<span  style='display:block;width:100%;height:100%; padding:8px; cursor:pointer;' onclick=\"add_all_att('$emp_shift_hrs','$emp_shift_ids','$month','$year','$emp[emp_id]',' $salary_generate_count')\"><i class='ri-add-line align-bottom text-primary' style='font-size:20px;'></i></span>";
-                                                    echo "</td>";
+                                                    foreach ($showFields as $fid) {
+                                                        if (!isset($fieldMap[$fid])) continue;
 
+                                                        $key = $fieldMap[$fid]['key'];
+                                                        $value = $emp[$key] ?? '-';
 
-                                                    for ($i = 1; $i <= $length; $i++) {
-                                                        $date = sprintf('%02d', $i);
-                                                        $crit = "$year-$month-$date";
-
-                                                        $is_holiday = false;
-                                                        $holiday_data  = $obj->getvalfield("holiday_entry", "holiday_tittle", "FIND_IN_SET('$unitid', unit_id) and date='$crit'");
-
-                                                        if (!empty($holiday_data)) {
-                                                            $is_holiday = true;
+                                                        // special formatting
+                                                        if ($fid == 9 && !empty($value)) { // Date of Joining
+                                                            $value = $obj->dateformatindia($value);
                                                         }
-                                                        // Future date → "-"
-                                                        // Future date
-                                                        if ($crit > $currentDate) {
-                                                            $attendance = "-";
-                                                            $bg = "rgb(220,220,220)";
-                                                        } else {
-                                                            $status = $attendanceMap[$emp['emp_id']][$crit] ?? '';
-                                                            // Holiday AND employee is present
-                                                            if ($is_holiday && in_array($status, ['Present', 'Half Day'])) {
 
-                                                                if ($status === "Present") {
-                                                                    $attendance = "<b>P</b>";
-                                                                    $bg = "rgb(173,233,179)";
-                                                                } else {
-                                                                    $attendance = "<b>HD</b>";
-                                                                    $bg = "rgb(255,246,163)";
-                                                                }
-                                                            }
-                                                            // Holiday but NO attendance
-                                                            elseif ($is_holiday && $status == '') {
-                                                                $attendance = "<b>PL</b>";
-                                                                $bg = "rgb(180,210,255)";
-                                                            }
-                                                            // Normal day attendance
-                                                            else {
-                                                                $status = $status ?: 'A';
+                                                        echo "<td>{$value}</td>";
+                                                    }
 
-                                                                if ($status === "Present") {
-                                                                    $attendance = "<b>P</b>";
-                                                                    $bg = "rgb(173,233,179)";
-                                                                } elseif ($status === "Half Day") {
-                                                                    $attendance = "<b>HD</b>";
-                                                                    $bg = "rgb(255,246,163)";
-                                                                } elseif ($status === "Incomplete") {
-                                                                    $attendance = "<b>I</b>";
-                                                                    $bg = "rgb(233,61,61)";
-                                                                } elseif ($status === "Leave") {
-                                                                    $attendance = "<b>L</b>";
-                                                                    $bg = "rgb(229,204,255)";
-                                                                } else {
-                                                                    $attendance = "<b>A</b>";
-                                                                    $bg = "rgb(251,175,175)";
-                                                                }
-                                                            }
+                                                    echo "<td class='text-center fw-bold' style='background:#f3e8ff'>" . number_format($totalAttendance, 1) . "</td>";
+
+                                                    echo "<td class='text-center fw-bold text-dark' style='background:#fff3cd'>" . number_format($week_leave, 1) . "</td>";
+
+                                                    echo "<td class='text-center fw-bold text-dark' style='background:#98defa'>" . number_format($tpd, 1) . "</td>";
+
+                                                    echo "<td class='text-center fw-bold text-dark' style='background:#e7f1ff'>" . number_format($monthly_leave, 1) . "</td>";
+
+                                                    echo "<td class='text-center fw-bold text-danger' style='background:#ffe5e5'>" . number_format($extra_coff, 1) . "</td>";
+
+                                                   
+                                                    if ($chkedit == 1) {
+                                                        echo "<td class='text-center' style='cursor:pointer'
+                                                                onclick=\"add_all_att('{$emp['shift_id']}','','{$month}','{$year}','{$empId}','{$salaryCount}')\">                                   
+                                                                <i class='ri-add-line text-primary'></i> 
+                                                            </td>";
+                                                    } else {
+                                                        echo "<td class='text-center'>
+                <i class='ri-forbid-2-line text-danger'></i>
+              </td>";
+                                                    }
+
+                                                    for ($d = 1; $d <= $length; $d++) {
+
+                                                        $date = sprintf('%s-%s-%02d', $year, $month, $d);
+
+                                                        if ($date > $currentDate) {
+                                                            echo "<td style='background:#ddd;text-align:center'>-</td>";
+                                                            continue;
                                                         }
-                                                        $intime = $obj->getvalfield("attendance_entry", "intime", "emp_id='$emp[emp_id]' and attendance_date='$crit' and month='$month' and year='$year'") ?? date('H:i');
-                                                        $att_in_remark = $obj->getvalfield("attendance_entry", "in_remark", "emp_id='$emp[emp_id]' and attendance_date='$crit' and month='$month' and year='$year'") ?? '';
+
+                                                        $row = $attendanceMap[$empId][$date] ?? null;
+                                                        $status = $row['attendance_status'] ?? 'A';
+                                                        $intime = $row['intime'] ?? '';
+                                                        $remark = $row['in_remark'] ?? '';
+                                                        $shift  = $row['shift_id'] ?? $emp['shift_id'];
+
+                                                        $isHoliday = isset($holidays[$date]);
+
+                                                        switch ($status) {
+                                                            case 'Present':
+                                                                $txt = 'P';
+                                                                $bg = 'rgb(173,233,179)';
+                                                                break;
+                                                            case 'Half Day':
+                                                                $txt = 'HD';
+                                                                $bg = 'rgb(255,246,163)';
+                                                                break;
+                                                            case 'Incomplete':
+                                                                $txt = 'I';
+                                                                $bg = 'rgb(233,61,61)';
+                                                                break;
+                                                            case 'Weekly Leave':
+                                                                $txt = 'WL';
+                                                                $bg = 'rgb(229,204,255)';
+                                                                break;
+                                                            case 'Earning Leave':
+                                                                $txt = 'L';
+                                                                $bg = 'rgb(121,170,248)';
+                                                                break;
+                                                            case 'Half Earning Leave':
+                                                                $txt = 'HL';
+                                                                $bg = 'rgb(121, 246, 248)';
+                                                                break;
+                                                            case 'Half Weekly Leave':
+                                                                $txt = 'HW';
+                                                                $bg = 'rgb(226, 237, 109)';
+                                                                break;
+                                                            case 'C Off':
+                                                                $txt = 'C';
+                                                                $bg = 'rgb(121, 246, 248)';
+                                                                break;
+                                                            case 'Half C Off':
+                                                                $txt = 'HC';
+                                                                $bg = 'rgb(226, 237, 109)';
+                                                                break;
 
 
-                                                        $emp_shift_id = $obj->getvalfield("attendance_entry", "shift_id", "emp_id='$emp[emp_id]' and attendance_date='$crit' and month='$month' and year='$year'") ?? $emp_shift_ids;
-
-                                                        // echo "<td style='background:$bg; text-align:center;'>";
-
-                                                        if ($crit <= $currentDate) {
-                                                            echo "<td style='background:$bg; text-align:center; padding:0;'>";
-
-                                                            // echo "<a href='employee_wise_attendance.php?emp_id={$emp['emp_id']}&currentYear=$year&currentMonth=$month&date=$crit'target='_blank' style='display:block;width:100%;height:100%; padding:8px; text-decoration:none; color:inherit;' >";
-                                                            echo "<span  style='display:block;width:100%;height:100%; padding:8px; cursor:pointer;' onclick=\"openPunchModal('$crit','$intime','$att_in_remark','$emp_shift_hrs','$emp_shift_id','$month','$year','$emp[emp_id]',' $salary_generate_count')\"> $attendance </span>";
-                                                            // echo $intime;
-                                                            echo "</a>";
-                                                            echo "</td>";
-                                                        } else {
-                                                            echo "<td style='background:$bg; text-align:center;'>";
-                                                            echo $attendance;
-                                                            echo "</td>";
+                                                            default:
+                                                                $txt = $isHoliday ? 'PL' : 'A';
+                                                                $bg  = $isHoliday ? 'rgb(180,210,255)' : 'rgb(251,175,175)';
                                                         }
+
+                                                        echo "<td style='background:$bg;text-align:center;padding:0' id='cell_{$empId}_{$date}'>
+                                                                            <span style='display:block;padding:8px;cursor:pointer'
+                                                                            onclick=\"openPunchModal('$date','$intime','$remark','{$emp['shift_id']}','$shift','$month','$year','$empId','$salaryCount')\">
+                                                                            <b>$txt</b>
+                                                                            </span>
+                                                                        </td>";
                                                     }
 
                                                     echo "</tr>";
                                                 }
+
                                                 ?>
                                             </tbody>
+                                            <tfoot>
+                                                <tr style="background:#e9ecef;font-weight:bold">
+                                                    <td colspan="<?php echo count($showFields) + 1; ?>" class="text-end">
+                                                        Total
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <?php echo number_format($totalPresentDays, 1); ?>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <?php echo number_format($totalWeekOff, 1); ?>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <?php echo number_format($totalEarnLEave, 1); ?>
+                                                    </td>
+                                                    <td></td>
+                                                    <td colspan="<?= $length ?>"></td>
+                                                </tr>
+                                            </tfoot>
                                         </table>
 
                                     </div>
-
                                 </div>
                             </div>
                         </div>
                     </div>
-                <?php
+            </div>
+        <?php
                 }
 
-                ?>
-            </div>
-            <!-- Content close-->
+        ?>
         </div>
+        <!-- Content close-->
+    </div>
     </div>
     <div class="modal fade" id="salaryGeneratedModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -391,13 +657,13 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
         </div>
     </div>
 
-
-
     <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">Attendance Punch &nbsp;&nbsp;<a id="show_att_details" class="float-end" target="_blank" title="View">
+                            <i class="ri-eye-line align-bottom text-primary fs-4"></i>
+                        </a></h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <hr class="mb-0 mt-2">
@@ -410,7 +676,13 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                 <option value="Absent">Absent</option>
                                 <option value="first_half">Half Day (1st Half)</option>
                                 <option value="second_half">Half Day (2nd Half)</option>
-                                <option value="Leave">Leave</option>
+                                <option value="weekly_leave">Weekly Leave</option>
+
+                                <option value="earn_leave">Earn Leave</option>
+                                <option value="half_weekly_leave">Half Weekly Leave</option>
+                                <option value="half_earn_leave">Half Earn Leave</option>
+                                <option value="c_off">C-Off</option>
+                                <option value="half_c_off">Half C-Off</option>
                             </select>
                         </div>
                         <div class="col-lg-12 " id="punchShiftBox">
@@ -434,10 +706,14 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                     </div>
                 </div>
                 <hr class="mb-0 mt-2">
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="savebutton" onclick="savePunch()">Punch</button>
-                </div>
+                <?php
+                $chkedit = $obj->check_editBtn($pagename, $loginid);
+                if ($chkedit == 1) { ?>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="savebutton" onclick="savePunch()">Punch</button>
+                    </div>
+                <?php } ?>
             </div>
         </div>
     </div>
@@ -446,7 +722,9 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="AllAttendenceModalLabel">Modal title</h1>
+                    <h1 class="modal-title fs-5" id="AllAttendenceModalLabel">Attendance Punch &nbsp;&nbsp;<a id="show_attAll_details" class="float-end" target="_blank" title="View">
+                            <i class="ri-eye-line align-bottom text-primary fs-4"></i>
+                        </a></h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <hr class="mb-0 mt-2">
@@ -459,7 +737,12 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                                 <option value="Absent">Absent</option>
                                 <option value="first_half">Half Day (1st Half)</option>
                                 <option value="second_half">Half Day (2nd Half)</option>
-                                <option value="Leave">Leave</option>
+                                <option value="weekly_leave">Weekly Leave</option>
+                                <option value="earn_leave">Earn Leave</option>
+                                <option value="half_weekly_leave">Half Weekly Leave</option>
+                                <option value="half_earn_leave">Half Earn Leave</option>
+                                <option value="c_off">C-Off</option>
+                                <option value="half_c_off">Half C-Off</option>
                             </select>
                         </div>
                         <div class="col-lg-12 col-12 mb-2">
@@ -488,10 +771,14 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                     </div>
                 </div>
                 <hr class="mb-0 mt-2">
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="saveAllbutton" onclick="saveAllPunch()">Punch All</button>
-                </div>
+                <?php
+                $chkedit = $obj->check_editBtn($pagename, $loginid);
+                if ($chkedit == 1) { ?>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="saveAllbutton" onclick="saveAllPunch()">Punch All</button>
+                    </div>
+                <?php } ?>
             </div>
         </div>
     </div>
@@ -499,61 +786,93 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
     <?php include('inc/delete.php') ?>
     <?php include('inc/js.php') ?>
     <?php include('inc/footer.php') ?>
+
     <!-- script tag -->
 
     <script>
+        const statusMap = {
+            "Present": {
+                txt: "P",
+                bg: "rgb(173,233,179)"
+            },
+            "Absent": {
+                txt: "A",
+                bg: "rgb(251,175,175)"
+            },
+            "first_half": {
+                txt: "HD",
+                bg: "rgb(255,246,163)"
+            },
+            "second_half": {
+                txt: "HD",
+                bg: "rgb(255,246,163)"
+            },
+            "weekly_leave": {
+                txt: "WL",
+                bg: "rgb(229,204,255)"
+            },
+            "earn_leave": {
+                txt: "L",
+                bg: "rgb(121,170,248)"
+            },
+            "half_earn_leave": {
+                txt: "HL",
+                bg: "rgb(121,246,248)"
+            },
+            "half_weekly_leave": {
+                txt: "HW",
+                bg: "rgb(226,237,109)"
+            },
+            "c_off": {
+                txt: "C",
+                bg: "rgb(121,246,248)"
+            },
+            "half_c_off": {
+                txt: "HC",
+                bg: "rgb(226,237,109)"
+            }
+        };
+
+        var s = statusMap[punch_all_status] || statusMap["Absent"];
         $(document).ready(function() {
-            $('#example').DataTable().destroy();
-            $('#example').DataTable({
-                lengthMenu: [
-                    [50, 100, 500, 1000],
-                    [50, 100, 500, 1000]
-                ],
-                pageLength: 50
+            $(".chosen-select").select2();
+
+            const $select = $("#show_field").select2({
+                placeholder: "Select Fields",
+                width: "100%",
+                closeOnSelect: false
             });
 
-            $(".chosen-select").select2();
-        });
-
-        function exportTableToExcel(tableID, filename = '') {
-            // alert(tableID);
-
-            var downloadLink;
-            var dataType = 'application/vnd.ms-excel';
-            var tableSelect = document.getElementById(tableID);
-            var tableHTML = tableSelect.outerHTML.replace(/ /g, '%20');
-
-
-            // Specify file name
-            filename = filename ? filename + '.xls' : 'excel_data.xls';
-            // Create download link element
-            downloadLink = document.createElement("a");
-            document.body.appendChild(downloadLink);
-
-
-            if (navigator.msSaveOrOpenBlob) {
-
-                var blob = new Blob(['\ufeff', tableHTML], {
-
-                    type: dataType
-
-                });
-                navigator.msSaveOrOpenBlob(blob, filename);
-            } else {
-
-                // Create a link to the file
-                downloadLink.href = 'data:' + dataType + ', ' + tableHTML;
-
-                // Setting the file name
-                downloadLink.download = filename;
-
-                //triggering the function
-
-                downloadLink.click();
-
+            const selectedFields = <?= json_encode($showFields) ?> || [];
+            if (selectedFields.length) {
+                $select.val(selectedFields.map(String)).trigger("change");
             }
 
-        }
+            $("form").on("submit", function() {
+                const selected = $select.val() || [];
+                $("#show_field_encoded").val(selected.join(","));
+                $select.removeAttr("name");
+            });
+
+
+            // $('#buttons-datatables').DataTable().destroy();
+            // $('#buttons-datatables').DataTable({
+            //     autoWidth: false,
+            //     dom: "lBfrtip",
+            //     buttons: [
+            //         "csv",
+            //         {
+            //             extend: "excel",
+            //             pageSize: "LEGAL",
+            //             footer: true
+            //         }
+            //     ],
+            // });
+
+
+
+
+        });
 
 
         function openPunchModal(attdate, time, remark, emp_shift_hrs, empp_shift_id, month, year, emp_id, salary_generate_count) {
@@ -562,10 +881,11 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
             document.getElementById('current_month').value = month;
             document.getElementById('current_year').value = year;
             document.getElementById('employee_id').value = emp_id;
+            month2 = parseInt(month);
             if (salary_generate_count > 0) {
                 $('#salaryReportLink').attr(
                     'href',
-                    'salary_generate_report.php?emp_id=' + emp_id
+                    'salary_generate_report.php?emp_id=' + emp_id + '&month=' + month2 + '&year=' + year + '&submit=Search'
                 );
                 $('#salaryGeneratedModal').modal('show');
             } else {
@@ -583,6 +903,11 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                 $('#exampleModal').modal('show');
             }
 
+            $('#show_att_details').attr(
+                'href',
+                'employee_wise_attendance.php?emp_id=' + emp_id + '&currentYear=' + year + '&currentMonth=' + month + '&date=' + attdate
+            );
+
         };
 
         function savePunch() {
@@ -595,6 +920,8 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
             var currentMonth = document.getElementById('current_month').value;
             var currentYear = document.getElementById('current_year').value;
             var emp_id = document.getElementById('employee_id').value;
+
+
 
             if (punch_shift_id == "") {
                 alert("Please Select Shift Name");
@@ -611,12 +938,56 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                     //alert(data);
                     // showatttype();
                     $('#exampleModal').modal('hide');
+                    var emp_id = document.getElementById('employee_id').value;
+                    var attdate = document.getElementById('punch_attdate').value;
+                    var status = document.getElementById('punch_status').value;
+
+                    var txt = 'A';
+                    var bg = 'rgb(251,175,175)';
+
+                    if (status == 'Present') {
+                        txt = 'P';
+                        bg = 'rgb(173,233,179)';
+                    } else if (status == 'first_half' || status == 'second_half') {
+                        txt = 'HD';
+                        bg = 'rgb(255,246,163)';
+                    } else if (status == 'Incomplete') {
+                        txt = 'I';
+                        bg = 'rgb(233,61,61)';
+                    } else if (status == 'weekly_leave') {
+                        txt = 'WL';
+                        bg = 'rgb(229,204,255)';
+                    } else if (status == 'earn_leave') {
+                        txt = 'L';
+                        bg = 'rgb(121,170,248)';
+                    } else if (status == 'half_earn_leave') {
+                        txt = 'HL';
+                        bg = 'rgb(121,246,248)';
+                    } else if (status == 'half_weekly_leave') {
+                        txt = 'HW';
+                        bg = 'rgb(226,237,109)';
+                    } else if (status == 'c_off') {
+                        txt = 'C';
+                        bg = 'rgb(121,246,248)';
+                    } else if (status == 'half_c_off') {
+                        txt = 'HC';
+                        bg = 'rgb(226,237,109)';
+                    }
+
+                    // 🔥 update only that cell
+                    var cellId = "#cell_" + emp_id + "_" + attdate;
+
+                    $(cellId).css("background", bg);
+                    $(cellId).find("b").text(txt);
+
+
                     document.getElementById('punching_remark').value = '';
                     $('#punch_status').val('Present').trigger('chosen:updated').trigger('change');
+
                     btn.disabled = false;
                     btn.value = 'Save change';
                     // total(emp_id, currentMonth, currentYear);
-                    location.reload();
+                    //  location.reload();
                 },
                 error: function() {
                     btn.disabled = false;
@@ -654,6 +1025,11 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                 });
                 $('#AllAttendenceModal').modal('show');
             }
+
+            $('#show_attAll_details').attr(
+                'href',
+                'employee_wise_attendance.php?emp_id=' + emp_id + '&currentYear=' + year + '&currentMonth=' + month
+            );
         };
 
 
@@ -699,11 +1075,29 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                         showConfirmButton: false
                     }).then(() => {
                         $('#AllAttendenceModal').modal('hide');
+                        var emp_id = document.getElementById('punch_all_employee_id').value;
+
+                        var s = statusMap[punch_all_status] || statusMap["Absent"];
+
+                        for (var d = 1; d <= '<?= $length ?>'; d++) {
+
+                            var day = d.toString().padStart(2, '0');
+                            var date = currentYear + "-" + currentMonth + "-" + day;
+
+                            var cellId = "#cell_" + emp_id + "_" + date;
+
+                            if ($(cellId).length) {
+                                $(cellId).css("background", s.bg);
+                                $(cellId).find("b").text(s.txt);
+                            }
+                        }
+
+
                         document.getElementById('punching_all_remark').value = '';
                         $('#punch_all_status').val('Present').trigger('chosen:updated').trigger('change');
                         btn.disabled = false;
                         btn.value = 'Save change';
-                        location.reload();
+                        // location.reload();
                     });
 
 

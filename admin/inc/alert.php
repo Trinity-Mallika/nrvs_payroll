@@ -1,4 +1,5 @@
 <?php
+$field = $_GET['field'] ?? '';
 switch ($action) {
     case '1':
         echo '<div class="alert alert-success alert-dismissible fade show" role="alert"  id="myElem">
@@ -23,6 +24,13 @@ switch ($action) {
                         <strong><i class="bi bi-exclamation-triangle-fill"></i> Duplicate Record !! </strong>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>';
+        break;
+    case '5':
+        echo '<div class="alert alert-warning alert-dismissible fade show" role="alert" id="duplicate">
+            <strong><i class="bi bi-exclamation-triangle-fill"></i> Duplicate Record !! </strong>
+            ' . htmlspecialchars($field) . ' already exists.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>';
         break;
 } ?>
 <script>
