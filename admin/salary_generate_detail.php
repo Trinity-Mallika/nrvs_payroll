@@ -53,6 +53,13 @@ if (isset($_GET['emp_id'])) {
     //$db_basic_salary  = $obj->getvalfield($tblname, "basic_salary", "emp_id='$emp_id' and month='$prev_month' and year='$prev_year'");
     $loan_data = $obj->select_record("loan_advance_details", ['emp_id' => $emp_id, 'month' => $month, 'year' => $year, 'status' => 1, 'type' => 'Loan']);
     $advance_data = $obj->select_record("loan_advance_details", ['emp_id' => $emp_id, 'month' => $month, 'year' => $year, 'status' => 1, 'type' => 'Advance']);
+    $emp_deduction = $obj->select_record("emp_deduction", ['emp_id' => $emp_id, 'month' => $month, 'year' => $year]);
+
+    $shoes_ded = $emp_deduction['shoes_ded']??0;
+    $lpg_ded = $emp_deduction['lpg_ded']??0;
+    $other = $emp_deduction['other']??0;
+    $other_deduction =  $shoes_ded+ $lpg_ded+ $other ;  
+
     $loan_amt  =  $loan_data['amount'] ?? 0;
     $loan_details_id  =  $loan_data['loan_details_id'] ?? 0;
     $advance_amt  =  $advance_data['amount'] ?? 0;
@@ -66,10 +73,12 @@ if (isset($_GET['emp_id'])) {
     $designation_id = $emp_data['designation_id'];
     $opening_balance_save = $emp_data['used_opening_balance'];
     $opening_balance_date = $emp_data['opening_date'];
+    $is_perform_incen = $emp_data['is_perform_incen']; 
 
     $depart_data  = $obj->select_record('department_master', array('department_id' => $department_id));
     $department = $depart_data['department_name'] ?? '';
     $is_allow_c_off = $depart_data['c_off_check'] ?? '';
+    $allow_earn_leave_carry = $depart_data['earn_leave_check'] ?? '';
 
     $unit = $obj->getvalfield("unit_master", "unit_name", "unit_id='$emp_data[unit_id]'");
     $is_all_leave_add = $obj->getvalfield("unit_master", "add_leave", "unit_id='$emp_data[unit_id]'");
@@ -88,6 +97,15 @@ if (isset($_GET['emp_id'])) {
     $holiday     = $holidayData['total'] ?? 0;
 
     $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year) ?? 31;
+    $eligibleDays = $daysInMonth;
+    if (!empty($date_of_joining)) {
+        $joinMonth = date('m', strtotime($date_of_joining));
+        $joinYear  = date('Y', strtotime($date_of_joining)); 
+        if ($joinMonth == $month && $joinYear == $year) { 
+            $joinDay = date('d', strtotime($date_of_joining)); 
+            $eligibleDays = $daysInMonth - $joinDay + 1;
+        }
+    }
 
     $att_res = $obj->executequery("
         SELECT 
@@ -102,7 +120,7 @@ if (isset($_GET['emp_id'])) {
             END) AS total_half1,
 
             SUM(CASE 
-                WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Leave') THEN 1 
+                WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Leave','Public Holiday') THEN 1 
                 ELSE 0 
             END) AS total_present,
 
@@ -143,24 +161,28 @@ if (isset($_GET['emp_id'])) {
     $total_half_extra_off     = $row['total_half_extra_off'] ?? 0;
     $total_extra_off     = $row['total_extra_off'] ?? 0;
     $total_opening_leave     = $row['total_opening_leave'] ?? 0;
-    $used_extra_off = $total_extra_off + ($total_half_extra_off/2);
+    $used_extra_off = $total_extra_off + $total_half_extra_off;
+    
  
     $total_att_leave = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$month' AND unit_id='$unitid' and year='$year' and attendance_status IN('Leave') ");
 
-    $overtime_days = $obj->getvalfield("emp_overtime", "no_of_overtime", "emp_id='$emp_id' and month='$month' and year='$year' AND unit_id='$unitid'");
+    //$overtime_days = $obj->getvalfield("emp_overtime", "no_of_overtime", "emp_id='$emp_id' and month='$month' and year='$year' AND unit_id='$unitid'");
 
     $total_working_day = $total_present + ($total_half / 2);
+
+     
+
     $real_total_working_day = $total_present1 + ($total_half1 / 2);
 
     $count = $obj->getvalfield($tblname, "count(*)", "emp_id='$emp_id' and month='$month' and year ='$year'");
-    $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_working_day, $allow_weekly_off);
+    $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_working_day, $emp_id,$month,$year,$keyvalue);
     $earn_leave_present =  $real_total_working_day+$week_leave;
     $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
     
-
     //$three_month_leave = $obj->getLeave($emp_id, $month, $year);
     $extra_off =$obj->getExtraOffBalance($emp_id, $month, $year);
-    $opening_leave_balance =$obj->get_opening_leave_balance($emp_id, $sessionid);
+    //$opening_leave_balance =$obj->get_opening_leave_balance($emp_id, $sessionid);
+    $opening_leave_balance =0;
 
     $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
 
@@ -316,12 +338,12 @@ if (isset($_POST['submit'])) {
 
         $lastid = $obj->insert_record_lastid($tblname, $form_data);
   
-        if ($overtimeDays > 0  && $is_allow_c_off == '1') {
+        if ($overtimeDays > 0  && $is_allow_c_off == '1' && $is_perform_incen==0) {
             $overtime_data['salary_struc_id'] = $lastid;
             $obj->insert_record('emp_monthly_leave', $overtime_data);
         }
 
-        if ($remining_earn_leave > 0  && $is_allow_c_off == '1') {
+        if ($remining_earn_leave > 0  && $allow_earn_leave_carry == '1') {
             $remining_earn_leave_data['salary_struc_id'] = $lastid;
             $obj->insert_record('emp_monthly_leave', $remining_earn_leave_data);
         }
@@ -358,7 +380,8 @@ if (isset($_POST['submit'])) {
             'department_id' => $department_id,
             'salary_struc_id' => $lastid,
             'designation_id' => $designation_id,
-            'basic_salary' => $tot_sal,
+            'basic_salary' => $tot_sal, 
+            'promote_amt' => $increment,
             'promotion_date' => $createdate,
             'type' => 'increment',
             'status' => '1',
@@ -386,12 +409,13 @@ if (isset($_POST['submit'])) {
         $form_data["updatedby"] = $loginid;
         $where = array($tblpkey => $keyvalue);
         $obj->update_record($tblname, $where, $form_data);
-        if ($overtimeDays > 0 && $is_allow_c_off == '1') {
+        if ($overtimeDays > 0 && $is_allow_c_off == '1' && $is_perform_incen==0) {
             $where = array(
                 'emp_id' => $emp_id,
                 'salary_struc_id' => $keyvalue,
                 'month'  => $month,
                 'year'   => $year,
+                'is_opb'   => 0,
                 'leave_type'   => 'weekly',
                 'unit_id'   => $unitid
             );
@@ -399,7 +423,7 @@ if (isset($_POST['submit'])) {
             $obj->insert_record('emp_monthly_leave', $overtime_data);
         }
 
-        if ($remining_earn_leave > 0  && $is_allow_c_off == '1') {
+        if ($remining_earn_leave > 0  && $allow_earn_leave_carry == '1') {
             $obj->insert_record('emp_monthly_leave', $remining_earn_leave_data);
         }
         if($increment > 0){
@@ -425,10 +449,11 @@ if (isset($_POST['submit'])) {
             'designation_id' => $designation_id,
             'basic_salary' => $tot_sal,
             'promotion_date' => $createdate,
+            'promote_amt' => $increment,
             'type' => 'increment',
             'status' => '1',
-            "createdate" => $createdate,
-            "createdby" => $loginid,
+            "lastupdated" => $createdate,
+            "updatedby" => $loginid,
             "ipaddress" => $ipaddress,
             "sessionid" => $sessionid
             );
@@ -527,8 +552,10 @@ if ($keyvalue != 0) {
     $increment =  $basic_pf_rate =  $revised_salary =  $pf_esic_basic =  $basic_da = $hra = $medical =  $conveyance =   $special_allow =   $total_salary = $pf_emp = $esic_emp =  $pf_employer =  $esic_employer = $pf_rate = $esic_rate = $basic_pf_rate = $pf_paid_basic = $esic_paid_basic =   $pf_rate =   $esic_rate = $pf_paid_basic =  $esic_paid_basic = "";
     $present_days = $paid_holiday =  $c_off_leave = $total_c_off = $total_payable_salary = "";
     $total_week_leave =  $total_earn_leave = $weekly_off = $leave_days = $pre_earn_leave = $used_overtime_days = '0';
-    $total_pay_sal_after_ded = $additional_payment = $other_deduction = $tds_deduction= $extra_off_balance = $leave_balance = '0';
+    $total_pay_sal_after_ded = $additional_payment =  $tds_deduction= $extra_off_balance = $leave_balance = '0';
+     
 }
+ 
 
 $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.basic_percent,ss.hra_percent,ss.medical_allow,ss.conve_allow,ss.pf_per,ss.esic_per,ss.pf_emp_per,ss.esic_emp_per FROM salary_slab sm JOIN salary_slab_master ss ON ss.slab_id = sm.slab_id ORDER BY sm.from_salary ASC");
 ?>
@@ -733,15 +760,17 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                                 <?= ($keyvalue > 0) ? $pre_earn_leave : $total_earning_leave; ?>
                                             </span>
                                             <span>Extra Off Balance :<span id="total_c_off_text" class="text-dark">
-                                                 <?= ($keyvalue > 0) ? $extra_off_balance : $extra_off['balance']; ?>     </span>
-                                            </span>
- 
-                                            <span>Leave Balance :<span class="text-dark">
-                                                <?= ($keyvalue > 0) ? $leave_balance : $opening_leave_balance; ?>    </span>
+                                                    <?= ($keyvalue > 0) ? $extra_off_balance : $extra_off['balance']; ?>
+                                                </span>
                                             </span>
 
+                                            <!-- <span>Leave Balance :<span class="text-dark">
+                                                    < ($keyvalue > 0) ? $leave_balance : $opening_leave_balance; ?>
+                                                </span>
+                                            </span> -->
+
                                             <span> This Month Week Off : <?php if ($keyvalue > 0) { ?>
-                                                <?= $total_week_leave ?>
+                                                <!-- < $total_week_leave ?> --> <?= $week_leave ?>
                                                 <?php } else { ?>
                                                 <?= $week_leave ?>
                                                 <?php } ?>
@@ -776,17 +805,17 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                             <label for="">Revised Gross Salary</label>
                                             <input type="text" class="form-control form-control-sm"
                                                 value="<?= $revised_salary ?>" name="revised_salary"
-                                                id="revised_salary">
+                                                id="revised_salary" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="pf_rate">Basic PF Rate</label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $pf_rate ?>" name="pf_rate" id="pf_rate">
+                                                value="<?= $pf_rate ?>" name="pf_rate" id="pf_rate" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="esic_rate">Basic ESIC Rate</label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $esic_rate ?>" name="esic_rate" id="esic_rate">
+                                                value="<?= $esic_rate ?>" name="esic_rate" id="esic_rate" readonly>
                                         </div>
                                         <!-- <div class="col-lg-2 col-12 mb-3">
                                                 <label for="basic_pf_rate">Basic+PF+ESIC Rate</label>
@@ -799,13 +828,13 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="pf_paid_basic">PF Paid Basic</label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $pf_paid_basic ?>" name="pf_paid_basic" id="pf_paid_basic">
+                                                value="<?= $pf_paid_basic ?>" name="pf_paid_basic" id="pf_paid_basic" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="esic_paid_basic"> ESIC Paid Basic</label>
                                             <input type="text" class="form-control form-control-sm"
                                                 value="<?= $esic_paid_basic ?>" name="esic_paid_basic"
-                                                id="esic_paid_basic">
+                                                id="esic_paid_basic" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">Present Days</label>
@@ -834,7 +863,7 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                                 value="<?= $leave_days ?>" name="leave_days" id="leave_days" readonly>
                                         </div>
 
-                                        <div class="col-lg-2 col-12 mb-3">
+                                        <div class="col-lg-2 col-12 mb-3"><?= $used_extra_off ?? 0 ?>
                                             <label for="overtime_days">Used Extra Off</label>
                                             <input type="text" class="form-control form-control-sm"
                                                 value="<?= $used_extra_off ?? 0 ?>" name="overtime_days"
@@ -850,53 +879,53 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">Basic + DA</label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $basic_da ?>" name="basic_da" id="basic_da">
+                                                value="<?= $basic_da ?>" name="basic_da" id="basic_da" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">HRA</label>
                                             <input type="text" class="form-control form-control-sm" value="<?= $hra ?>"
-                                                name="hra" id="hra">
+                                                name="hra" id="hra" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">Medical Allowance </label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $medical ?>" name="medical" id="medical">
+                                                value="<?= $medical ?>" name="medical" id="medical" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">Conveyance Allowance </label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $conveyance ?>" name="conveyance" id="conveyance">
+                                                value="<?= $conveyance ?>" name="conveyance" id="conveyance" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">Special Allowance</label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $special_allow ?>" name="special_allow" id="special_allow">
+                                                value="<?= $special_allow ?>" name="special_allow" id="special_allow" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <!-- <label for="">Total Salary </label> -->
                                             <label for="">Gross Salary </label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $total_salary ?>" name="total_salary" id="total_salary">
+                                                value="<?= $total_salary ?>" name="total_salary" id="total_salary" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for=""> PF Emp Share </label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $pf_emp ?>" name="pf_emp" id="pf_emp">
+                                                value="<?= $pf_emp ?>" name="pf_emp" id="pf_emp" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">ESIC Emp Share </label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $esic_emp ?>" name="esic_emp" id="esic_emp">
+                                                value="<?= $esic_emp ?>" name="esic_emp" id="esic_emp" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">PF Employer Share</label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $pf_employer ?>" name="pf_employer" id="pf_employer">
+                                                value="<?= $pf_employer ?>" name="pf_employer" id="pf_employer" readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">ESIC Employer Share</label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $esic_employer ?>" name="esic_employer" id="esic_employer">
+                                                value="<?= $esic_employer ?>" name="esic_employer" id="esic_employer" readonly>
                                         </div>
 
 
@@ -904,7 +933,7 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                             <label for="" class="text-success">Total Gross Salary</label>
                                             <input type="text" class="form-control form-control-sm border-green"
                                                 value="<?= $total_payable_salary ?>" name="total_payable_salary"
-                                                id="total_payable_salary">
+                                                id="total_payable_salary" readonly>
                                         </div>
                                         <div class="col-lg-1 col-12 mb-3">
                                             <label for="loan_amt">Loan</label>
@@ -943,7 +972,7 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                             </label>
                                             <input type="text" class="form-control form-control-sm border-green"
                                                 value="<?= $total_pay_sal_after_ded ?>" name="total_pay_sal_after_ded"
-                                                id="total_pay_sal_after_ded">
+                                                id="total_pay_sal_after_ded" readonly>
                                         </div>
 
                                         <div class="col-lg-12  text-center mt-4">
@@ -1006,7 +1035,6 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
         const form = document.getElementById('salaryForm');
 
         let presentSalary = parseFloat(document.getElementById('basic_salary').value) || 0;
-
 
         let incrementSalary = parseFloat(document.getElementById('increment').value) || 0;
         let daysWorked = parseFloat(document.getElementById('total_working_days').value) || 0;
@@ -1126,8 +1154,9 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
         }
 
         esic_paid_basic_val = round(basicRate / totalDaysInMonth * daysWorked);
+        // console.log('basicRate',basicRate);
+        // console.log('esic_paid_basic_val',esic_paid_basic_val);
         if (is_esic == '1') {
-
             //if (basicRate <= unit_esic_rate) {
             esic_val = Math.ceil(esic_paid_basic_val * slab.esic_per / 100);
             esic_emp_val = round(esic_paid_basic_val * slab.esic_emp_per / 100);
@@ -1171,84 +1200,83 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
     }
     </script>
     <script>
-    function totalWorking() {
-
-        const daysInMonth = parseInt('<?= $daysInMonth ?>') || 0;
-        const weeklyBalance = parseFloat('<?= $week_leave ?>') || 0;
-        const monthlyBalance = parseFloat('<?= $monthly_leave ?>') || 0;
-        const is_allow_c_off = parseInt('<?= $is_allow_c_off ?>') || 0;
-        const is_all_leave_add = parseFloat('<?= $is_all_leave_add ?>') || 0;
-        const overtimeDays = parseFloat('<?= $used_extra_off ?>') || 0;
+    function totalWorking() { 
+        const daysInMonth = parseFloat('<?= isset($eligibleDays) ? $eligibleDays : 0 ?>') || 0;
+        const weeklyBalance = parseFloat('<?= isset($week_leave) ? $week_leave : 0 ?>') || 0;
+        const monthlyBalance = parseFloat('<?= isset($monthly_leave) ? $monthly_leave : 0 ?>') || 0;
+        const is_allow_c_off = parseInt('<?= isset($is_allow_c_off) ? $is_allow_c_off : 0 ?>') || 0;
+        const allow_earn_leave_carry = parseInt('<?= isset($allow_earn_leave_carry) ? $allow_earn_leave_carry : 0 ?>') || 0;
+        const is_all_leave_add = parseInt('<?= isset($is_all_leave_add) ? $is_all_leave_add : 0 ?>') || 0;
+        const overtimeDays = parseFloat('<?= isset($used_extra_off) ? $used_extra_off : 0 ?>') || 0;
+        const empBasicSalary = parseFloat('<?= isset($basic_salary) ? $basic_salary : 0 ?>') || 0;
+       // const weeklyBalance = parseFloat('< $week_leave ?>') || 0;
+        //const monthlyBalance = parseFloat('<$monthly_leave ?>') || 0;
+        // const is_allow_c_off = parseInt('<$is_allow_c_off ?>') || 0;
+        // const allow_earn_leave_carry = parseInt('<$allow_earn_leave_carry ?>') || 0;
+        // const is_all_leave_add = parseFloat('<$is_all_leave_add ?>') || 0;
+      
+        // const empBasicSalary = parseFloat('<$basic_salary ?>') || 0;
 
         let presentDays = parseFloat($('#present_days').val()) || 0;
-        let holidays = parseFloat($('#paid_holiday').val()) || 0;
-        let advanceLeave = parseFloat($('#advance_leave').val()) || 0;
-        // let overtimeDays = parseFloat($('#overtime_days').val()) || 0;
-
-        //let baseTotal = presentDays + holidays + advanceLeave + overtimeDays;
-        let baseTotal = presentDays + holidays;
-        //let baseTotal = presentDays;
-        // console.log('baseTotal', baseTotal);
-
+        let holidays = parseFloat($('#paid_holiday').val()) || 0; 
+        
+        //let baseTotal = presentDays + holidays;
+        let baseTotal = presentDays + overtimeDays;
+       // console.log('baseTotal',overtimeDays);
+         
         let usedWeeklyLeave = 0;
         let usedMonthlyLeave = 0;
-        let usedCOff = 0;
         let totalWorkingDays = 0;
         let used_overtime = 0;
+        let shortage = 0;
+
         // CASE 1: C-OFF ALLOWED
         if (is_allow_c_off === 1) {
 
-            let shortage = daysInMonth - baseTotal;
+            shortage = daysInMonth - baseTotal;
             if (shortage < 0) shortage = 0;
 
-            used_overtime = Math.min(shortage, overtimeDays);
-            shortage -= used_overtime;
-
-            // usedCOff = Math.min(shortage, totalCOffBalance);
-            // shortage -= usedCOff;
-            // Weekly → Monthly → C-Off
+            // used_overtime = Math.min(shortage, overtimeDays);
+            // shortage -= used_overtime;
 
             usedWeeklyLeave = Math.min(shortage, weeklyBalance);
             shortage -= usedWeeklyLeave;
 
-            if (is_all_leave_add === 1) {
-                usedMonthlyLeave = Math.min(shortage, monthlyBalance);
-                shortage -= usedMonthlyLeave;
-            }
-
-            totalWorkingDays = baseTotal + usedWeeklyLeave + usedMonthlyLeave + used_overtime;
-            totalWorkingDays = Math.min(totalWorkingDays, daysInMonth);
-
         }
         // CASE 2: C-OFF NOT ALLOWED
         else {
-            used_overtime = overtimeDays;
-            usedWeeklyLeave = weeklyBalance;
-            if (is_all_leave_add === 1) {
-                usedMonthlyLeave = monthlyBalance;
-            }
+            // used_overtime = overtimeDays;
+            // // pehle overtime ke baad shortage nikalo
+            // shortage = daysInMonth - (baseTotal + used_overtime);
+            shortage = daysInMonth - baseTotal;
+            if (shortage < 0) shortage = 0;
 
-            usedCOff = 0;
+            // sirf required weekly leave use karo
+            usedWeeklyLeave = Math.min(shortage, weeklyBalance);
 
-            totalWorkingDays =
-                baseTotal +
-                usedWeeklyLeave +
-                used_overtime +
-                usedMonthlyLeave;
+            shortage -= usedWeeklyLeave;
         }
 
-        // ✅ SET UI VALUES
+        //   COMMON MONTHLY LEAVE LOGIC
+        if (is_all_leave_add === 1 && allow_earn_leave_carry === 1) {
+            usedMonthlyLeave = Math.min(shortage, monthlyBalance);
+            shortage -= usedMonthlyLeave;
+        }
 
+        totalWorkingDays =
+            baseTotal +
+            usedWeeklyLeave +
+            //used_overtime +
+            usedMonthlyLeave;
+
+        totalWorkingDays = Math.min(totalWorkingDays, daysInMonth); 
+        //  SET UI VALUES
         $('#weekly_off').val(usedWeeklyLeave);
         $('#leave_days').val(usedMonthlyLeave);
-        //$('#c_off_leave').val(usedCOff);
-        $('#overtime_days').val(used_overtime);
-
-        //$('#used_c_off_text').text(usedCOff);
-
+       // $('#overtime_days').val(used_overtime);
         $('#total_working_days').val(totalWorkingDays);
     }
-
+ 
     function update_pf_esic_check(el) {
         let emp_id = el.dataset.empid;
         let type = el.dataset.type;

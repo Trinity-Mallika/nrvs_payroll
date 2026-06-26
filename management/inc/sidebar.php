@@ -145,16 +145,43 @@
                     </li>
 
                 <?php }
-                $chkmenu = $obj->check_menuname("biomatric_manual_att_report.php", $loginid);
+                $chkmenu = $obj->check_menuname("biomatric_manual_count_report.php", $loginid);
                 if ($chkmenu > 0 || $_SESSION['usertype'] == 'super_management') {
                 ?>
                     <li class="nav-item">
-                        <a class="nav-link menu-link" href="biomatric_manual_att_report.php">
+                        <a class="nav-link menu-link" href="biomatric_manual_count_report.php">
                             <i class="ri-user-unfollow-line"></i> <span>Biomatric VS Manual Attendance</span>
                         </a>
                     </li>
-
                 <?php }
+                $chkmenu = $obj->check_menuname("emp_promotion.php", $loginid);
+                if ($chkmenu > 0 || $_SESSION['usertype'] == 'super_management') {
+                ?>
+                    <li class="nav-item">
+                        <a class="nav-link menu-link" href="emp_promotion.php">
+                            <i class="ri-user-unfollow-line"></i> <span>Emp Promotion And Increment Report</span>
+                        </a>
+                    </li>
+                <?php }
+                    $chkmenu = $obj->check_menuname("unit_transfer.php", $loginid);
+                if ($chkmenu > 0 || $_SESSION['usertype'] == 'super_management') {
+                ?>
+                    <li class="nav-item">
+                        <a class="nav-link menu-link" href="unit_transfer.php">
+                            <i class="ri-user-unfollow-line"></i> <span>Emp Transfer Report</span>
+                        </a>
+                    </li>
+                <?php } 
+                $chkmenu = $obj->check_menuname("employee_leave_ledger.php", $loginid);
+                if ($chkmenu > 0 || $_SESSION['usertype'] == 'super_management') {
+                ?>
+                    <li class="nav-item">
+                        <a class="nav-link menu-link" href="employee_leave_ledger.php">
+                            <i class="ri-user-unfollow-line"></i> <span>Emp Leave Ledger</span>
+                        </a>
+                    </li>
+                <?php }
+                
                 $chkmenu = $obj->check_menuname("change_password.php", $loginid);
                 if ($chkmenu > 0 || $_SESSION['usertype'] == 'super_management') {
                 ?>

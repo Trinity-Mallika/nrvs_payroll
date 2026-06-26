@@ -8,47 +8,68 @@ $with_employee = $obj->test_input($_REQUEST['with_employee']);
 $remark = $obj->test_input($_REQUEST['remark']);
 $keyvalue = $obj->test_input($_REQUEST['keyvalue']);
 $emp_id = $obj->test_input($_REQUEST['emp_id']);
+$on_duty_details_id = $obj->test_input($_REQUEST['on_duty_details_id']?? 0);
+$no_of_days = !empty($_REQUEST['no_of_days']) ? (int)$_REQUEST['no_of_days'] : 1;
+$inserted = 0;
+$duplicate_dates = [];
 
-$check = $obj->getvalfield(
-    "on_duty_details",
-    "count(*)",
-    "emp_id='$emp_id' AND date='$date' AND unit_id='$unitid' and status!=2"
-);
-if ($check > 0) {
-    echo json_encode([
-        "status" => "duplicate",
-        "message" => "This date is already added!"
-    ]);
-    exit;
-}
 
-$form_data = array(
-    'on_duty_id' => $keyvalue,
-    'date' => $date,
-    'emp_id' => $emp_id,
-    'intime' => $intime,
-    'outtime' => $outtime,
-    'place' => $place,
-    'with_employee' => $with_employee,
-    'remark' => $remark,
-    "createdate" => $createdate,
-    "createdby" => $loginid,
-    "ipaddress" => $ipaddress,
-    "sessionid" => $sessionid,
-    "unit_id" => $unitid
-);
-if ($intime != '') {
-    $obj->insert_record("on_duty_details", $form_data);
+for ($i = 0; $i < $no_of_days; $i++) {
+    $current_date = date('Y-m-d', strtotime($date . " +$i days"));
+    $form_data = array(
+        'on_duty_id' => $keyvalue,
+        'date' => $current_date,
+        'emp_id' => $emp_id,
+        'intime' => $intime,
+        'outtime' => $outtime,
+        'place' => $place,
+        'with_employee' => $with_employee,
+        'remark' => $remark,
+        "createdate" => $createdate,
+        "createdby" => $loginid,
+        "ipaddress" => $ipaddress,
+        "sessionid" => $sessionid,
+        "unit_id" => $unitid
+    );
+    
+    if ($on_duty_details_id == 0) {
+        
+           $check = $obj->getvalfield(
+                "on_duty_details",
+                "count(*)",
+                "emp_id='$emp_id' AND date='$current_date' AND unit_id='$unitid' and status!=2"
+            );
 
-    $count = $obj->getvalfield("on_duty_details", "count(*)", "on_duty_id='$keyvalue' and unit_id='$unitid' and createdby='$loginid'");
+            if ($check > 0) {
+                $duplicate_dates[] = $current_date;
+                continue; // skip duplicate
+            }
 
+        $obj->insert_record("on_duty_details", $form_data);
+
+       
+    } else {
+            $where = ['on_duty_details_id' => $on_duty_details_id];
+            $obj->update_record("on_duty_details", $where, $form_data);
+        }
+
+    $inserted++;
+} 
+$count = $obj->getvalfield("on_duty_details", "count(*)", "on_duty_id='$keyvalue' and unit_id='$unitid' and createdby='$loginid'");
+
+if ($inserted > 0) {
     echo json_encode([
         "status" => "success",
-        "total_days" => $count
+        "total_days" => $count,
+        "inserted" => $inserted,
+        "duplicates" => $duplicate_dates
     ]);
 } else {
     echo json_encode([
-        "status" => "error",
-        "message" => "Something Went Wrong!!!"
+        "status" => "duplicate",
+        "message" => "selected dates already exist!",
+        "duplicates" => $duplicate_dates
     ]);
 }
+ 
+ 

@@ -137,10 +137,12 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
 
     $exit_id = $obj->test_input($_POST['exit_id']) ?? 0;
     $rejoin_emp_id = $obj->test_input($_POST['rejoin_emp_id']) ?? 0;
+    $actual_date_of_joining =$obj->getvalfield("employee_master","date_of_joining","emp_id='$rejoin_emp_id'");
     $rejoin_date = $obj->test_input($_POST['rejoin_date']) ?? "";
     $remark =  $obj->test_input($_POST['remark']) ?? '';
     $prev_join_date = $obj->getvalfield("employee_master", "date_of_joining", "emp_id='$rejoin_emp_id'");
     $rejoin_with_new_id = $obj->test_input($_POST['new_emp_checkbox']) ?? 0;
+    $new_join_checkbox = $obj->test_input($_POST['new_join_checkbox']) ?? 0;
     $new_emp_code = $obj->test_input($_POST['new_emp_code']) ?? '';
     $biometric_id = $obj->test_input($_POST['biometric_id']) ?? '';
     $show_emp_code = $obj->test_input($_POST['show_emp_code']) ?? '';
@@ -158,6 +160,10 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
             "biomatric_id",
             "emp_id='$rejoin_emp_id'"
         );
+    }
+
+    if($new_join_checkbox == 0){
+        $rejoin_date=$actual_date_of_joining;
     }
 
     // Update emp_separation
@@ -221,277 +227,282 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
                 <?php include('inc/bredcrum.php') ?>
                 <?php include('inc/alert.php'); ?>
                 <div class="row">
-                    <div class="col-lg-12">
-                        <div class="card" id="customerList">
-                            <div class="card-header border-bottom-dashed">
-                                <div class="row g-4 align-items-center">
-                                    <div class="col-sm">
-                                        <div>
-                                            <h5 class="card-title mb-0"> <?= $module; ?> <a href="emp_separation.php"
-                                                    class="float-end btn btn-primary btn-sm">Add New</a></h5>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <form method="get">
-                                    <div class="row">
-
-                                        <div class="col-lg-3 mb-3">
-                                            <label for="emp_id" class="form-label">Employee Name<span
-                                                    class="text-danger fw-bold"> </span></label>
-                                            <select class="form-select form-select-sm chosen-select" name="emp_id"
-                                                id="emp_id">
-                                                <option value="">All</option>
-                                                <?php
-                                                //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
-                                                $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' ORDER BY first_name ASC");
-                                                foreach ($res as $key) { ?>
-                                                    <option value="<?= $key['emp_id']; ?>">
-                                                        <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?>
-                                                        <?= ucfirst($key['last_name'] ?? ''); ?></option>
-                                                <?php } ?>
-                                            </select>
-                                            <script>
-                                                document.getElementById('emp_id').value =
-                                                    '<?= $emp_id; ?>';
-                                            </script>
-                                        </div>
-
-                                        <div class="col-lg-3 mb-2">
-                                            <label for="" class="form-label">Resignation Date </label>
-                                            <div class="input-group input-group-sm">
-                                                <input type="date" class="form-control form-control-sm" name="fromdate"
-                                                    id="fromdate" placeholder='dd-mm-yyyy'
-                                                    value="<?php echo $fromdate; ?>">
-                                                <span class="input-group-text">To</span>
-                                                <input type="date" class="form-control form-control-sm" name="todate"
-                                                    id="todate" placeholder='dd-mm-yyyy' value="<?php echo $todate; ?>">
+                    <?php if (!isset($_GET['submit'])) { ?>
+                        <div class="col-lg-12">
+                            <div class="card" id="customerList">
+                                <div class="card-header border-bottom-dashed">
+                                    <div class="row g-4 align-items-center">
+                                        <div class="col-sm">
+                                            <div>
+                                                <h5 class="card-title mb-0"> <?= $module; ?> <a href="emp_separation.php"
+                                                        class="float-end btn btn-primary btn-sm">Add New</a></h5>
                                             </div>
                                         </div>
-
-                                        <div class="col-lg-3 mt-4">
-                                            <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn"
-                                                value="Search">
-                                            <a href="<?php echo $pagename ?>"
-                                                class="btn btn-sm btn-danger add-btn">Reset</a>
-                                        </div>
                                     </div>
-                                </form>
+                                </div>
+                                <div class="card-body">
+                                    <form method="get">
+                                        <div class="row">
+
+                                            <div class="col-lg-3 mb-3">
+                                                <label for="emp_id" class="form-label">Employee Name<span
+                                                        class="text-danger fw-bold"> </span></label>
+                                                <select class="form-select form-select-sm chosen-select" name="emp_id"
+                                                    id="emp_id">
+                                                    <option value="">All</option>
+                                                    <?php
+                                                    //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
+                                                    $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' ORDER BY first_name ASC");
+                                                    foreach ($res as $key) { ?>
+                                                        <option value="<?= $key['emp_id']; ?>">
+                                                            <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?>
+                                                            <?= ucfirst($key['last_name'] ?? ''); ?></option>
+                                                    <?php } ?>
+                                                </select>
+                                                <script>
+                                                    document.getElementById('emp_id').value =
+                                                        '<?= $emp_id; ?>';
+                                                </script>
+                                            </div>
+
+                                            <div class="col-lg-3 mb-2">
+                                                <label for="" class="form-label">Resignation Date </label>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="date" class="form-control form-control-sm" name="fromdate"
+                                                        id="fromdate" placeholder='dd-mm-yyyy'
+                                                        value="<?php echo $fromdate; ?>">
+                                                    <span class="input-group-text">To</span>
+                                                    <input type="date" class="form-control form-control-sm" name="todate"
+                                                        id="todate" placeholder='dd-mm-yyyy' value="<?php echo $todate; ?>">
+                                                </div>
+                                            </div>
+
+                                            <div class="col-lg-3 mt-4">
+                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn"
+                                                    value="Search">
+                                                <a href="<?php echo $pagename ?>"
+                                                    class="btn btn-sm btn-danger add-btn">Reset</a>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-lg-12">
-                        <div class="card" id="customerList">
-                            <div class="card-header border-bottom-dashed">
-                                <div class="row g-4 align-items-center">
-                                    <div class="col-sm">
-                                        <div>
-                                            <h5 class="card-title mb-0"><?php echo $submodule; ?> </h5>
+                    <?php } ?>
+                    <?php if (isset($_GET['submit'])) { ?>
+                        <div class="col-lg-12">
+                            <div class="card" id="customerList">
+                                <div class="card-header border-bottom-dashed">
+                                    <div class="row g-4 align-items-center">
+                                        <div class="col-sm">
+                                            <div>
+                                                <h5 class="card-title mb-0"><?php echo $submodule; ?> <a href="emp_separation_list.php"
+                                                        class="float-end btn btn-primary btn-sm">Search Again</a></h5>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="card-body auto-scroll-wrapper">
-                                <div class="table-responsive">
-                                    <table id="buttons-datatables" class="display table table-sm table-bordered"
-                                        style="width:100%">
-                                        <thead>
-                                            <tr class="table-primary">
-                                                <th>Sr No.</th>
-                                                <th>Emp Code</th>
-                                                <th>Employee Name</th>
-                                                <th>Department</th>
-                                                <th>Designation</th>
-                                                <th>Basic Salary</th>
-                                                <th>Aadhar No</th>
-                                                <th>Mobile No</th>
-                                                <th>Exit Type</th>
-                                                <th>Joining Date</th>
-                                                <th>Resignation Date</th>
-                                                <th>Last Working Date</th>
-                                                <th>Total Working Days</th>
-                                                <th>Notice Period (Days)</th>
-                                                <th>Reason</th>
-                                                <th>Approved Status <input type="checkbox" id="checkAll"
-                                                        class="form-check-input" /></th>
+                                <div class="card-body auto-scroll-wrapper">
+                                    <div class="table-responsive">
+                                        <table id="buttons-datatables" class="display table table-sm table-bordered"
+                                            style="width:100%">
+                                            <thead>
+                                                <tr class="table-primary">
+                                                    <th>Sr No.</th>
+                                                    <th>Emp Code</th>
+                                                    <th>Employee Name</th>
+                                                    <th>Department</th>
+                                                    <th>Designation</th>
+                                                    <th>Basic Salary</th>
+                                                    <th>Aadhar No</th>
+                                                    <th>Mobile No</th>
+                                                    <th>Exit Type</th>
+                                                    <th>Joining Date</th>
+                                                    <th>Resignation Date</th>
+                                                    <th>Last Working Date</th>
+                                                    <th>Total Working Days</th>
+                                                    <th>Notice Period (Days)</th>
+                                                    <th>Reason</th>
+                                                    <th>Approved Status <input type="checkbox" id="checkAll"
+                                                            class="form-check-input" /></th>
 
-                                                <th>Actions </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php
-                                            $slno = 1;
-                                            // $res = $obj->executequery("SELECT * FROM $tblname where unit_id='$unitid' $crit ORDER BY $tblpkey desc ");
+                                                    <th>Actions </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php
+                                                $slno = 1;
+                                                // $res = $obj->executequery("SELECT * FROM $tblname where unit_id='$unitid' $crit ORDER BY $tblpkey desc ");
 
-                                            $res = $obj->executequery("SELECT 
-                                                    t.*, 
-                                                    em.date_of_joining,
-                                                    em.emp_code,
-                                                    em.basic_salary,
-                                                    em.first_name,
-                                                    em.last_name,
-                                                    dm.department_name,
-                                                    em.mobile_no,
-                                                    em.aadhar_no,
-                                                    desi.designation,
-                                                    cu.fullname as created_name,
-                                                    cu.username as created_username,
-                                                    cu.mobile as created_mobile,
+                                                $res = $obj->executequery("SELECT 
+                                                        t.*, 
+                                                        em.date_of_joining,
+                                                        em.emp_code,
+                                                        em.basic_salary,
+                                                        em.first_name,
+                                                        em.last_name,
+                                                        dm.department_name,
+                                                        em.mobile_no,
+                                                        em.aadhar_no,
+                                                        desi.designation,
+                                                        cu.fullname as created_name,
+                                                        cu.username as created_username,
+                                                        cu.mobile as created_mobile,
 
-                                                    uu.fullname as updated_name,
-                                                    uu.username as updated_username,
-                                                    uu.mobile as updated_mobile
-                                                FROM $tblname t
-                                                LEFT JOIN employee_master em ON em.emp_id = t.emp_id
-                                                LEFT JOIN department_master dm ON dm.department_id = em.department_id
-                                                LEFT JOIN designation_master desi ON desi.designation_id = em.designation_id
-                                                LEFT JOIN user cu ON t.createdby = cu.userid
-                                                LEFT JOIN user uu ON t.updatedby = uu.userid
-                                                WHERE t.unit_id = '$unitid' $crit
-                                                ORDER BY t.$tblpkey DESC
-                                            ");
+                                                        uu.fullname as updated_name,
+                                                        uu.username as updated_username,
+                                                        uu.mobile as updated_mobile
+                                                    FROM $tblname t
+                                                    LEFT JOIN employee_master em ON em.emp_id = t.emp_id
+                                                    LEFT JOIN department_master dm ON dm.department_id = em.department_id
+                                                    LEFT JOIN designation_master desi ON desi.designation_id = em.designation_id
+                                                    LEFT JOIN user cu ON t.createdby = cu.userid
+                                                    LEFT JOIN user uu ON t.updatedby = uu.userid
+                                                    WHERE t.unit_id = '$unitid' $crit
+                                                    ORDER BY t.$tblpkey DESC
+                                                ");
 
-                                            foreach ($res as $row) {
+                                                foreach ($res as $row) {
 
 
-                                                if ($row['is_approved'] == 0) {
-                                                    $statusText = 'Pending';
-                                                    $badgeClass = 'bg-warning';
-                                                } elseif ($row['is_approved'] == 1) {
-                                                    $statusText = 'Approved';
-                                                    $badgeClass = 'bg-success';
-                                                } else {
-                                                    $statusText = 'Rejected';
-                                                    $badgeClass = 'bg-danger';
-                                                }
-                                            ?>
-                                                <tr data-details="
-                                    <div style='background:#dafced; padding:4px;'>
-                                    <?php if (!empty($row['created_name'])): ?>
-                                    Added by (User: <?= $row['created_name'] ?>,
-                                    Username: <?= $row['created_username'] ?>,
-                                    Mobile: <?= $row['created_mobile'] ?>,
-                                     Date: <?= $row['createdate'] ?>,)<br>
-                                    <?php endif; ?>
+                                                    if ($row['is_approved'] == 0) {
+                                                        $statusText = 'Pending';
+                                                        $badgeClass = 'bg-warning';
+                                                    } elseif ($row['is_approved'] == 1) {
+                                                        $statusText = 'Approved';
+                                                        $badgeClass = 'bg-success';
+                                                    } else {
+                                                        $statusText = 'Rejected';
+                                                        $badgeClass = 'bg-danger';
+                                                    }
+                                                ?>
+                                                    <tr data-details="
+                                        <div style='background:#dafced; padding:4px;'>
+                                        <?php if (!empty($row['created_name'])): ?>
+                                        Added by (User: <?= $row['created_name'] ?>,
+                                        Username: <?= $row['created_username'] ?>,
+                                        Mobile: <?= $row['created_mobile'] ?>,
+                                        Date: <?= $row['createdate'] ?>,)<br>
+                                        <?php endif; ?>
 
-                                    <?php if (!empty($row['updated_name'])): ?>
-                                    Last Edited by (User: <?= $row['updated_name'] ?>,
-                                    Username: <?= $row['updated_username'] ?>,
-                                    Mobile: <?= $row['updated_mobile'] ?>,
-                                    Date: <?= $row['lastupdated'] ?>) 
-                                    <?php endif; ?>
-                                     </div>
-                                ">
-                                                    <td class="details-control text-center" style="cursor:pointer;">
-                                                        <?php echo $slno++; ?> <i
-                                                            class="ri-add-circle-fill text-primary"></i></td>
-                                                    <td><?= $row['emp_code']; ?> </td>
-                                                    <td> <?= ucfirst($row['first_name'] ?? ''); ?>
-                                                        <?= ucfirst($row['last_name'] ?? ''); ?></td>
-                                                    <td><?php echo $row["department_name"]; ?></td>
-                                                    <td><?php echo $row["designation"]; ?></td>
-                                                    <td><?php echo $row["basic_salary"]; ?></td>
-                                                    <td><?php echo $row["aadhar_no"]; ?></td>
-                                                    <td><?php echo $row["mobile_no"]; ?></td>
-                                                    <td><?php echo $row["exit_type"]; ?></td>
-                                                    <td><?php echo $row["date_of_joining"]; ?></td>
-                                                    <td><?= $obj->dateformatindia($row["resignation_date"]); ?></td>
-                                                    <td><?= $obj->dateformatindia($row["last_working_date"]); ?></td>
-                                                    <td>
-                                                        <?php
-                                                        echo $obj->getWorkingDuration($row["date_of_joining"], $row["last_working_date"]);
-                                                        ?>
-                                                    </td>
-                                                    <td><?php echo $row["notice_period"]; ?></td>
-                                                    <td><?php echo $row["reason_for_leaving"]; ?></td>
-                                                    <td class="text-center">
-                                                        <?php $chkapr = $obj->check_aprBtn($pagename, $loginid);
-                                                        if ($chkapr == 1 && $row['is_approved'] == 0) { ?>
-                                                            <a href="javascript:void(0)" title="Change Status"
-                                                                onclick="openStatusModal('<?= $row['is_approved']; ?>','<?= $row['exit_id']; ?>','<?= $row['emp_id']; ?>','<?= $row['last_working_date']; ?>')">
+                                        <?php if (!empty($row['updated_name'])): ?>
+                                        Last Edited by (User: <?= $row['updated_name'] ?>,
+                                        Username: <?= $row['updated_username'] ?>,
+                                        Mobile: <?= $row['updated_mobile'] ?>,
+                                        Date: <?= $row['lastupdated'] ?>) 
+                                        <?php endif; ?>
+                                        </div>
+                                    ">
+                                                        <td class="details-control text-center" style="cursor:pointer;">
+                                                            <?php echo $slno++; ?> <i
+                                                                class="ri-add-circle-fill text-primary"></i></td>
+                                                        <td><?= $row['emp_code']; ?> </td>
+                                                        <td> <?= ucfirst($row['first_name'] ?? ''); ?>
+                                                            <?= ucfirst($row['last_name'] ?? ''); ?></td>
+                                                        <td><?php echo $row["department_name"]; ?></td>
+                                                        <td><?php echo $row["designation"]; ?></td>
+                                                        <td><?php echo $row["basic_salary"]; ?></td>
+                                                        <td><?php echo $row["aadhar_no"]; ?></td>
+                                                        <td><?php echo $row["mobile_no"]; ?></td>
+                                                        <td><?php echo $row["exit_type"]; ?></td>
+                                                        <td><?php echo $obj->dateformatindia($row["date_of_joining"]); ?></td>
+                                                        <td><?= $obj->dateformatindia($row["resignation_date"]); ?></td>
+                                                        <td><?= $obj->dateformatindia($row["last_working_date"]); ?></td>
+                                                        <td>
+                                                            <?php
+                                                            echo $obj->getWorkingDuration($row["date_of_joining"], $row["last_working_date"]);
+                                                            ?>
+                                                        </td>
+                                                        <td><?php echo $row["notice_period"]; ?></td>
+                                                        <td><?php echo $row["reason_for_leaving"]; ?></td>
+                                                        <td class="text-center">
+                                                            <?php $chkapr = $obj->check_aprBtn($pagename, $loginid);
+                                                            if ($chkapr == 1 && $row['is_approved'] == 0) { ?>
+                                                                <a href="javascript:void(0)" title="Change Status"
+                                                                    onclick="openStatusModal('<?= $row['is_approved']; ?>','<?= $row['exit_id']; ?>','<?= $row['emp_id']; ?>','<?= $row['last_working_date']; ?>')">
+                                                                    <span class="badge <?= $badgeClass; ?> me-2">
+                                                                        <?= $statusText; ?>
+                                                                    </span>
+                                                                </a>
+                                                                <input type="checkbox" class="appr_single form-check-input"
+                                                                    value="<?= $row['exit_id'] ?>" />
+                                                            <?php } else { ?>
                                                                 <span class="badge <?= $badgeClass; ?> me-2">
                                                                     <?= $statusText; ?>
                                                                 </span>
-                                                            </a>
-                                                            <input type="checkbox" class="appr_single form-check-input"
-                                                                value="<?= $row['exit_id'] ?>" />
-                                                        <?php } else { ?>
-                                                            <span class="badge <?= $badgeClass; ?> me-2">
-                                                                <?= $statusText; ?>
-                                                            </span>
-                                                            <p><?= $row["reason_for_reject"]; ?></p>
-                                                        <?php } ?>
-                                                    </td>
-
-
-                                                    <td>
-                                                        <ul class="list-inline hstack gap-2 mb-0">
-                                                            <?php
-                                                            $chkdel = $obj->check_delBtn($pagename, $loginid);
-                                                            if ($chkdel == 1 && ($row['is_approved'] == 0 || $row['is_approved'] == 2)) { ?>
-                                                                <li class="list-inline-item" data-bs-toggle="tooltip"
-                                                                    data-bs-trigger="hover" data-bs-placement="top"
-                                                                    title="Delete">
-                                                                    <a class="remove-item-btn" type="button"
-                                                                        onclick="funDel('<?php echo $row[$tblpkey]; ?>','<?= $row['emp_id'] ?>');">
-                                                                        <i
-                                                                            class="ri-delete-bin-fill align-bottom text-danger"></i>
-                                                                    </a>
-                                                                </li>
+                                                                <p><?= $row["reason_for_reject"]; ?></p>
                                                             <?php } ?>
-                                                            <?php $chkedit = $obj->check_editBtn($pagename, $loginid);
-                                                            if ($chkedit == 1 && $row['is_approved'] == 0) {  ?>
+                                                        </td>
 
-                                                                <li class="list-inline-item " data-bs-toggle="tooltip"
-                                                                    data-bs-trigger="hover" data-bs-placement="top"
-                                                                    title="Edit">
-                                                                    <a href="emp_separation.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>"
-                                                                        class="edit-item-btn">
-                                                                        <i class="ri-pencil-fill align-bottom text-success"></i>
-                                                                    </a>
-                                                                </li>
-                                                            <?php  }
 
-                                                            if ($row['is_approved'] == 1 && $row['is_rejoined'] == 0 && $row['exit_type'] != 'Blacklist') { ?>
-                                                                <span class="badge bg-primary me-2 cursor-pointer"
-                                                                    onclick="openRejoinModal('<?php echo $row[$tblpkey]; ?>','<?php echo $row['emp_id']; ?>','<?= ucfirst($row['first_name'] ?? ''); ?>','<?= $row['emp_code']; ?>');">
-                                                                    Rejoin
-                                                                </span>
-                                                            <?php }
-                                                            if ($row['is_rejoined'] == 1) { ?>
-                                                                <div style="cursor:pointer;" onclick="openRejoinDetailsModal(
-                                                            '<?= ucfirst($row['first_name'] . ' ' . $row['last_name']); ?>',
-                                                            '<?= $row['rejoin_with_new_id']; ?>',
-                                                            '<?= $row['prev_emp_code']; ?>',
-                                                            '<?= $row['new_emp_code']; ?>',
-                                                            '<?= $row['biometric_id']; ?>',
-                                                            '<?= $row['emp_code']; ?>',
-                                                           
-                                                            '<?= addslashes($row['rejoin_remark']); ?>'
-                                                        )">
+                                                        <td>
+                                                            <ul class="list-inline hstack gap-2 mb-0">
+                                                                <?php
+                                                                $chkdel = $obj->check_delBtn($pagename, $loginid);
+                                                                if ($chkdel == 1 && ($row['is_approved'] == 0 || $row['is_approved'] == 2)) { ?>
+                                                                    <li class="list-inline-item" data-bs-toggle="tooltip"
+                                                                        data-bs-trigger="hover" data-bs-placement="top"
+                                                                        title="Delete">
+                                                                        <a class="remove-item-btn" type="button"
+                                                                            onclick="funDel('<?php echo $row[$tblpkey]; ?>','<?= $row['emp_id'] ?>');">
+                                                                            <i
+                                                                                class="ri-delete-bin-fill align-bottom text-danger"></i>
+                                                                        </a>
+                                                                    </li>
+                                                                <?php } ?>
+                                                                <?php $chkedit = $obj->check_editBtn($pagename, $loginid);
+                                                                if ($chkedit == 1 && $row['is_approved'] == 0) {  ?>
 
-                                                                    <span class="badge bg-success mb-1 d-inline-block">
-                                                                        Re-joined
+                                                                    <li class="list-inline-item " data-bs-toggle="tooltip"
+                                                                        data-bs-trigger="hover" data-bs-placement="top"
+                                                                        title="Edit">
+                                                                        <a href="emp_separation.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>"
+                                                                            class="edit-item-btn">
+                                                                            <i class="ri-pencil-fill align-bottom text-success"></i>
+                                                                        </a>
+                                                                    </li>
+                                                                <?php  }
+
+                                                                if ($row['is_approved'] == 1 && $row['is_rejoined'] == 0 && $row['exit_type'] != 'Blacklist') { ?>
+                                                                    <span class="badge bg-primary me-2 cursor-pointer"
+                                                                        onclick="openRejoinModal('<?php echo $row[$tblpkey]; ?>','<?php echo $row['emp_id']; ?>','<?= ucfirst($row['first_name'] ?? ''); ?>','<?= $row['emp_code']; ?>');">
+                                                                        Rejoin
                                                                     </span>
+                                                                <?php }
+                                                                if ($row['is_rejoined'] == 1) { ?>
+                                                                    <div style="cursor:pointer;" onclick="openRejoinDetailsModal(
+                                                                '<?= ucfirst($row['first_name'] . ' ' . $row['last_name']); ?>',
+                                                                '<?= $row['rejoin_with_new_id']; ?>',
+                                                                '<?= $row['prev_emp_code']; ?>',
+                                                                '<?= $row['new_emp_code']; ?>',
+                                                                '<?= $row['biometric_id']; ?>',
+                                                                '<?= $row['emp_code']; ?>',
+                                                            
+                                                                '<?= addslashes($row['rejoin_remark']); ?>'
+                                                            )">
 
-                                                                </div>
-                                                            <?php } ?>
-                                                        </ul>
-                                                    </td>
-                                                </tr>
-                                            <?php } ?>
-                                        </tbody>
-                                    </table>
-                                    <div class="col-lg-12 mt-4 text-end">
-                                        <input type="submit" name="appr_status" class="btn btn-sm btn-primary add-btn"
-                                            value="Approve All" onclick="updateStatus();">
+                                                                        <span class="badge bg-success mb-1 d-inline-block">
+                                                                            Re-joined
+                                                                        </span>
+
+                                                                    </div>
+                                                                <?php } ?>
+                                                            </ul>
+                                                        </td>
+                                                    </tr>
+                                                <?php } ?>
+                                            </tbody>
+                                        </table>
+                                        <div class="col-lg-12 mt-4 text-end">
+                                            <input type="submit" name="appr_status" class="btn btn-sm btn-primary add-btn"
+                                                value="Approve All" onclick="updateStatus();">
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
+                            </div>
                         </div>
-                    </div>
+                    <?php } ?>
                 </div>
                 <!--end col-->
             </div>
@@ -578,6 +589,15 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
 
                             <label class="form-check-label" for="new_emp_checkbox">
                                 Rejoin With New Emp Code
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="new_join_checkbox">
+                            <label class="form-check-label" for="new_join_checkbox">
+                                Rejoin With New Joining Date
                             </label>
                         </div>
                     </div>
@@ -910,6 +930,7 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
             let rejoin_emp_id = $('#rejoin_emp_id').val();
             let remark = $('#rejoin_remark').val().trim();
             let new_emp_checkbox = $('#new_emp_checkbox').is(':checked') ? 1 : 0;
+            let new_join_checkbox = $('#new_join_checkbox').is(':checked') ? 1 : 0;
             let new_emp_code = $('#new_emp_code').val().trim();
             let biometric_id = $('#biometric_id').val().trim();
             let show_emp_code = $('#prevv_emp_code').val().trim();
@@ -929,6 +950,7 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
                     rejoin_date: rejoin_date,
                     remark: remark,
                     new_emp_checkbox: new_emp_checkbox,
+                    new_join_checkbox: new_join_checkbox,
                     new_emp_code: new_emp_code,
                     biometric_id: biometric_id,
                     show_emp_code: show_emp_code

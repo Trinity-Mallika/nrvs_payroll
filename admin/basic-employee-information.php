@@ -329,27 +329,27 @@ if (isset($_GET[$tblpkey])) {
     <?php include('inc/css.php') ?>
 </head>
 <style>
-    .table-borderless tr td {
-        border: 0px !important;
-        padding-bottom: 0px;
-    }
+.table-borderless tr td {
+    border: 0px !important;
+    padding-bottom: 0px;
+}
 
-    .form-step {
-        display: none;
-    }
+.form-step {
+    display: none;
+}
 
-    .form-step-active {
-        display: block;
-    }
+.form-step-active {
+    display: block;
+}
 
-    .step-arrow-nav .nav .nav-link.active {
-        background-color: rgb(64 81 137);
-        color: #ffffff;
-    }
+.step-arrow-nav .nav .nav-link.active {
+    background-color: rgb(64 81 137);
+    color: #ffffff;
+}
 
-    .step-arrow-nav .nav .nav-link.active::before {
-        border-left-color: rgb(64 81 137);
-    }
+.step-arrow-nav .nav .nav-link.active::before {
+    border-left-color: rgb(64 81 137);
+}
 </style>
 
 
@@ -412,22 +412,27 @@ if (isset($_GET[$tblpkey])) {
 
                                                 <div class="row g-3">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Employee Code <span class="text-danger"> *</span> </label>
+                                                        <label class="form-label">Employee Code <span
+                                                                class="text-danger"> *</span> </label>
                                                         <input type="text" class="form-control form-control-sm"
-                                                            name="emp_code" id="emp_code" placeholder="Enter Code" value="<?= $emp_code ?>">
+                                                            name="emp_code" id="emp_code" placeholder="Enter Code"
+                                                            value="<?= $emp_code ?>">
                                                     </div>
 
                                                     <div class="col-md-3">
-                                                        <label class="form-label">First Name<span class="text-danger"> *</span> </label>
+                                                        <label class="form-label">First Name<span class="text-danger">
+                                                                *</span> </label>
                                                         <input type="text" class="form-control form-control-sm"
-                                                            name="first_name" id="first_name"
-                                                            value="<?= $first_name ?>" placeholder="Enter First Name">
+                                                            name="first_name" id="first_name" value="<?= $first_name ?>"
+                                                            placeholder="Enter First Name">
                                                     </div>
 
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Last Name<span class="text-danger"> *</span> </label>
+                                                        <label class="form-label">Last Name<span class="text-danger">
+                                                                *</span> </label>
                                                         <input type="text" class="form-control form-control-sm"
-                                                            name="last_name" id="last_name" value="<?= $last_name ?>" placeholder="Enter Last Name">
+                                                            name="last_name" id="last_name" value="<?= $last_name ?>"
+                                                            placeholder="Enter Last Name">
                                                     </div>
 
                                                     <div class="col-md-3">
@@ -447,7 +452,7 @@ if (isset($_GET[$tblpkey])) {
                                                             <option value="Other">Other</option>
                                                         </select>
                                                         <script>
-                                                            document.getElementById('gender').value = '<?= $gender ?>'
+                                                        document.getElementById('gender').value = '<?= $gender ?>'
                                                         </script>
                                                     </div>
 
@@ -460,12 +465,15 @@ if (isset($_GET[$tblpkey])) {
                                                     <div class="col-md-3">
                                                         <label class="form-label">Age</label>
                                                         <input type="text" class="form-control form-control-sm"
-                                                            name="age" id="age" value="<?= $age ?>" placeholder="Enter Age" autocomplete="off" onkeypress="numberOnly(event);" maxlength="3">
+                                                            name="age" id="age" value="<?= $age ?>"
+                                                            placeholder="Enter Age" autocomplete="off"
+                                                            onkeypress="numberOnly(event);" maxlength="3">
                                                     </div>
 
                                                     <div class="col-md-3">
                                                         <label class="form-label">Blood Group</label>
-                                                        <select class="form-select form-select-sm" name="blood_group" id="blood_group">
+                                                        <select class="form-select form-select-sm" name="blood_group"
+                                                            id="blood_group">
                                                             <option value="">Select Blood Group</option>
                                                             <option value="A+">A+</option>
                                                             <option value="A-">A-</option>
@@ -477,7 +485,8 @@ if (isset($_GET[$tblpkey])) {
                                                             <option value="AB-">AB-</option>
                                                         </select>
                                                         <script>
-                                                            document.getElementById('blood_group').value = '<?= $blood_group ?>'
+                                                        document.getElementById('blood_group').value =
+                                                            '<?= $blood_group ?>'
                                                         </script>
                                                     </div>
 
@@ -491,8 +500,8 @@ if (isset($_GET[$tblpkey])) {
                                                             <option value="Divorced">Divorced</option>
                                                         </select>
                                                         <script>
-                                                            document.getElementById('marital_status').value =
-                                                                '<?= $marital_status ?>'
+                                                        document.getElementById('marital_status').value =
+                                                            '<?= $marital_status ?>'
                                                         </script>
                                                     </div>
 
@@ -506,7 +515,8 @@ if (isset($_GET[$tblpkey])) {
                                                     <div class="col-md-3">
                                                         <label class="form-label">Religion</label>
                                                         <input type="text" class="form-control form-control-sm"
-                                                            name="religion" id="religion" value="<?= $religion ?>" placeholder="Enter Religion">
+                                                            name="religion" id="religion" value="<?= $religion ?>"
+                                                            placeholder="Enter Religion">
                                                     </div>
 
                                                     <div class="col-md-3">
@@ -520,7 +530,7 @@ if (isset($_GET[$tblpkey])) {
                                                             <option value="ST">ST</option>
                                                         </select>
                                                         <script>
-                                                            document.getElementById('caste').value = '<?= $caste ?>'
+                                                        document.getElementById('caste').value = '<?= $caste ?>'
                                                         </script>
                                                     </div>
                                                 </div>
@@ -538,41 +548,51 @@ if (isset($_GET[$tblpkey])) {
                                                     <div class="col-md-3">
                                                         <label class="form-label">Mobile Number *</label>
                                                         <input type="text" class="form-control form-control-sm"
-                                                            name="mobile_no" id="mobile_no" value="<?= $mobile_no ?>" placeholder="Enter Number" autocomplete="off" onkeypress="numberOnly(event);" maxlength="10">
+                                                            name="mobile_no" id="mobile_no" value="<?= $mobile_no ?>"
+                                                            placeholder="Enter Number" autocomplete="off"
+                                                            onkeypress="numberOnly(event);" maxlength="10">
                                                     </div>
 
                                                     <div class="col-md-3">
                                                         <label class="form-label">Alternate Mobile</label>
                                                         <input type="text" class="form-control form-control-sm"
                                                             name="alt_mobile_no" id="alt_mobile_no"
-                                                            value="<?= $alt_mobile_no ?>" placeholder="Enter Alternate Mobile No." autocomplete="off" onkeypress="numberOnly(event);" maxlength="10">
+                                                            value="<?= $alt_mobile_no ?>"
+                                                            placeholder="Enter Alternate Mobile No." autocomplete="off"
+                                                            onkeypress="numberOnly(event);" maxlength="10">
                                                     </div>
 
                                                     <div class="col-md-3">
                                                         <label class="form-label">Email</label>
                                                         <input type="email" class="form-control form-control-sm"
-                                                            name="email_id" id="email_id" value="<?= $email_id ?>" placeholder="Enter Email">
+                                                            name="email_id" id="email_id" value="<?= $email_id ?>"
+                                                            placeholder="Enter Email">
                                                     </div>
 
                                                     <div class="col-md-3">
                                                         <label class="form-label">Emergency Contact Name</label>
                                                         <input type="text" class="form-control form-control-sm"
                                                             name="emer_contact_name" id="emer_contact_name"
-                                                            value="<?= $emer_contact_name ?>" placeholder="Enter Emergency Contact Name">
+                                                            value="<?= $emer_contact_name ?>"
+                                                            placeholder="Enter Emergency Contact Name">
                                                     </div>
 
                                                     <div class="col-md-3">
                                                         <label class="form-label">Emergency Contact Relation</label>
                                                         <input type="text" class="form-control form-control-sm"
                                                             name="emer_contact_relation" id="emer_contact_relation"
-                                                            value="<?= $emer_contact_relation ?>" placeholder="Enter Emergency Contact Relation">
+                                                            value="<?= $emer_contact_relation ?>"
+                                                            placeholder="Enter Emergency Contact Relation">
                                                     </div>
 
                                                     <div class="col-md-3">
                                                         <label class="form-label">Emergency Contact Number</label>
                                                         <input type="text" class="form-control form-control-sm"
                                                             name="emer_contact_no" id="emer_contact_no"
-                                                            value="<?= $emer_contact_no ?>" placeholder="Enter Emergency Contact Number" autocomplete="off" onkeypress="numberOnly(event);" maxlength="10">
+                                                            value="<?= $emer_contact_no ?>"
+                                                            placeholder="Enter Emergency Contact Number"
+                                                            autocomplete="off" onkeypress="numberOnly(event);"
+                                                            maxlength="10">
                                                     </div>
 
                                                     <div class="col-md-6">
@@ -606,20 +626,23 @@ if (isset($_GET[$tblpkey])) {
                                                     <div class="col-md-3">
                                                         <label class="form-label">Aadhaar No</label>
                                                         <input type="text" class="form-control form-control-sm"
-                                                            name="aadhar_no" id="aadhar_no" value="<?= $aadhar_no ?>" placeholder="Enter Aadhaar Number">
+                                                            name="aadhar_no" id="aadhar_no" value="<?= $aadhar_no ?>"
+                                                            placeholder="Enter Aadhaar Number">
                                                     </div>
 
                                                     <div class="col-md-3">
                                                         <label class="form-label">PAN No</label>
                                                         <input type="text" class="form-control form-control-sm"
-                                                            name="pan_no" id="pan_no" value="<?= $pan_no ?>" placeholder="Enter PAN Number">
+                                                            name="pan_no" id="pan_no" value="<?= $pan_no ?>"
+                                                            placeholder="Enter PAN Number">
                                                     </div>
 
                                                     <div class="col-md-3">
                                                         <label class="form-label">Driving License</label>
                                                         <input type="text" class="form-control form-control-sm"
                                                             name="driving_license" id="driving_license"
-                                                            value="<?= $driving_license ?>" placeholder="Enter Driving License">
+                                                            value="<?= $driving_license ?>"
+                                                            placeholder="Enter Driving License">
                                                     </div>
 
                                                     <div class="col-md-6">
@@ -658,13 +681,13 @@ if (isset($_GET[$tblpkey])) {
                                                             <option value="">Select</option>
                                                             <?php $res = $obj->executequery("Select * from department_master order by department_name asc");
                                                             foreach ($res as $key) { ?>
-                                                                <option value="<?= $key['department_id']; ?>">
-                                                                    <?= $key['department_name']; ?></option>
+                                                            <option value="<?= $key['department_id']; ?>">
+                                                                <?= $key['department_name']; ?></option>
                                                             <?php } ?>
                                                         </select>
                                                         <script>
-                                                            document.getElementById('department_id').value =
-                                                                '<?= $department_id; ?>';
+                                                        document.getElementById('department_id').value =
+                                                            '<?= $department_id; ?>';
                                                         </script>
                                                     </div>
                                                     <div class="col-lg-3 mb-3">
@@ -675,13 +698,13 @@ if (isset($_GET[$tblpkey])) {
                                                             <option value="">Select</option>
                                                             <?php $res = $obj->executequery("Select * from designation_master order by designation asc");
                                                             foreach ($res as $key) { ?>
-                                                                <option value="<?= $key['designation_id']; ?>">
-                                                                    <?= $key['designation']; ?></option>
+                                                            <option value="<?= $key['designation_id']; ?>">
+                                                                <?= $key['designation']; ?></option>
                                                             <?php } ?>
                                                         </select>
                                                         <script>
-                                                            document.getElementById('designation_id').value =
-                                                                '<?= $designation_id; ?>';
+                                                        document.getElementById('designation_id').value =
+                                                            '<?= $designation_id; ?>';
                                                         </script>
                                                     </div>
                                                     <div class="col-lg-3 mb-3">
@@ -692,12 +715,12 @@ if (isset($_GET[$tblpkey])) {
                                                             <option value="">Select</option>
                                                             <?php $res = $obj->executequery("Select * from grade_master order by grade_name asc");
                                                             foreach ($res as $key) { ?>
-                                                                <option value="<?= $key['grade_id']; ?>">
-                                                                    <?= $key['grade_name']; ?></option>
+                                                            <option value="<?= $key['grade_id']; ?>">
+                                                                <?= $key['grade_name']; ?></option>
                                                             <?php } ?>
                                                         </select>
                                                         <script>
-                                                            document.getElementById('grade_id').value = '<?= $grade_id; ?>';
+                                                        document.getElementById('grade_id').value = '<?= $grade_id; ?>';
                                                         </script>
                                                     </div>
 
@@ -712,7 +735,8 @@ if (isset($_GET[$tblpkey])) {
                                                         <label>Job Location</label>
                                                         <input type="text" class="form-control form-control-sm"
                                                             name="job_location" id="job_location"
-                                                            value="<?= $job_location  ?>" placeholder="Enter Job Location">
+                                                            value="<?= $job_location  ?>"
+                                                            placeholder="Enter Job Location">
                                                     </div>
 
                                                     <div class="col-lg-3 mb-3">
@@ -723,21 +747,21 @@ if (isset($_GET[$tblpkey])) {
                                                             <option value="">Select</option>
                                                             <?php $res = $obj->executequery("Select * from shift_master order by shift_name asc");
                                                             foreach ($res as $key) { ?>
-                                                                <option value="<?= $key['shift_id']; ?>">
-                                                                    <?= $key['shift_name']; ?></option>
+                                                            <option value="<?= $key['shift_id']; ?>">
+                                                                <?= $key['shift_name']; ?></option>
                                                             <?php } ?>
                                                         </select>
                                                         <script>
-                                                            document.getElementById('shift_id').value = '<?= $shift_id; ?>';
+                                                        document.getElementById('shift_id').value = '<?= $shift_id; ?>';
                                                         </script>
                                                     </div>
-
 
                                                     <div class="col-md-3">
                                                         <label>Reporting Manager</label>
                                                         <input type="text" class="form-control form-control-sm"
                                                             name="reporting_manager" id="reporting_manager"
-                                                            value="<?= $reporting_manager ?>" placeholder="Enter Reporting Manager Name">
+                                                            value="<?= $reporting_manager ?>"
+                                                            placeholder="Enter Reporting Manager Name">
                                                     </div>
 
                                                     <div class="col-md-3">
@@ -751,8 +775,8 @@ if (isset($_GET[$tblpkey])) {
                                                             <option value="Trainee">Trainee</option>
                                                         </select>
                                                         <script>
-                                                            document.getElementById('employee_type').value =
-                                                                '<?= $employee_type; ?>';
+                                                        document.getElementById('employee_type').value =
+                                                            '<?= $employee_type; ?>';
                                                         </script>
                                                     </div>
 
@@ -775,7 +799,8 @@ if (isset($_GET[$tblpkey])) {
                                                     <table class="table table-bordered table-sm">
                                                         <thead class="table-light">
                                                             <tr class="table-primary">
-                                                                <th>Family Member Name<span class="text-danger">*</span></th>
+                                                                <th>Family Member Name<span class="text-danger">*</span>
+                                                                </th>
                                                                 <th>Relation<span class="text-danger">*</span></th>
                                                                 <th>Date of Birth</th>
                                                                 <th>Address<span class="text-danger">*</span></th>
@@ -784,19 +809,28 @@ if (isset($_GET[$tblpkey])) {
                                                             </tr>
                                                             <tr>
 
-                                                                <td><input type="text" class="form-control" id="member_name" placeholder="Enter Member Name"></td>
-                                                                <td><input type="text" class="form-control" id="member_relation" placeholder="Enter Member Relation"></td>
-                                                                <td><input type="date" class="form-control" id="member_dob"></td>
-                                                                <td><input class="form-control" id="member_address" placeholder="Enter Member Address"></td>
+                                                                <td><input type="text" class="form-control"
+                                                                        id="member_name"
+                                                                        placeholder="Enter Member Name"></td>
+                                                                <td><input type="text" class="form-control"
+                                                                        id="member_relation"
+                                                                        placeholder="Enter Member Relation"></td>
+                                                                <td><input type="date" class="form-control"
+                                                                        id="member_dob"></td>
+                                                                <td><input class="form-control" id="member_address"
+                                                                        placeholder="Enter Member Address"></td>
                                                                 <td>
-                                                                    <select class="form-select form-select-sm" id="member_gender">
+                                                                    <select class="form-select form-select-sm"
+                                                                        id="member_gender">
                                                                         <option value="">Select</option>
                                                                         <option>Male</option>
                                                                         <option>Female</option>
                                                                         <option>Other</option>
                                                                     </select>
                                                                 </td>
-                                                                <td><button type="button" class="btn btn-sm btn-success" onclick="save_family();" id="family_btn">Add</button></td>
+                                                                <td><button type="button" class="btn btn-sm btn-success"
+                                                                        onclick="save_family();"
+                                                                        id="family_btn">Add</button></td>
                                                             </tr>
                                                         </thead>
 
@@ -825,27 +859,41 @@ if (isset($_GET[$tblpkey])) {
                                                         <thead class="table-light">
                                                             <tr class="table-primary">
                                                                 <th>Examination <span class="text-danger">*</span></th>
-                                                                <th>Board/University<span class="text-danger">*</span></th>
-                                                                <th>College/Institute<span class="text-danger">*</span></th>
+                                                                <th>Board/University<span class="text-danger">*</span>
+                                                                </th>
+                                                                <th>College/Institute<span class="text-danger">*</span>
+                                                                </th>
                                                                 <th>Year<span class="text-danger">*</span></th>
                                                                 <th>Percentage %<span class="text-danger">*</span></th>
                                                                 <th>Subject<span class="text-danger">*</span></th>
                                                                 <th>Action</th>
                                                             </tr>
                                                             <tr>
-                                                                <td><input type="text" class="form-control" id="examination" placeholder="Enter Examination"></td>
+                                                                <td><input type="text" class="form-control"
+                                                                        id="examination"
+                                                                        placeholder="Enter Examination"></td>
 
-                                                                <td><input type="text" class="form-control" id="university" placeholder="Enter Board/University"></td>
+                                                                <td><input type="text" class="form-control"
+                                                                        id="university"
+                                                                        placeholder="Enter Board/University"></td>
 
-                                                                <td><input type="text" class="form-control" id="college" placeholder="Enter College/Institute"></td>
+                                                                <td><input type="text" class="form-control" id="college"
+                                                                        placeholder="Enter College/Institute"></td>
 
-                                                                <td><input type="text" class="form-control" id="pass_year" placeholder="Enter Passing Year" oninput="formatPassingYear(this);"></td>
+                                                                <td><input type="text" class="form-control"
+                                                                        id="pass_year" placeholder="Enter Passing Year"
+                                                                        oninput="formatPassingYear(this);"></td>
 
-                                                                <td><input type="text" class="form-control" id="percentage" placeholder="Enter Percentage" onkeypress="numberOnly(event);"></td>
+                                                                <td><input type="text" class="form-control"
+                                                                        id="percentage" placeholder="Enter Percentage"
+                                                                        onkeypress="numberOnly(event);"></td>
 
-                                                                <td><input type="text" class="form-control" id="subject" placeholder="Enter Subject"></td>
+                                                                <td><input type="text" class="form-control" id="subject"
+                                                                        placeholder="Enter Subject"></td>
 
-                                                                <td><button type="button" class="btn btn-sm btn-success" onclick="save_emp_ducation();" id="education_btn">Add</button></td>
+                                                                <td><button type="button" class="btn btn-sm btn-success"
+                                                                        onclick="save_emp_ducation();"
+                                                                        id="education_btn">Add</button></td>
                                                             </tr>
                                                         </thead>
 
@@ -866,46 +914,54 @@ if (isset($_GET[$tblpkey])) {
                                             <div class="form-step">
                                                 <div class="row g-3">
                                                     <div class="col-md-3"><label>Employer Name</label>
-                                                        <input
-                                                            class="form-control form-control-sm" name="employer_name" id="employer_name" value="<?= $employer_name ?>" placeholder="Enter Employer Name">
+                                                        <input class="form-control form-control-sm" name="employer_name"
+                                                            id="employer_name" value="<?= $employer_name ?>"
+                                                            placeholder="Enter Employer Name">
                                                     </div>
 
 
                                                     <div class="col-lg-3 mb-3">
-                                                        <label for="employer_designation_id" class="form-label">Designation<span
+                                                        <label for="employer_designation_id"
+                                                            class="form-label">Designation<span
                                                                 class="text-danger fw-bold"></span></label>
                                                         <select class="form-select form-select-sm chosen-select"
                                                             name="employer_designation_id" id="employer_designation_id">
                                                             <option value="">Select</option>
                                                             <?php $res = $obj->executequery("Select * from designation_master order by designation asc");
                                                             foreach ($res as $key) { ?>
-                                                                <option value="<?= $key['designation_id']; ?>">
-                                                                    <?= $key['designation']; ?></option>
+                                                            <option value="<?= $key['designation_id']; ?>">
+                                                                <?= $key['designation']; ?></option>
                                                             <?php } ?>
                                                         </select>
                                                         <script>
-                                                            document.getElementById('employer_designation_id').value =
-                                                                '<?= $employer_designation_id; ?>';
+                                                        document.getElementById('employer_designation_id').value =
+                                                            '<?= $employer_designation_id; ?>';
                                                         </script>
                                                     </div>
                                                     <div class="col-md-3"><label> Service Period From</label>
-                                                        <input type="date"
-                                                            class="form-control form-control-sm" name="service_from" id="service_from" value="<?= $service_from ?>">
+                                                        <input type="date" class="form-control form-control-sm"
+                                                            name="service_from" id="service_from"
+                                                            value="<?= $service_from ?>">
                                                     </div>
                                                     <div class="col-md-3"><label> Service Period To</label>
-                                                        <input type="date"
-                                                            class="form-control form-control-sm" name="service_to" id="service_to" value="<?= $service_to ?>">
+                                                        <input type="date" class="form-control form-control-sm"
+                                                            name="service_to" id="service_to"
+                                                            value="<?= $service_to ?>">
                                                     </div>
                                                     <div class="col-md-3"><label>Last Drawn Salary</label>
-                                                        <input
-                                                            class="form-control form-control-sm" name="last_salary" id="last_salary" value="<?= $last_salary ?>" placeholder="Enter Last Drawn Salary">
+                                                        <input class="form-control form-control-sm" name="last_salary"
+                                                            id="last_salary" value="<?= $last_salary ?>"
+                                                            placeholder="Enter Last Drawn Salary">
                                                     </div>
                                                     <div class="col-md-3"><label>Reason for Leaving</label>
-                                                        <input
-                                                            class="form-control form-control-sm" name="reason" id="reason" value="<?= $reason ?>" placeholder="Enter Reason for Leaving">
+                                                        <input class="form-control form-control-sm" name="reason"
+                                                            id="reason" value="<?= $reason ?>"
+                                                            placeholder="Enter Reason for Leaving">
                                                     </div>
                                                     <div class="col-md-12"><label>Job Responsibilities</label><textarea
-                                                            class="form-control form-control-sm" rows="3" name="job_responsibility" id="job_responsibility"><?= $job_responsibility ?></textarea>
+                                                            class="form-control form-control-sm" rows="3"
+                                                            name="job_responsibility"
+                                                            id="job_responsibility"><?= $job_responsibility ?></textarea>
                                                     </div>
                                                 </div>
 
@@ -922,31 +978,42 @@ if (isset($_GET[$tblpkey])) {
 
                                                 <div class="row g-3">
                                                     <div class="col-md-3"><label>Basic Salary</label>
-                                                        <input
-                                                            class="form-control" placeholder="Enter Basic Salary" name="basic_salary" id="basic_salary" value="<?= $basic_salary ?>">
+                                                        <input class="form-control" placeholder="Enter Basic Salary"
+                                                            name="basic_salary" id="basic_salary"
+                                                            value="<?= $basic_salary ?>">
                                                     </div>
                                                     <div class="col-md-3"><label>HRA</label>
-                                                        <input class="form-control" placeholder="Enter HRA" name="hra" id="hra" value="<?= $hra ?>">
+                                                        <input class="form-control" placeholder="Enter HRA" name="hra"
+                                                            id="hra" value="<?= $hra ?>">
                                                     </div>
-                                                    <div class="col-md-3"><label>DA</label><input class="form-control" placeholder="Enter Dearness Allowance" name="da" id="da" value="<?= $da ?>">
+                                                    <div class="col-md-3"><label>DA</label><input class="form-control"
+                                                            placeholder="Enter Dearness Allowance" name="da" id="da"
+                                                            value="<?= $da ?>">
                                                     </div>
                                                     <div class="col-md-3"><label>Conveyance</label><input
-                                                            class="form-control" placeholder="Enter Conveyance" name="conveyance" id="conveyance" value="<?= $conveyance ?>"></div>
+                                                            class="form-control" placeholder="Enter Conveyance"
+                                                            name="conveyance" id="conveyance"
+                                                            value="<?= $conveyance ?>"></div>
                                                     <div class="col-md-3"><label>Medical Allowance</label>
-                                                        <input
-                                                            class="form-control" placeholder="Enter Medical Allowance" name="medical_allowance" id="medical_allowance" value="<?= $medical_allowance ?>">
+                                                        <input class="form-control"
+                                                            placeholder="Enter Medical Allowance"
+                                                            name="medical_allowance" id="medical_allowance"
+                                                            value="<?= $medical_allowance ?>">
                                                     </div>
                                                     <div class="col-md-3"><label>Special Allowance</label>
-                                                        <input
-                                                            class="form-control" placeholder="Enter Special Allowance" name="special_allowance" id="special_allowance" value="<?= $special_allowance ?>">
+                                                        <input class="form-control"
+                                                            placeholder="Enter Special Allowance"
+                                                            name="special_allowance" id="special_allowance"
+                                                            value="<?= $special_allowance ?>">
                                                     </div>
 
-                                                    <div class="col-md-3"><label>PF?</label><select class="form-select" name="is_pf" id="is_pf">
+                                                    <div class="col-md-3"><label>PF?</label><select class="form-select"
+                                                            name="is_pf" id="is_pf">
                                                             <option value="1">Yes</option>
                                                             <option value="0">No</option>
                                                         </select>
                                                         <script>
-                                                            document.getElementById('is_pf').value = '<?= $is_pf ?>'
+                                                        document.getElementById('is_pf').value = '<?= $is_pf ?>'
                                                         </script>
                                                     </div>
                                                     <div class="col-md-3"><label>ESIC?</label><select
@@ -955,36 +1022,44 @@ if (isset($_GET[$tblpkey])) {
                                                             <option value="0">No</option>
                                                         </select>
                                                         <script>
-                                                            document.getElementById('is_esic').value = '<?= $is_esic ?>'
+                                                        document.getElementById('is_esic').value = '<?= $is_esic ?>'
                                                         </script>
                                                     </div>
 
                                                     <div class="col-md-3"><label>CTC</label>
-                                                        <input class="form-control" placeholder="Enter CTC" name="ctc" id="ctc" value="<?= $ctc ?>">
+                                                        <input class="form-control" placeholder="Enter CTC" name="ctc"
+                                                            id="ctc" value="<?= $ctc ?>">
                                                     </div>
                                                     <div class="col-md-3"><label>Gross Salary</label>
-                                                        <input
-                                                            class="form-control" placeholder="Enter Gross Salary" name="gross_salary" id="gross_salary" value="<?= $gross_salary ?>">
+                                                        <input class="form-control" placeholder="Enter Gross Salary"
+                                                            name="gross_salary" id="gross_salary"
+                                                            value="<?= $gross_salary ?>">
                                                     </div>
                                                     <div class="col-md-3"><label>Net Salary</label>
-                                                        <input
-                                                            class="form-control" placeholder="Enter Net Salary" name="net_salary" id="net_salary" value="<?= $net_salary ?>">
+                                                        <input class="form-control" placeholder="Enter Net Salary"
+                                                            name="net_salary" id="net_salary"
+                                                            value="<?= $net_salary ?>">
                                                     </div>
                                                 </div>
 
                                                 <h6 class="mt-4">Bank Details</h6>
                                                 <div class="row g-3">
                                                     <div class="col-md-3"><label>Bank Name</label>
-                                                        <input
-                                                            class="form-control" placeholder="Enter Bank Name" name="bank_name" id="bank_name" value="<?= $bank_name ?>">
+                                                        <input class="form-control" placeholder="Enter Bank Name"
+                                                            name="bank_name" id="bank_name" value="<?= $bank_name ?>">
                                                     </div>
                                                     <div class="col-md-3"><label>Account Holder Name</label><input
-                                                            class="form-control" placeholder="Enter Account Holder Name" name="acc_holder_name" id="acc_holder_name" value="<?= $acc_holder_name ?>"></div>
+                                                            class="form-control" placeholder="Enter Account Holder Name"
+                                                            name="acc_holder_name" id="acc_holder_name"
+                                                            value="<?= $acc_holder_name ?>"></div>
                                                     <div class="col-md-3"><label>Bank Account Number
-                                                        </label><input
-                                                            class="form-control" placeholder="Enter Bank Account Number" name="account_no" id="account_no" value="<?= $account_no ?>"></div>
+                                                        </label><input class="form-control"
+                                                            placeholder="Enter Bank Account Number" name="account_no"
+                                                            id="account_no" value="<?= $account_no ?>"></div>
                                                     <div class="col-md-3"><label>IFSC Code</label><input
-                                                            class="form-control" placeholder="Enter IFSC Code" name="ifsc_code" id="ifsc_code" value="<?= $ifsc_code ?>"></div>
+                                                            class="form-control" placeholder="Enter IFSC Code"
+                                                            name="ifsc_code" id="ifsc_code" value="<?= $ifsc_code ?>">
+                                                    </div>
                                                 </div>
 
                                                 <div class="mt-4 d-flex justify-content-between">
@@ -999,16 +1074,22 @@ if (isset($_GET[$tblpkey])) {
                                             <div class="form-step">
                                                 <div class="row g-3">
                                                     <div class="col-md-6"><label>PF UAN</label><input
-                                                            class="form-control" placeholder="Enter PF UAN" name="pf_uan" id="pf_uan" value="<?= $pf_uan ?>"></div>
+                                                            class="form-control" placeholder="Enter PF UAN"
+                                                            name="pf_uan" id="pf_uan" value="<?= $pf_uan ?>"></div>
 
                                                     <div class="col-md-6"><label>ESIC Number</label><input
-                                                            class="form-control" placeholder="Enter ESIC Number" name="esic_no" id="esic_no" value="<?= $esic_no ?>"></div>
+                                                            class="form-control" placeholder="Enter ESIC Number"
+                                                            name="esic_no" id="esic_no" value="<?= $esic_no ?>"></div>
 
                                                     <div class="col-md-6"><label>PF Joining Date</label><input
-                                                            type="date" class="form-control" placeholder="Enter PF Joining Date" name="pf_joining_date" id="pf_joining_date" value="<?= $pf_joining_date ?>"></div>
+                                                            type="date" class="form-control"
+                                                            placeholder="Enter PF Joining Date" name="pf_joining_date"
+                                                            id="pf_joining_date" value="<?= $pf_joining_date ?>"></div>
 
                                                     <div class="col-md-6"><label>ESIC Joining Date</label><input
-                                                            type="date" class="form-control" name="esic_joining_date" id="esic_joining_date" value="<?= $esic_joining_date ?>"></div>
+                                                            type="date" class="form-control" name="esic_joining_date"
+                                                            id="esic_joining_date" value="<?= $esic_joining_date ?>">
+                                                    </div>
                                                 </div>
 
                                                 <div class="mt-4 d-flex justify-content-between">
@@ -1025,26 +1106,34 @@ if (isset($_GET[$tblpkey])) {
                                                     <table class="table table-bordered table-sm">
                                                         <thead class="table-light">
                                                             <tr class="table-primary">
-                                                                <th>Document Name <span class="text-danger">*</span></th>
+                                                                <th>Document Name <span class="text-danger">*</span>
+                                                                </th>
                                                                 <th>File<span class="text-danger">*</span></th>
                                                                 <th>Remark</th>
                                                                 <th>Action</th>
                                                             </tr>
                                                             <tr>
                                                                 <td>
-                                                                    <select class="form-select form-select-sm chosen-select"
+                                                                    <select
+                                                                        class="form-select form-select-sm chosen-select"
                                                                         name="doc_id" id="doc_id">
                                                                         <option value="">Select</option>
                                                                         <?php $res = $obj->executequery("Select * from document_master order by doc_id asc");
                                                                         foreach ($res as $key) { ?>
-                                                                            <option value="<?= $key['doc_id']; ?>">
-                                                                                <?= $key['document_name']; ?></option>
+                                                                        <option value="<?= $key['doc_id']; ?>">
+                                                                            <?= $key['document_name']; ?></option>
                                                                         <?php } ?>
                                                                     </select>
                                                                 </td>
-                                                                <td><input type="file" class="form-control form-control-sm" id="doc_file"></td>
-                                                                <td><input type="text" class="form-control form-control-sm" id="doc_remark" placeholder="Enter Remark"></td>
-                                                                <td><button type="button" class="btn btn-sm btn-success" onclick="save_emp_document();" id="document_btn">Add</button></td>
+                                                                <td><input type="file"
+                                                                        class="form-control form-control-sm"
+                                                                        id="doc_file"></td>
+                                                                <td><input type="text"
+                                                                        class="form-control form-control-sm"
+                                                                        id="doc_remark" placeholder="Enter Remark"></td>
+                                                                <td><button type="button" class="btn btn-sm btn-success"
+                                                                        onclick="save_emp_document();"
+                                                                        id="document_btn">Add</button></td>
                                                             </tr>
                                                         </thead>
                                                         <tbody id="fetch_document_details">
@@ -1056,7 +1145,8 @@ if (isset($_GET[$tblpkey])) {
                                                 <div class="mt-4 d-flex justify-content-between">
                                                     <button type="button" class="btn btn-secondary btn-prev">←
                                                         Previous</button>
-                                                    <button type="submit" name="submit" class="btn btn-success">Submit ✓</button>
+                                                    <button type="submit" name="submit" class="btn btn-success">Submit
+                                                        ✓</button>
                                                 </div>
                                             </div>
 
@@ -1081,386 +1171,386 @@ if (isset($_GET[$tblpkey])) {
     <?php include('inc/footer.php') ?>
 
     <script>
-        $(document).ready(function() {
-            $(".chosen-select").select2({
-                width: '100%',
-            });
-            fetch_family_details();
-            fetch_education_details();
-            fetch_document_details();
+    $(document).ready(function() {
+        $(".chosen-select").select2({
+            width: '100%',
         });
+        fetch_family_details();
+        fetch_education_details();
+        fetch_document_details();
+    });
 
 
-        const nextBtns = document.querySelectorAll(".btn-next");
-        const prevBtns = document.querySelectorAll(".btn-prev");
-        const steps = document.querySelectorAll(".form-step");
-        const tabs = document.querySelectorAll("#stepTabs .nav-link");
+    const nextBtns = document.querySelectorAll(".btn-next");
+    const prevBtns = document.querySelectorAll(".btn-prev");
+    const steps = document.querySelectorAll(".form-step");
+    const tabs = document.querySelectorAll("#stepTabs .nav-link");
 
-        let currentStep = 0;
+    let currentStep = 0;
 
-        function showStep(step) {
-            steps.forEach(s => s.classList.remove("form-step-active"));
-            tabs.forEach(t => t.classList.remove("active"));
+    function showStep(step) {
+        steps.forEach(s => s.classList.remove("form-step-active"));
+        tabs.forEach(t => t.classList.remove("active"));
 
-            steps[step].classList.add("form-step-active");
-            tabs[step].classList.add("active");
+        steps[step].classList.add("form-step-active");
+        tabs[step].classList.add("active");
 
-            currentStep = step;
-            window.scrollTo(0, 0);
-        }
+        currentStep = step;
+        window.scrollTo(0, 0);
+    }
 
-        nextBtns.forEach(btn => btn.onclick = () => showStep(currentStep + 1));
-        prevBtns.forEach(btn => btn.onclick = () => showStep(currentStep - 1));
+    nextBtns.forEach(btn => btn.onclick = () => showStep(currentStep + 1));
+    prevBtns.forEach(btn => btn.onclick = () => showStep(currentStep - 1));
 
-        tabs.forEach(tab => {
-            tab.onclick = () => {
-                let step = parseInt(tab.dataset.step);
-                showStep(step);
-            };
-        });
+    tabs.forEach(tab => {
+        tab.onclick = () => {
+            let step = parseInt(tab.dataset.step);
+            showStep(step);
+        };
+    });
 
-        showStep(0);
+    showStep(0);
     </script>
 
     <script>
-        function formatPassingYear(input) {
-            let value = input.value.replace(/[^0-9]/g, ""); // allow digits only
+    function formatPassingYear(input) {
+        let value = input.value.replace(/[^0-9]/g, ""); // allow digits only
 
-            if (value.length >= 4) {
-                input.value = value.substring(0, 4) + "-" + value.substring(4, 6);
-            } else {
-                input.value = value;
-            }
+        if (value.length >= 4) {
+            input.value = value.substring(0, 4) + "-" + value.substring(4, 6);
+        } else {
+            input.value = value;
+        }
+    }
+
+    function numberOnly(evt) {
+        var theEvent = evt || window.event;
+        // Handle paste
+        if (theEvent.type === 'paste') {
+            key = event.clipboardData.getData('text/plain');
+        } else {
+            // Handle key press
+            var key = theEvent.keyCode || theEvent.which;
+            key = String.fromCharCode(key);
+        }
+        var regex = /[0-9]|\.|\s/;
+        if (!regex.test(key)) {
+            theEvent.returnValue = false;
+            if (theEvent.preventDefault) theEvent.preventDefault();
+        }
+    }
+
+    function save_family() {
+        const member_name = $('#member_name').val();
+        const member_relation = $('#member_relation').val();
+        const member_dob = $('#member_dob').val();
+        const member_address = $('#member_address').val();
+        const member_gender = $('#member_gender').val();
+        const keyvalue = '<?= $keyvalue; ?>';
+        if (member_name === "") {
+            alert("Please Enter Member Name");
+            return;
+        }
+        if (member_relation === "") {
+            alert("Please Enter Member Relation");
+            return;
+        }
+        if (member_address === "") {
+            alert("Please Enter Member Address");
+            return;
+        }
+        if (member_gender === "") {
+            alert("Please Enter Member Gender");
+            return;
         }
 
-        function numberOnly(evt) {
-            var theEvent = evt || window.event;
-            // Handle paste
-            if (theEvent.type === 'paste') {
-                key = event.clipboardData.getData('text/plain');
-            } else {
-                // Handle key press
-                var key = theEvent.keyCode || theEvent.which;
-                key = String.fromCharCode(key);
+        $.ajax({
+            url: 'ajax/ajax_save_emp_family.php',
+            type: 'POST',
+            data: {
+                member_name: member_name,
+                keyvalue: keyvalue,
+                member_relation: member_relation,
+                member_dob: member_dob,
+                member_address: member_address,
+                member_gender: member_gender,
+                type: 'family'
+            },
+            beforeSend: function() {
+                $('#family_btn').prop("disabled", true).text("Saving...");
+            },
+            success: function(response) {
+                if (response.trim() === "success") {
+                    fetch_family_details();
+                    $('#member_name').val('');
+                    $('#member_relation').val('');
+                    $('#member_dob').val('');
+                    $('#member_address').val('');
+                    $('#member_gender').val('').trigger("chosen:updated");
+                } else {
+                    alert("Error: " + response);
+                }
+            },
+            error: function() {
+                alert("Something went wrong. Please try again.");
+            },
+            complete: function() {
+                $('#family_btn').prop("disabled", false).text("Add");
             }
-            var regex = /[0-9]|\.|\s/;
-            if (!regex.test(key)) {
-                theEvent.returnValue = false;
-                if (theEvent.preventDefault) theEvent.preventDefault();
-            }
-        }
+        });
+    }
 
-        function save_family() {
-            const member_name = $('#member_name').val();
-            const member_relation = $('#member_relation').val();
-            const member_dob = $('#member_dob').val();
-            const member_address = $('#member_address').val();
-            const member_gender = $('#member_gender').val();
-            const keyvalue = '<?= $keyvalue; ?>';
-            if (member_name === "") {
-                alert("Please Enter Member Name");
-                return;
+    function fetch_family_details() {
+        let keyvalue = '<?= $keyvalue; ?>';
+        jQuery.ajax({
+            type: 'POST',
+            url: 'ajax/ajax_fetch_family_details.php',
+            data: 'keyvalue=' + keyvalue + '&type=family',
+            dataType: 'html',
+            success: function(data) {
+                //alert(data);
+                document.getElementById('fetch_family_details').innerHTML = data;
             }
-            if (member_relation === "") {
-                alert("Please Enter Member Relation");
-                return;
-            }
-            if (member_address === "") {
-                alert("Please Enter Member Address");
-                return;
-            }
-            if (member_gender === "") {
-                alert("Please Enter Member Gender");
-                return;
-            }
+        }); //ajax close
+    }
 
+
+    function delete_family(id) {
+        $('#deleteRecordModal').modal('show');
+        var tblname = 'emp_family_details';
+        var tblpkey = 'family_detail_id';
+        var keyvalue = '<?= $keyvalue; ?>';
+        $('#delete-record').click(function() {
             $.ajax({
-                url: 'ajax/ajax_save_emp_family.php',
                 type: 'POST',
+                url: 'ajax/delete_master.php',
                 data: {
-                    member_name: member_name,
-                    keyvalue: keyvalue,
-                    member_relation: member_relation,
-                    member_dob: member_dob,
-                    member_address: member_address,
-                    member_gender: member_gender,
-                    type: 'family'
-                },
-                beforeSend: function() {
-                    $('#family_btn').prop("disabled", true).text("Saving...");
-                },
-                success: function(response) {
-                    if (response.trim() === "success") {
-                        fetch_family_details();
-                        $('#member_name').val('');
-                        $('#member_relation').val('');
-                        $('#member_dob').val('');
-                        $('#member_address').val('');
-                        $('#member_gender').val('').trigger("chosen:updated");
-                    } else {
-                        alert("Error: " + response);
-                    }
-                },
-                error: function() {
-                    alert("Something went wrong. Please try again.");
-                },
-                complete: function() {
-                    $('#family_btn').prop("disabled", false).text("Add");
-                }
-            });
-        }
+                    id: id,
+                    tblname: tblname,
+                    tblpkey: tblpkey,
 
-        function fetch_family_details() {
-            let keyvalue = '<?= $keyvalue; ?>';
-            jQuery.ajax({
-                type: 'POST',
-                url: 'ajax/ajax_fetch_family_details.php',
-                data: 'keyvalue=' + keyvalue + '&type=family',
-                dataType: 'html',
+                },
                 success: function(data) {
-                    //alert(data);
-                    document.getElementById('fetch_family_details').innerHTML = data;
+                    fetch_family_details();
                 }
-            }); //ajax close
-        }
-
-
-        function delete_family(id) {
-            $('#deleteRecordModal').modal('show');
-            var tblname = 'emp_family_details';
-            var tblpkey = 'family_detail_id';
-            var keyvalue = '<?= $keyvalue; ?>';
-            $('#delete-record').click(function() {
-                $.ajax({
-                    type: 'POST',
-                    url: 'ajax/delete_master.php',
-                    data: {
-                        id: id,
-                        tblname: tblname,
-                        tblpkey: tblpkey,
-
-                    },
-                    success: function(data) {
-                        fetch_family_details();
-                    }
-                });
-                $('#deleteRecordModal').modal('hide');
             });
+            $('#deleteRecordModal').modal('hide');
+        });
+    }
+
+
+
+    function save_emp_ducation() {
+        const examination = $('#examination').val();
+        const university = $('#university').val();
+        const college = $('#college').val();
+        const pass_year = $('#pass_year').val();
+        const percentage = $('#percentage').val();
+        const subject = $('#subject').val();
+        const keyvalue = '<?= $keyvalue; ?>';
+        if (examination === "") {
+            alert("Please Enter examination");
+            return;
+        }
+        if (university === "") {
+            alert("Please Enter Board / University");
+            return;
+        }
+        if (college === "") {
+            alert("Please Enter College/Institute");
+            return;
+        }
+        if (pass_year === "") {
+            alert("Please Enter Passing Year");
+            return;
+        }
+        if (subject === "") {
+            alert("Please Enter Subject");
+            return;
         }
 
+        $.ajax({
+            url: 'ajax/ajax_save_emp_family.php',
+            type: 'POST',
+            data: {
+                examination: examination,
+                keyvalue: keyvalue,
+                university: university,
+                college: college,
+                percentage: percentage,
+                pass_year: pass_year,
+                subject: subject,
+                type: 'education'
+            },
+            beforeSend: function() {
+                $('#education_btn').prop("disabled", true).text("Saving...");
+            },
+            success: function(response) {
+                if (response.trim() === "success") {
+                    fetch_education_details();
+                    $('#examination').val('');
+                    $('#university').val('');
+                    $('#college').val('');
+                    $('#percentage').val('');
+                    $('#pass_year').val('');
+                    $('#subject').val('');
+                } else {
+                    alert("Error: " + response);
+                }
+            },
+            error: function() {
+                alert("Something went wrong. Please try again.");
+            },
+            complete: function() {
+                $('#education_btn').prop("disabled", false).text("Add");
+            }
+        });
+    }
 
+    function fetch_education_details() {
+        let keyvalue = '<?= $keyvalue; ?>';
+        jQuery.ajax({
+            type: 'POST',
+            url: 'ajax/ajax_fetch_family_details.php',
+            data: 'keyvalue=' + keyvalue + '&type=education',
+            dataType: 'html',
+            success: function(data) {
+                //alert(data);
+                document.getElementById('fetch_education_details').innerHTML = data;
+            }
+        }); //ajax close
+    }
 
-        function save_emp_ducation() {
-            const examination = $('#examination').val();
-            const university = $('#university').val();
-            const college = $('#college').val();
-            const pass_year = $('#pass_year').val();
-            const percentage = $('#percentage').val();
-            const subject = $('#subject').val();
-            const keyvalue = '<?= $keyvalue; ?>';
-            if (examination === "") {
-                alert("Please Enter examination");
-                return;
-            }
-            if (university === "") {
-                alert("Please Enter Board / University");
-                return;
-            }
-            if (college === "") {
-                alert("Please Enter College/Institute");
-                return;
-            }
-            if (pass_year === "") {
-                alert("Please Enter Passing Year");
-                return;
-            }
-            if (subject === "") {
-                alert("Please Enter Subject");
-                return;
-            }
-
+    function delete_education(id) {
+        $('#deleteRecordModal').modal('show');
+        var tblname = 'emp_education';
+        var tblpkey = 'education_id';
+        var keyvalue = '<?= $keyvalue; ?>';
+        $('#delete-record').click(function() {
             $.ajax({
-                url: 'ajax/ajax_save_emp_family.php',
                 type: 'POST',
+                url: 'ajax/delete_master.php',
                 data: {
-                    examination: examination,
-                    keyvalue: keyvalue,
-                    university: university,
-                    college: college,
-                    percentage: percentage,
-                    pass_year: pass_year,
-                    subject: subject,
-                    type: 'education'
-                },
-                beforeSend: function() {
-                    $('#education_btn').prop("disabled", true).text("Saving...");
-                },
-                success: function(response) {
-                    if (response.trim() === "success") {
-                        fetch_education_details();
-                        $('#examination').val('');
-                        $('#university').val('');
-                        $('#college').val('');
-                        $('#percentage').val('');
-                        $('#pass_year').val('');
-                        $('#subject').val('');
-                    } else {
-                        alert("Error: " + response);
-                    }
-                },
-                error: function() {
-                    alert("Something went wrong. Please try again.");
-                },
-                complete: function() {
-                    $('#education_btn').prop("disabled", false).text("Add");
-                }
-            });
-        }
+                    id: id,
+                    tblname: tblname,
+                    tblpkey: tblpkey,
 
-        function fetch_education_details() {
-            let keyvalue = '<?= $keyvalue; ?>';
-            jQuery.ajax({
-                type: 'POST',
-                url: 'ajax/ajax_fetch_family_details.php',
-                data: 'keyvalue=' + keyvalue + '&type=education',
-                dataType: 'html',
+                },
                 success: function(data) {
-                    //alert(data);
-                    document.getElementById('fetch_education_details').innerHTML = data;
-                }
-            }); //ajax close
-        }
-
-        function delete_education(id) {
-            $('#deleteRecordModal').modal('show');
-            var tblname = 'emp_education';
-            var tblpkey = 'education_id';
-            var keyvalue = '<?= $keyvalue; ?>';
-            $('#delete-record').click(function() {
-                $.ajax({
-                    type: 'POST',
-                    url: 'ajax/delete_master.php',
-                    data: {
-                        id: id,
-                        tblname: tblname,
-                        tblpkey: tblpkey,
-
-                    },
-                    success: function(data) {
-                        fetch_education_details();
-                    }
-                });
-                $('#deleteRecordModal').modal('hide');
-            });
-        }
-
-
-        function save_emp_document() {
-            let formData = new FormData();
-            let doc_file = document.getElementById("doc_file").files[0];
-            let doc_id = document.getElementById("doc_id").value;
-            let doc_remark = document.getElementById("doc_remark").value;
-            if (doc_id == "" || doc_id == "0") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required!',
-                    text: 'Please select Document Type.'
-                });
-                return false;
-            }
-
-            if (!doc_file) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required!',
-                    text: 'Please upload a document file.'
-                });
-                return false;
-            }
-            const keyvalue = '<?= $keyvalue; ?>';
-            formData.append("doc_file", doc_file);
-            formData.append("doc_id", doc_id);
-            formData.append("doc_remark", doc_remark);
-            formData.append("type", "emp_document");
-            formData.append("keyvalue", keyvalue);
-
-            $.ajax({
-                url: 'ajax/ajax_save_emp_family.php',
-                type: "POST",
-                data: formData,
-                contentType: false,
-                processData: false,
-
-                beforeSend: function() {
-                    $('#document_btn').prop("disabled", true).text("Saving...");
-                },
-
-                success: function(response) {
-                    if (response.trim() === "success") {
-                        Swal.fire({
-                            title: "Success!",
-                            text: "File uploaded successfully!",
-                            icon: "success",
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            fetch_document_details();
-                            $('#doc_file').val('');
-                            $('#doc_remark').val('');
-                            $('#doc_id').val('').trigger("chosen:updated").trigger('change');
-                        });
-                    } else {
-                        Swal.fire("Error", "Upload failed: " + response, "error");
-                    }
-                },
-                error: function() {
-                    Swal.fire("Error", "Error while uploading. Try again.");
-
-                },
-                complete: function() {
-                    $('#document_btn').prop("disabled", false).text("Add");
+                    fetch_education_details();
                 }
             });
+            $('#deleteRecordModal').modal('hide');
+        });
+    }
+
+
+    function save_emp_document() {
+        let formData = new FormData();
+        let doc_file = document.getElementById("doc_file").files[0];
+        let doc_id = document.getElementById("doc_id").value;
+        let doc_remark = document.getElementById("doc_remark").value;
+        if (doc_id == "" || doc_id == "0") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required!',
+                text: 'Please select Document Type.'
+            });
+            return false;
         }
 
-        function fetch_document_details() {
-            let keyvalue = '<?= $keyvalue; ?>';
-            jQuery.ajax({
-                type: 'POST',
-                url: 'ajax/ajax_fetch_family_details.php',
-                data: 'keyvalue=' + keyvalue + '&type=document',
-                dataType: 'html',
-                success: function(data) {
-                    //alert(data);
-                    document.getElementById('fetch_document_details').innerHTML = data;
-                }
-            }); //ajax close
+        if (!doc_file) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required!',
+                text: 'Please upload a document file.'
+            });
+            return false;
         }
+        const keyvalue = '<?= $keyvalue; ?>';
+        formData.append("doc_file", doc_file);
+        formData.append("doc_id", doc_id);
+        formData.append("doc_remark", doc_remark);
+        formData.append("type", "emp_document");
+        formData.append("keyvalue", keyvalue);
 
-        function delete_document(id, imgname) {
-            $('#deleteRecordModal').modal('show');
-            var tblname = 'emp_document';
-            var tblpkey = 'emp_doc_id';
-            var keyvalue = '<?= $keyvalue; ?>';
-            var imgpath = '<?= $imgpath; ?>';
-            $('#delete-record').click(function() {
-                $.ajax({
-                    type: 'POST',
-                    url: 'ajax/delete_master_img.php',
-                    data: {
-                        id: id,
-                        tblname: tblname,
-                        tblpkey: tblpkey,
-                        imgname: imgname,
-                        imgpath: imgpath,
-                    },
-                    success: function(data) {
+        $.ajax({
+            url: 'ajax/ajax_save_emp_family.php',
+            type: "POST",
+            data: formData,
+            contentType: false,
+            processData: false,
+
+            beforeSend: function() {
+                $('#document_btn').prop("disabled", true).text("Saving...");
+            },
+
+            success: function(response) {
+                if (response.trim() === "success") {
+                    Swal.fire({
+                        title: "Success!",
+                        text: "File uploaded successfully!",
+                        icon: "success",
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
                         fetch_document_details();
-                    }
-                });
-                $('#deleteRecordModal').modal('hide');
+                        $('#doc_file').val('');
+                        $('#doc_remark').val('');
+                        $('#doc_id').val('').trigger("chosen:updated").trigger('change');
+                    });
+                } else {
+                    Swal.fire("Error", "Upload failed: " + response, "error");
+                }
+            },
+            error: function() {
+                Swal.fire("Error", "Error while uploading. Try again.");
+
+            },
+            complete: function() {
+                $('#document_btn').prop("disabled", false).text("Add");
+            }
+        });
+    }
+
+    function fetch_document_details() {
+        let keyvalue = '<?= $keyvalue; ?>';
+        jQuery.ajax({
+            type: 'POST',
+            url: 'ajax/ajax_fetch_family_details.php',
+            data: 'keyvalue=' + keyvalue + '&type=document',
+            dataType: 'html',
+            success: function(data) {
+                //alert(data);
+                document.getElementById('fetch_document_details').innerHTML = data;
+            }
+        }); //ajax close
+    }
+
+    function delete_document(id, imgname) {
+        $('#deleteRecordModal').modal('show');
+        var tblname = 'emp_document';
+        var tblpkey = 'emp_doc_id';
+        var keyvalue = '<?= $keyvalue; ?>';
+        var imgpath = '<?= $imgpath; ?>';
+        $('#delete-record').click(function() {
+            $.ajax({
+                type: 'POST',
+                url: 'ajax/delete_master_img.php',
+                data: {
+                    id: id,
+                    tblname: tblname,
+                    tblpkey: tblpkey,
+                    imgname: imgname,
+                    imgpath: imgpath,
+                },
+                success: function(data) {
+                    fetch_document_details();
+                }
             });
-        }
+            $('#deleteRecordModal').modal('hide');
+        });
+    }
     </script>
 
 </body>

@@ -9,16 +9,16 @@ $btn_name = "Save";
 $imgpath = "uploaded/emp_documents/";
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
- 
 
-if(isset($_POST['change_password_ajax'])){
+
+if (isset($_POST['change_password_ajax'])) {
     $emp_id       = $_POST['emp_id'];
     $new_password = $_POST['new_password'];
 
     $update = $obj->update_record(
         "employee_master",
         ["emp_id" => $emp_id],
-        ["password" => $new_password,"lastupdated" => $createdate,"updatedby" => $loginid]
+        ["password" => $new_password, "lastupdated" => $createdate, "updatedby" => $loginid]
     );
 
     echo 1;
@@ -26,7 +26,7 @@ if(isset($_POST['change_password_ajax'])){
 }
 
 ?>
- 
+
 
 
 <!doctype html>
@@ -39,10 +39,10 @@ if(isset($_POST['change_password_ajax'])){
     <?php include('inc/css.php') ?>
 </head>
 <style>
-.table-borderless tr td {
-    border: 0px !important;
-    padding-bottom: 0px;
-}
+    .table-borderless tr td {
+        border: 0px !important;
+        padding-bottom: 0px;
+    }
 </style>
 
 <body>
@@ -91,6 +91,7 @@ if(isset($_POST['change_password_ajax'])){
                                                     <th>Designation</th>
                                                     <th>Date of Joining</th>
                                                     <th>Date of Birth</th>
+                                                    <th>Is Active</th>
 
                                                 </tr>
                                             </thead>
@@ -102,7 +103,7 @@ if(isset($_POST['change_password_ajax'])){
                                                 foreach ($res as $row) {
 
                                                 ?>
-                                                <tr id="tr_<?= $row["emp_id"]; ?>" data-details="
+                                                    <tr id="tr_<?= $row["emp_id"]; ?>" data-details="
                                     <div style='background:#dafced; padding:4px;'>
                                     <?php if (!empty($row['created_name'])): ?>
                                     Added by (User: <?= $row['created_name'] ?>,
@@ -119,85 +120,101 @@ if(isset($_POST['change_password_ajax'])){
                                     <?php endif; ?>
                                      </div>
                                 ">
-                                                    <td class="details-control text-center" style="cursor:pointer;">
-                                                        <?php echo $slno++; ?>
-                                                        <i class="ri-add-circle-fill text-primary"></i>
-                                                    </td>
-                                                    <td>
-                                                        <ul class="list-inline hstack gap-2 mb-0">
-                                                            <?php $chkedit = $obj->check_editBtn($pagename, $loginid);
+                                                        <td class="details-control text-center" style="cursor:pointer;">
+                                                            <?php echo $slno++; ?>
+                                                            <i class="ri-add-circle-fill text-primary"></i>
+                                                        </td>
+                                                        <td>
+                                                            <ul class="list-inline hstack gap-2 mb-0">
+                                                                <?php $chkedit = $obj->check_editBtn($pagename, $loginid);
                                                                 if ($chkedit == 1) {  ?>
-                                                            <li class="list-inline-item " data-bs-toggle="tooltip"
-                                                                data-bs-trigger="hover" data-bs-placement="top"
-                                                                title="Edit">
-                                                                <a href="employee_master.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>"
-                                                                    class="edit-item-btn">
-                                                                    <i
-                                                                        class="ri-pencil-fill align-bottom text-success"></i>
-                                                                </a>
-                                                            </li>
-                                                            <?php }
+                                                                    <li class="list-inline-item " data-bs-toggle="tooltip"
+                                                                        data-bs-trigger="hover" data-bs-placement="top"
+                                                                        title="Edit">
+                                                                        <a href="employee_master.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>"
+                                                                            class="edit-item-btn">
+                                                                            <i
+                                                                                class="ri-pencil-fill align-bottom text-success"></i>
+                                                                        </a>
+                                                                    </li>
+                                                                <?php }
                                                                 $chkdel = $obj->check_delBtn($pagename, $loginid);
                                                                 if ($chkdel == 1) {  ?>
-                                                            <li class="list-inline-item" data-bs-toggle="tooltip"
-                                                                data-bs-trigger="hover" data-bs-placement="top"
-                                                                title="Delete">
-                                                                <a class="remove-item-btn" type="button"
-                                                                    onclick="funDel('<?php echo $row[$tblpkey]; ?>');">
-                                                                    <i
-                                                                        class="ri-delete-bin-fill align-bottom text-danger"></i>
-                                                                </a>
-                                                            </li>
-                                                            <?php }
+                                                                    <li class="list-inline-item" data-bs-toggle="tooltip"
+                                                                        data-bs-trigger="hover" data-bs-placement="top"
+                                                                        title="Delete">
+                                                                        <a class="remove-item-btn" type="button"
+                                                                            onclick="funDel('<?php echo $row[$tblpkey]; ?>');">
+                                                                            <i
+                                                                                class="ri-delete-bin-fill align-bottom text-danger"></i>
+                                                                        </a>
+                                                                    </li>
+                                                                <?php }
                                                                 $chkprint = $obj->check_printBtn($pagename, $loginid);
                                                                 if ($chkprint == 1) {  ?>
-                                                            <li class="list-inline-item " data-bs-toggle="tooltip"
+                                                                    <li class="list-inline-item " data-bs-toggle="tooltip"
+                                                                        data-bs-trigger="hover" data-bs-placement="top"
+                                                                        title="Print">
+                                                                        <a href="employee_pdf.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>"
+                                                                            class="edit-item-btn" target="_blank">
+                                                                            <i class="ri-printer-fill align-bottom text-primary"
+                                                                                title="Print"></i>
+                                                                        </a>
+                                                                    </li>
+                                                                    <!-- <li class="list-inline-item " data-bs-toggle="tooltip"
                                                                 data-bs-trigger="hover" data-bs-placement="top"
                                                                 title="Print">
-                                                                <a href="employee_pdf.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>"
+                                                                <a href="employee_concern_pdf.php?emp_id=<?php echo $row[$tblpkey]; ?>"
                                                                     class="edit-item-btn" target="_blank">
-                                                                    <i class="ri-printer-fill align-bottom text-primary"
-                                                                        title="Print"></i>
+                                                                    
+                                                                    <i   class="ri-file-text-fill text-success"   title="Print employee concern"></i>
                                                                 </a>
-                                                            </li>
-                                                            <?php } ?>
-                                                        </ul>
-                                                    </td>
-                                                    <td><?= $row["emp_code"]; ?></td>
-                                                    <td> <?= ucfirst($row['first_name'] ?? ''); ?>
-                                                        <?= ucfirst($row['last_name'] ?? ''); ?></td>
-                                                    <td><?php echo $row["father_name"]; ?></td>
-                                                    <td><?php echo $row['mobile_no']; ?></td>
-                                                    <td>
-                                                        <span id="pass_text_<?= $row['emp_id']; ?>">
-                                                            <?php echo $row['password']; ?>
-                                                        </span>
+                                                            </li> -->
 
-                                                        
+                                                                    <li class="list-inline-item " data-bs-toggle="tooltip"
+                                                                        data-bs-trigger="hover" data-bs-placement="top"
+                                                                        title="Print">
+                                                                        <a href="emp_idcard.php?emp_id=<?= $row[$tblpkey]; ?>"
+                                                                            class="edit-item-btn" target="_blank">
 
-                                                        <!-- Update Icon -->
-                                                        <a href="javascript:void(0)"
-                                                        onclick="openPasswordModal(
+                                                                            <i class="ri-file-text-fill text-success" title="Print employee concern"></i>
+                                                                        </a>
+                                                                    </li>
+                                                                <?php } ?>
+                                                            </ul>
+                                                        </td>
+                                                        <td><?= $row["emp_code"]; ?></td>
+                                                        <td> <?= ucfirst($row['first_name'] ?? ''); ?>
+                                                            <?= ucfirst($row['last_name'] ?? ''); ?></td>
+                                                        <td><?php echo $row["father_name"]; ?></td>
+                                                        <td><?php echo $row['mobile_no']; ?></td>
+                                                        <td>
+                                                            <span id="pass_text_<?= $row['emp_id']; ?>">
+                                                                <?php echo $row['password']; ?>
+                                                            </span>
+
+
+
+                                                            <!-- Update Icon -->
+                                                            <a href="javascript:void(0)"
+                                                                onclick="openPasswordModal(
                                                             '<?= $row['emp_id']; ?>',
                                                             '<?= $row['password']; ?>'
                                                         )"
-                                                        title="Update Password">
+                                                                title="Update Password">
 
-                                                            <i class="ri-edit-2-fill text-success fs-16"></i>
-                                                        </a>
-                                                    </td>
-                                                    <td><?php echo $row['department_name']; ?></td>
-                                                    <td><?php echo $row['designation']; ?></td>
-                                                    <td><?php echo $obj->dateformatindia($row["date_of_joining"]); ?>
-                                                    </td>
-                                                    <td><?php echo $obj->dateformatindia($row["dob"]); ?></td>
-
-
-
+                                                                <i class="ri-edit-2-fill text-success fs-16"></i>
+                                                            </a>
+                                                        </td>
+                                                        <td><?php echo $row['department_name']; ?></td>
+                                                        <td><?php echo $row['designation']; ?></td>
+                                                        <td><?php echo $obj->dateformatindia($row["date_of_joining"]); ?>
+                                                        </td>
+                                                        <td><?php echo $obj->dateformatindia($row["dob"]); ?></td>
+                                                        <td><?php echo $row['is_active'] == 1 ? 'Yes' : 'No'; ?></td>
 
 
-
-                                                </tr>
+                                                    </tr>
                                                 <?php } ?>
                                             </tbody>
                                         </table>
@@ -218,26 +235,26 @@ if(isset($_POST['change_password_ajax'])){
     <!-- End Page-content -->
     </div>
     <!-- Change Password Modal -->
-<div class="modal fade" id="passwordModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+    <div class="modal fade" id="passwordModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
 
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    Change Password
-                </h5>
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Change Password
+                    </h5>
 
-                <button type="button"
+                    <button type="button"
                         class="btn-close btn-close-white"
                         data-bs-dismiss="modal">
-                </button>
-            </div>
- 
+                    </button>
+                </div>
+
                 <div class="modal-body">
 
                     <input type="hidden"
-                           name="emp_id"
-                           id="modal_emp_id">
+                        name="emp_id"
+                        id="modal_emp_id">
 
                     <!-- Old Password -->
                     <div class="mb-3">
@@ -246,9 +263,9 @@ if(isset($_POST['change_password_ajax'])){
                         </label>
 
                         <input type="text"
-                               class="form-control"
-                               id="old_password"
-                               readonly>
+                            class="form-control"
+                            id="old_password"
+                            readonly>
                     </div>
 
                     <!-- New Password -->
@@ -257,9 +274,9 @@ if(isset($_POST['change_password_ajax'])){
                             New Password
                         </label>
                         <input type="text"
-                               class="form-control"
-                               id="new_password"
-                               required>
+                            class="form-control"
+                            id="new_password"
+                            required>
                     </div>
                     <!-- Confirm Password -->
                     <div class="mb-3">
@@ -267,9 +284,9 @@ if(isset($_POST['change_password_ajax'])){
                             Confirm Password
                         </label>
                         <input type="text"
-                               class="form-control"
-                               id="confirm_password"
-                               required>
+                            class="form-control"
+                            id="confirm_password"
+                            required>
                     </div>
 
                 </div>
@@ -277,107 +294,107 @@ if(isset($_POST['change_password_ajax'])){
                 <div class="modal-footer">
 
                     <button type="submit"
-                            name="change_password"
-                            class="btn btn-success" onclick="change_pass();">
+                        name="change_password"
+                        class="btn btn-success" onclick="change_pass();">
 
                         <i class="ri-save-line"></i>
                         Update Password
                     </button>
 
                 </div>
- 
+
+            </div>
         </div>
     </div>
-</div>
     <?php include('inc/delete.php') ?>
     <?php include('inc/js.php') ?>
     <?php include('inc/footer.php') ?>
     <script>
-    $(document).ready(function() {
-        $('#example').DataTable();
-        $(".chosen-select").select2({
-            width: '100%',
-            search_contains: true
+        $(document).ready(function() {
+            $('#example').DataTable();
+            $(".chosen-select").select2({
+                width: '100%',
+                search_contains: true
+            });
+
         });
 
-    });
+        function funDel(id) {
+            $('#deleteRecordModal').modal('show');
+            tblname = '<?php echo $tblname; ?>';
+            tblpkey = '<?php echo $tblpkey; ?>';
+            imgpath = '<?php echo $imgpath; ?>';
+            pagename = '<?php echo $pagename; ?>';
+            submodule = '<?php echo $submodule; ?>';
+            $('#delete-record').click(function() {
+                $.ajax({
+                    type: 'POST',
+                    url: 'ajax/delete_master_emp.php',
+                    data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&imgpath=' +
+                        imgpath + '&submodule=' + submodule + '&pagename=' + pagename,
+                    dataType: 'html',
+                    success: function(data) {
+                        $("#tr_" + id).hide();
+                        // alert(data);
+                        // location.reload();
+                    }
+                });
+                $('#deleteRecordModal').modal('hide');
+            });
+        };
 
-    function funDel(id) {
-        $('#deleteRecordModal').modal('show');
-        tblname = '<?php echo $tblname; ?>';
-        tblpkey = '<?php echo $tblpkey; ?>';
-        imgpath = '<?php echo $imgpath; ?>';
-        pagename = '<?php echo $pagename; ?>';
-        submodule = '<?php echo $submodule; ?>';
-        $('#delete-record').click(function() {
-            $.ajax({
-                type: 'POST',
-                url: 'ajax/delete_master_emp.php',
-                data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&imgpath=' +
-                    imgpath + '&submodule=' + submodule + '&pagename=' + pagename,
-                dataType: 'html',
-                success: function(data) {
-                    $("#tr_" + id).hide();
-                    // alert(data);
-                    // location.reload();
+        function numberOnly(evt) {
+            var theEvent = evt || window.event;
+
+            // Handle paste
+            if (theEvent.type === 'paste') {
+                key = event.clipboardData.getData('text/plain');
+            } else {
+                // Handle key press
+                var key = theEvent.keyCode || theEvent.which;
+                key = String.fromCharCode(key);
+            }
+            var regex = /[0-9]|\.|\s/;
+            if (!regex.test(key)) {
+                theEvent.returnValue = false;
+                if (theEvent.preventDefault) theEvent.preventDefault();
+            }
+        }
+
+
+        $(document).ready(function() {
+            var table = $('#buttons-datatables').DataTable();
+            $('#buttons-datatables tbody').on('click', 'td.details-control', function() {
+                var tr = $(this).closest('tr');
+                var row = table.row(tr);
+                if (row.child.isShown()) {
+                    row.child.hide();
+                    tr.removeClass('shown');
+                } else {
+                    var details = tr.data('details');
+                    row.child(details).show();
+                    tr.addClass('shown');
                 }
             });
-            $('#deleteRecordModal').modal('hide');
         });
-    };
 
-    function numberOnly(evt) {
-        var theEvent = evt || window.event;
+        function openPasswordModal(emp_id, password) {
+            $('#modal_emp_id').val(emp_id);
+            $('#old_password').val(password);
 
-        // Handle paste
-        if (theEvent.type === 'paste') {
-            key = event.clipboardData.getData('text/plain');
-        } else {
-            // Handle key press
-            var key = theEvent.keyCode || theEvent.which;
-            key = String.fromCharCode(key);
+            $('#new_password').val('');
+            $('#confirm_password').val('');
+
+            $('#passwordModal').modal('show');
         }
-        var regex = /[0-9]|\.|\s/;
-        if (!regex.test(key)) {
-            theEvent.returnValue = false;
-            if (theEvent.preventDefault) theEvent.preventDefault();
-        }
-    }
 
-
-    $(document).ready(function() {
-        var table = $('#buttons-datatables').DataTable();
-        $('#buttons-datatables tbody').on('click', 'td.details-control', function() {
-            var tr = $(this).closest('tr');
-            var row = table.row(tr);
-            if (row.child.isShown()) {
-                row.child.hide();
-                tr.removeClass('shown');
-            } else {
-                var details = tr.data('details');
-                row.child(details).show();
-                tr.addClass('shown');
-            }
-        });
-    });
-   
-    function openPasswordModal(emp_id, password) {
-        $('#modal_emp_id').val(emp_id);
-        $('#old_password').val(password);
-
-        $('#new_password').val('');
-        $('#confirm_password').val('');
-
-        $('#passwordModal').modal('show');
-    }
-
-    function change_pass(){
-            let emp_id      = $('#modal_emp_id').val();
-            let newPass     = $('#new_password').val();
+        function change_pass() {
+            let emp_id = $('#modal_emp_id').val();
+            let newPass = $('#new_password').val();
             let confirmPass = $('#confirm_password').val();
 
             // blank check
-            if(newPass == ''){
+            if (newPass == '') {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Required',
@@ -388,7 +405,7 @@ if(isset($_POST['change_password_ajax'])){
             }
 
             // confirm blank check
-            if(confirmPass == ''){
+            if (confirmPass == '') {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Required',
@@ -397,8 +414,8 @@ if(isset($_POST['change_password_ajax'])){
                 $('#confirm_password').focus();
                 return false;
             }
- 
-            if(newPass != confirmPass){
+
+            if (newPass != confirmPass) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Password Mismatch',
@@ -414,13 +431,12 @@ if(isset($_POST['change_password_ajax'])){
                 url: '',
                 type: 'POST',
                 data: {
-                    change_password_ajax : 1,
-                    emp_id : emp_id,
-                    new_password : newPass
+                    change_password_ajax: 1,
+                    emp_id: emp_id,
+                    new_password: newPass
                 },
 
-                beforeSend:function()
-                {
+                beforeSend: function() {
                     Swal.fire({
                         title: 'Please Wait...',
                         text: 'Updating Password',
@@ -431,26 +447,24 @@ if(isset($_POST['change_password_ajax'])){
                     });
                 },
 
-                success:function(response){
+                success: function(response) {
                     Swal.close();
-                    if(response == 1){
+                    if (response == 1) {
                         $('#pass_text_' + emp_id).text(newPass);
 
                         Swal.fire({
-                            icon:'success',
-                            title:'Success',
-                            text:'Password Updated Successfully'
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Password Updated Successfully'
                         });
                         $('#passwordModal').modal('hide');
                         $('#new_password').val('');
                         $('#confirm_password').val('');
-                    }
-                    else
-                    {
+                    } else {
                         Swal.fire({
-                            icon:'error',
-                            title:'Error',
-                            text:'Password Not Updated'
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Password Not Updated'
                         });
                     }
                 }
@@ -458,8 +472,7 @@ if(isset($_POST['change_password_ajax'])){
             });
 
         }
-
-</script>
+    </script>
 </body>
 
 </html>

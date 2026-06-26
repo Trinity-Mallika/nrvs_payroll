@@ -23,21 +23,42 @@ $dateforas = date('Y-m-d', strtotime("$currentYear-$currentMonth")) ?? '';
 $totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
 $salary_generate_count = $obj->getvalfield("salary_structure", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear'");
 
-$total_present1 = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status='Present'");
+$res = $obj->executequery("
+    SELECT 
+        SUM(CASE 
+            WHEN attendance_status = 'Present' THEN 1 
+            ELSE 0 
+        END) AS total_present1,
 
-$total_half1 = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status='Half Day'");
+        SUM(CASE 
+            WHEN attendance_status = 'Half Day' THEN 1 
+            ELSE 0 
+        END) AS total_half1,
 
-$total_present = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status IN('Present','Weekly Leave','Earning Leave','C Off')");
+        SUM(CASE 
+            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave') THEN 1 
+            ELSE 0 
+        END) AS total_present,
 
-$total_half = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status IN('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off')");
-// echo $total_half;
-// die;
-$total_att_leave = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status='Leave'");
-// echo $total_att_leave;
-// die;
-$total_attandence = $total_present + ($total_half / 2);
+        SUM(CASE 
+            WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave') THEN 1 
+            ELSE 0 
+        END) AS total_half
+
+    FROM attendance_entry
+    WHERE emp_id = '$emp_id' 
+    AND month = '$currentMonth' 
+    AND year = '$currentYear' AND unit_id='$unitid'
+");
+$row = $res[0] ?? [];
+$total_present1 = $row['total_present1'] ?? 0;
+$total_half1    = $row['total_half1'] ?? 0;
+
+$total_present  = $row['total_present'] ?? 0;
+$total_half     = $row['total_half'] ?? 0;
 
 $real_total_attandence = $total_present1 + ($total_half1 / 2);
+$total_attandence      = $total_present + ($total_half / 2); 
 
 $emp_shift_ids = $obj->getvalfield("attendance_entry", "shift_id", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' order by attendance_id desc limit 1") ?? '';
 
@@ -49,7 +70,7 @@ $three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
 // die;
 
 $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $real_total_attandence, $unit_id);
-$week_leave = $obj->totalWeeklyLeave($unit_id, $real_total_attandence, $allow_weekly_off);
+$week_leave = $obj->totalWeeklyLeave($unit_id, $real_total_attandence, $emp_id,$currentMonth,$currentYear);
 $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
 $total_curr_week_leave = $obj->getCurrentWeekLeave($emp_id, $currentMonth, $currentYear);
 

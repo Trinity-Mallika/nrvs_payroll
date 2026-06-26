@@ -72,7 +72,7 @@ if (isset($_GET[$tblpkey])) {
     $unit_logo = $obj->getvalfield("unit_master", "logo_image", "unit_id='$unit_id'");
 
 
-    $total_deduction = $lpg_ded + $shoes_ded + $other + $pf_emp + $esic_emp;
+    $total_deduction = $loan_amt + $advance_amt + $other_deduction + $tds_deduction + $pf_emp + $esic_emp;
 
 
     // If $month is like "January", "Feb", etc.
@@ -118,28 +118,28 @@ if (!empty($emp_id)) {
     $bank_name = $obj->getvalfield("bank_master", "bank_name", "bank_id='$bank_id'");
     $department_name = $obj->getvalfield("department_master", "department_name", "department_id='$department_id'");
     $unit_name = $obj->getvalfield("unit_master", "unit_name", "unit_id='$unit_id'");
+    $month_name = strtoupper(date('M', mktime(0, 0, 0, $month, 1)));
 }
 // echo $first_name;
 // die;
 
+$logoPath = __DIR__ . '/assets/images/logo.jpg';
+$smallLogoPath = __DIR__ . '/assets/images/nrvs-logo.png';
+
 $mpdf->SetHTMLHeader('
 <table>
-        <tr>
-            <td width="20%">
-                <img src="assets/images/logo.jpg" width="120px">
-            </td>
+        <tr> 
             <td style="text-align: center; ">
-                <h2>NRVS STEELS LIMITED</h2>
-                <h3>SALARY SLIP FOR THE MONTH: OCT-2020</h3>
-            </td>
-            <td width="20%" style="text-align: right;">
-                <img src="assets/images/nrvs-logo.png" alt="" width="50px">
-            </td>
+                <h2>'.$unit_name.'</h2>
+                 <h3>SALARY SLIP FOR THE MONTH: '.$month_name.'-'.$year.'</h3>
+            </td> 
         </tr>
     </table>
-', 'O'); // 'O' = apply on all pages
+', 'O');  
 
 // IMAGE watermark
+// $mpdf->SetWatermarkImage(__DIR__ . '/assets/images/water-mark.png', 0.2, "", [65, 40]);
+// $mpdf->showWatermarkImage = true;
 $mpdf->SetWatermarkImage(__DIR__ . '/assets/images/water-mark.png', 0.2, "", [65, 40]);
 $mpdf->showWatermarkImage = true;
 
@@ -334,8 +334,7 @@ $html = '<!DOCTYPE html>
 
 </html>';
 
-// print($html);
-// die;
+
 
 $mpdf->WriteHTML($html);
 

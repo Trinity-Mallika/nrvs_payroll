@@ -294,7 +294,8 @@ if ($last_month != '' && $last_year != '') {
                                     <div class="col-sm">
                                         <div>
                                             <h5 class="card-title mb-0"> <?= $module; ?> <a href="loan_advance_list.php"
-                                                    class="float-end btn btn-sm btn-primary">Search Again</a></h5>
+                                                    class="float-end btn btn-sm btn-primary ms-2">Search Again</a>  <a href="loan_advance.php"
+                                                    class="float-end btn btn-sm btn-primary ms-2">Add</a> </h5>
                                         </div>
                                     </div>
                                 </div>
@@ -326,6 +327,7 @@ if ($last_month != '' && $last_year != '') {
                                                         Inst.<br>From
                                                     </th>
                                                     <th> Inst.<br>To</th>
+                                                    <th>Paid<br>Loan/Adv.</th>
 
                                                     <th>Status   <input type="checkbox" id="checkAll"></th>
                                                     <th>
@@ -359,7 +361,13 @@ if ($last_month != '' && $last_year != '') {
 
                                                             uu.fullname as updated_name,
                                                             uu.username as updated_username,
-                                                            uu.mobile as updated_mobile
+                                                            uu.mobile as updated_mobile,
+                                                            (
+            SELECT IFNULL(SUM(ld.amount),0)
+            FROM loan_advance_details ld
+            WHERE ld.loan_advance_id = la.loan_advance_id
+            AND ld.is_paid = '1'
+        ) as total_paid_amount
 
                                                         FROM $tblname la
 
@@ -411,8 +419,8 @@ if ($last_month != '' && $last_year != '') {
                                                     <td> <?= $row['loan_adv_amt'] . " + " . $row['interest_amount'] ?>
                                                         <br>(<?= $row['type'] ?>)
                                                     </td>
-                                                    <td><?= $row['no_of_inst']; ?></td>
-                                                    <td><?= $row['total_amount']; ?></td>
+                                                    <td><?= $obj->formatAmount($row['no_of_inst']); ?></td>
+                                                    <td><?= $obj->formatAmount($row['total_amount']); ?></td>
                                                     <td>
                                                         <?= date("F", mktime(0, 0, 0, $row['start_month'], 1)) . " - " . $row['start_year'] ?>
                                                     </td>
@@ -420,6 +428,7 @@ if ($last_month != '' && $last_year != '') {
                                                     <td>
                                                         <?= date("F", mktime(0, 0, 0, $row['last_month'], 1)) . " - " . $row['last_year'] ?>
                                                     </td>
+                                                       <td><?= $obj->formatAmount($row['total_paid_amount']); ?></td>
                                                     <td>
                                                         <?php
                                                             if ($row['appr_status'] == "1") {

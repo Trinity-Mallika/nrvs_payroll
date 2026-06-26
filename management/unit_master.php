@@ -18,6 +18,7 @@ if (isset($_POST['submit'])) {
     $address = $obj->test_input($_POST['address']);
     $pan_no = $obj->test_input($_POST['pan_no']);
     $gstin_no = $obj->test_input($_POST['gstin_no']);
+    $cin_no = $obj->test_input($_POST['cin_no']);
     $city = $obj->test_input($_POST['city']);
     $unithead  = $obj->test_input($_POST['unithead']);
     $add_leave = $obj->test_input($_POST['add_leave'] ?? 0);
@@ -36,6 +37,7 @@ if (isset($_POST['submit'])) {
         "address" => $address,
         "pan_no" => $pan_no,
         "gstin_no" => $gstin_no,
+        "cin_no" => $cin_no,
         "machine_id" => $machine_id,
         "city" => $city,
         "add_leave" => $add_leave,
@@ -91,6 +93,7 @@ if (isset($_GET[$tblpkey])) {
     $mobile = $sqledit['mobile'];
     $address = $sqledit['address'];
     $gstin_no = $sqledit['gstin_no'];
+    $cin_no = $sqledit['cin_no'];
     $machine_id = $sqledit['machine_id'];
     $city = $sqledit['city'];
     $pan_no = $sqledit['pan_no'];
@@ -104,6 +107,7 @@ if (isset($_GET[$tblpkey])) {
     $mobile = "";
     $address = "";
     $gstin_no = "";
+    $cin_no = "";
     $machine_id = "";
     $city = "";
     $pan_no = "";
@@ -178,6 +182,11 @@ if (isset($_GET[$tblpkey])) {
                                         <div class="col-lg-3 mb-3">
                                             <label for="gstin_no" class="form-label">GSTIN No.<span class="text-danger fw-bold"></span></label>
                                             <input type="text" id="gstin_no" name="gstin_no" class="form-control form-control-sm" placeholder="Enter GSTIN No." value="<?php echo $gstin_no ?>" autocomplete="off" />
+                                        </div>
+
+                                        <div class="col-lg-3 mb-3">
+                                            <label for="cin_no" class="form-label">CIN No.<span class="text-danger fw-bold"></span></label>
+                                            <input type="text" id="cin_no" name="cin_no" class="form-control form-control-sm" placeholder="Enter cin No." value="<?php echo $cin_no ?>" autocomplete="off" />
                                         </div>
                                         <div class="col-lg-3 mb-3">
                                             <label for="city" class="form-label">City<span class="text-danger fw-bold">*</span></label>
@@ -254,6 +263,7 @@ if (isset($_GET[$tblpkey])) {
                                                 <th>Email-Id</th>
                                                 <th>Pan No.</th>
                                                 <th>GSTIN No.</th>
+                                                <th>CIN No.</th>
                                                 <th>City</th>
                                                 <th>Machine ID</th>
                                                 <th>Allow Leave</th>
@@ -277,6 +287,7 @@ if (isset($_GET[$tblpkey])) {
                                                     <td><?php echo $row["email_id"]; ?></td>
                                                     <td><?php echo $row["pan_no"]; ?></td>
                                                     <td><?php echo $row["gstin_no"]; ?></td>
+                                                    <td><?php echo $row["cin_no"]; ?></td>
                                                     <td><?php echo $row["city"]; ?></td>
                                                     <td><?php echo $row["machine_id"]; ?></td>
                                                     <td><?php echo $row["add_leave"] == '1' ? 'Yes' : 'No'; ?></td>

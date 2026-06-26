@@ -79,99 +79,115 @@ $month_cases = rtrim($month_cases, ',');
                 <?php include('inc/bredcrum.php') ?>
                 <?php include('inc/alert.php'); ?>
                 <div class="row">
+                    <?php if (!isset($_GET['search'])) { ?>
+                        <div class="col-lg-12">
+                            <fieldset class="mt-2">
+                                <form action="<?php echo $pagename; ?>" method="get">
+                                    <div class="card">
+                                        <div class="card-header border-bottom-dashed">
+                                            <div class="row g-4 align-items-center">
+                                                <div class="col-sm">
+                                                    <div>
+                                                        <h5 class="card-title mb-0"> <?= $module; ?> <a href="monthly_salary_cost_details.php" class="float-end btn btn-primary btn-sm" target="_blank">View Details</a></h5>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-lg-3 mb-3">
+                                                    <label for="unit_id" class="form-label">Unit Name<span class="text-danger fw-bold"></span></label>
+                                                    <select class="form-select chosen-select" name="unit_id" id="unit_id">
+                                                        <option value="">All</option>
+                                                        <?php $res = $obj->executequery("Select * from unit_master order by unit_name asc");
+                                                        foreach ($res as $key) {
+                                                            echo "<option value='" . $key['unit_id'] . "'>" . $key['unit_name'] . "</option>";
+                                                        } ?>
+                                                    </select>
+                                                    <script>
+                                                        document.getElementById('unit_id').value = '<?= $unit_id; ?>';
+                                                    </script>
+                                                </div>
+                                                <div class="col-md-3 md-2">
+                                                    <strong><label for="from_month">From Month<span class="text-danger fw-bold">*</span></label></strong></br>
+                                                    <select name="from_month" class="chosen-select form-control form-control" id="from_month">
 
-                    <div class="col-lg-12">
-                        <fieldset class="mt-2">
-                            <form action="<?php echo $pagename; ?>" method="get">
-                                <div class="card">
-                                    <div class="card-header border-bottom-dashed">
-                                        <div class="row g-4 align-items-center">
-                                            <div class="col-sm">
-                                                <div>
-                                                    <h5 class="card-title mb-0"> <?= $module; ?> <a href="monthly_salary_cost_details.php" class="float-end btn btn-primary btn-sm" target="_blank">View Details</a></h5>
+                                                        <?php for ($iM = 1; $iM <= 12; $iM++) {
+                                                        ?>
+                                                            <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>"><?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?></option>
+
+                                                        <?php
+                                                        } ?>
+                                                    </select>
+                                                    <script>
+                                                        document.getElementById('from_month').value = '<?php echo $from_month; ?>';
+                                                    </script>
+                                                </div>
+                                                <div class="col-md-3 md-2">
+                                                    <strong><label for="to_month">To Month<span class="text-danger fw-bold">*</span></label></strong></br>
+                                                    <select name="to_month" class="chosen-select form-control form-control" id="to_month">
+
+                                                        <?php for ($iM = 1; $iM <= 12; $iM++) {
+                                                        ?>
+                                                            <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>"><?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?></option>
+
+                                                        <?php
+                                                        } ?>
+                                                    </select>
+                                                    <script>
+                                                        document.getElementById('to_month').value = '<?php echo $to_month; ?>';
+                                                    </script>
+                                                </div>
+                                                <div class="col-lg-3 col-12">
+                                                    <label for="year" class="form-label">Year<span class="text-danger fw-bold">*</span></label>
+                                                    <select class="form-select chosen-select" name="year" id="year">
+
+                                                        <?php
+                                                        $startYear = 2025;
+                                                        $endYear = 2100;
+                                                        for ($year1 = $startYear; $year1 <= $endYear; $year1++) {
+                                                            echo "<option value=\"$year1\">$year1</option>";
+                                                        } ?>
+                                                    </select>
+                                                    <script>
+                                                        document.getElementById('year').value = '<?php echo $year ?>'
+                                                    </script>
+                                                </div>
+                                                <div class="col-md-3 mt-4 ">
+                                                    <input type="submit" class="btn btn-primary add-btn" name="search" value="Search" onclick="return validateMonthRange()">
+                                                    <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset" id="reset">Reset</a>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-lg-3 mb-3">
-                                                <label for="unit_id" class="form-label">Unit Name<span class="text-danger fw-bold"></span></label>
-                                                <select class="form-select chosen-select" name="unit_id" id="unit_id">
-                                                    <option value="">All</option>
-                                                    <?php $res = $obj->executequery("Select * from unit_master order by unit_name asc");
-                                                    foreach ($res as $key) {
-                                                        echo "<option value='" . $key['unit_id'] . "'>" . $key['unit_name'] . "</option>";
-                                                    } ?>
-                                                </select>
-                                                <script>
-                                                    document.getElementById('unit_id').value = '<?= $unit_id; ?>';
-                                                </script>
-                                            </div>
-                                            <div class="col-md-3 md-2">
-                                                <strong><label for="from_month">From Month<span class="text-danger fw-bold">*</span></label></strong></br>
-                                                <select name="from_month" class="chosen-select form-control form-control" id="from_month">
-
-                                                    <?php for ($iM = 1; $iM <= 12; $iM++) {
-                                                    ?>
-                                                        <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>"><?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?></option>
-
-                                                    <?php
-                                                    } ?>
-                                                </select>
-                                                <script>
-                                                    document.getElementById('from_month').value = '<?php echo $from_month; ?>';
-                                                </script>
-                                            </div>
-                                            <div class="col-md-3 md-2">
-                                                <strong><label for="to_month">To Month<span class="text-danger fw-bold">*</span></label></strong></br>
-                                                <select name="to_month" class="chosen-select form-control form-control" id="to_month">
-
-                                                    <?php for ($iM = 1; $iM <= 12; $iM++) {
-                                                    ?>
-                                                        <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>"><?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?></option>
-
-                                                    <?php
-                                                    } ?>
-                                                </select>
-                                                <script>
-                                                    document.getElementById('to_month').value = '<?php echo $to_month; ?>';
-                                                </script>
-                                            </div>
-                                            <div class="col-lg-3 col-12">
-                                                <label for="year" class="form-label">Year<span class="text-danger fw-bold">*</span></label>
-                                                <select class="form-select chosen-select" name="year" id="year">
-
-                                                    <?php
-                                                    $startYear = 2025;
-                                                    $endYear = 2100;
-                                                    for ($year1 = $startYear; $year1 <= $endYear; $year1++) {
-                                                        echo "<option value=\"$year1\">$year1</option>";
-                                                    } ?>
-                                                </select>
-                                                <script>
-                                                    document.getElementById('year').value = '<?php echo $year ?>'
-                                                </script>
-                                            </div>
-                                            <div class="col-md-3 mt-4 ">
-                                                <input type="submit" class="btn btn-primary add-btn" name="search" value="Search" onclick="return validateMonthRange()">
-                                                <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset" id="reset">Reset</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </fieldset>
-                    </div>
+                                </form>
+                            </fieldset>
+                        </div>
+                    <?php } ?>
                     <?php if (isset($_GET['search'])) { ?>
                         <div class="col-lg-12">
                             <div class="card" id="customerList">
                                 <div class="card-header border-bottom-dashed">
                                     <div class="row g-4 align-items-center">
-                                        <div class="col-sm">
-                                            <div>
-                                                <h5 class="card-title mb-0"><?php echo $submodule; ?> </h5>
-                                            </div>
+                                        <div class="d-flex justify-content-between">
+                                            <h5 class="card-title mb-0"><?php echo $submodule; ?> </h5>
+                                            <h5 class="mb-0 fw-bold text-primary">
+                                                <?php
+                                                if ($from_month == $to_month) {
+                                                    echo strtoupper(date('F', mktime(0, 0, 0, $from_month, 1))) . " - " . $year;
+                                                } else {
+                                                    echo strtoupper(date('F', mktime(0, 0, 0, $from_month, 1))) .
+                                                        " - " .
+                                                        strtoupper(date('F', mktime(0, 0, 0, $to_month, 1))) .
+                                                        "   " . $year;
+                                                }
+                                                ?>
+                                            </h5>
+
+                                            <a href="<?php echo $pagename; ?>" class="btn btn-primary btn-sm">
+                                                Search Again
+                                            </a>
+
                                         </div>
                                     </div>
                                 </div>
@@ -197,7 +213,7 @@ $month_cases = rtrim($month_cases, ',');
                                             <tbody>
                                                 <?php
                                                 $slno = 1;
-                                                $res = $obj->executequery("SELECT 
+                                                $res = $obj->executequery("SELECT
                                                         ss.unit_id,
                                                         um.unit_name,
                                                         $month_cases

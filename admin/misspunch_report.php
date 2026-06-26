@@ -379,7 +379,7 @@ table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
 
                 $base_date = date('Y-m-d', strtotime($pDate . ' +1 day'));
                 $max_out = strtotime($base_date . ' ' . $morning_in) + (4 * 3600);
-//             echo "<pre>";
+// echo "<pre>";
 // echo "IN Date: " . $pDate . "\n";
 // echo "IN Time: " . date('Y-m-d H:i:s', $inStamp) . "\n";
 // echo "OUT Time: " . date('Y-m-d H:i:s', $stamp) . "\n";

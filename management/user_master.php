@@ -74,9 +74,9 @@ if (isset($_POST['submit'])) {
 
                 // old user ke privileges fetch karo
                 $privileges = $obj->executequery("
-            SELECT * FROM privilage_setting 
-            WHERE userid = '$pri_userid'
-        ");
+                    SELECT * FROM privilage_setting 
+                    WHERE userid = '$pri_userid'
+                ");
 
                 foreach ($privileges as $row) {
 
@@ -104,6 +104,46 @@ if (isset($_POST['submit'])) {
             $form_data["lastupdated"] = $createdate;
             $where = array($tblpkey => $old_uid);
             $obj->update_record($tblname, $where, $form_data);
+            if (!empty($pri_userid)) {
+
+                // type decide karo
+                if ($usertype1 == 'management' || $usertype1 == 'super_management') {
+                    $type = 'mngmt';
+                } else {
+                    $type = 'hrms';
+                }
+
+                $where = array('userid' => $old_uid);
+                $obj->delete_record('privilage_setting', $where);
+
+                // old user ke privileges fetch karo
+                $privileges = $obj->executequery("
+                    SELECT * FROM privilage_setting 
+                    WHERE userid = '$pri_userid'
+                ");
+
+                foreach ($privileges as $row) {
+
+                    $priv_data = array(
+                        "type" => $type,
+                        "userid" => $old_uid,
+                        "page_id" => $row['page_id'],
+                        "pagedit" => $row['pagedit'],
+                        "pageview" => $row['pageview'],
+                        "pagedel" => $row['pagedel'],
+                        "page_add" => $row['page_add'],
+                        "page_print" => $row['page_print'],
+                        "page_approve" => $row['page_approve'],
+                        "page_special" => $row['page_special'],
+                        "privilage" => $row['privilage'],
+                        "createdby" => $loginid,
+                        "ipaddress" => $ipaddress,
+                        "createdate" => $createdate
+                    );
+
+                    $obj->insert_record("privilage_setting", $priv_data);
+                }
+            }
             $action = 2;
             $process = "updated";
         }
@@ -270,7 +310,7 @@ if (isset($_POST['user_typee'])) {
                                             <input type="email" id="email" name="email" class="form-control form-control-sm" placeholder="Enter Email" value="<?php echo $email ?>" autocomplete="off" />
                                         </div>
 
-                                        <?php if ($old_uid == 0) {  ?>
+                                         
                                             <div class="col-md-3" id="privilage_div">
                                                 <strong> <label for="pri_userid">Privilege From User<span class="text-danger fw-bold"> </span></label></strong>
                                                 <div class="input-group mb-3">
@@ -280,7 +320,7 @@ if (isset($_POST['user_typee'])) {
                                                     </select>
                                                 </div>
                                             </div>
-                                        <?php } ?>
+                                       
                                         <div class="col-lg-3 mb-3 mt-2">
                                             <br>
                                             <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">

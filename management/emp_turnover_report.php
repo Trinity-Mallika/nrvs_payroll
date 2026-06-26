@@ -9,11 +9,13 @@ $btn_name = "Save";
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 $crit = '';
+$crit2 = '1=1';
 
 if (isset($_GET['department_id'])) {
     $department_id = $obj->test_input($_GET['department_id']);
     if ($department_id != '') {
         $crit .= " and department_id = '$department_id'";
+        $crit2 .= " and e.department_id = '$department_id'";
     }
 } else {
     $department_id = "";
@@ -23,6 +25,7 @@ if (isset($_GET['unit_id'])) {
     $unit_id = $obj->test_input($_GET['unit_id']);
     if ($unit_id != '') {
         $crit .= " and unit_id = '$unit_id'";
+        $crit2 .= " and e.unit_id = '$unit_id'";
     }
 } else {
     $unit_id = "";
@@ -49,16 +52,61 @@ $exit_count = $obj->getvalfield(
     "COUNT(exit_id)",
     "MONTH(resignation_date)='$month' AND YEAR(resignation_date)='$year' $crit AND is_approved='1'"
 );
+ 
+$emp_res = $obj->executequery("SELECT emp_id FROM employee_master WHERE (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) $crit ORDER BY first_name ASC");
 
-// Total Employee
-$total_emp = $obj->getvalfield(
-    "employee_master",
-    "COUNT(emp_id)",
-    "1=1 $crit"
-);
+$total_emp =count($emp_res);
+$firstDateOfMonth = date("Y-m-01", strtotime("$year-$month-01"));
+$lastDateOfMonth = date("Y-m-t", strtotime("$year-$month-01")); 
+ 
+$employees = $obj->executequery("
+        SELECT 
+            e.emp_id 
+        FROM employee_master e
+      
+        LEFT JOIN (
+            SELECT a1.*
+            FROM emp_active_status a1
+            INNER JOIN (
+                SELECT 
+                    emp_id,
+                    MAX(active_id) AS last_id
+                FROM emp_active_status
+                WHERE (
+                        YEAR(last_inactive_date) < '$year'
+                        OR (
+                            YEAR(last_inactive_date) = '$year'
+                            AND MONTH(last_inactive_date) <= '$month'
+                        )
+                    )
+                GROUP BY emp_id
+            ) a2 
+            ON a1.active_id = a2.last_id
+        ) eas 
+            ON eas.emp_id = e.emp_id
+
+        WHERE  $crit2 
+            AND e.is_active = '1'
+            AND e.date_of_joining <= '$lastDateOfMonth'
+
+            AND (
+                e.resign_status != '1' 
+                OR (
+                    e.resign_status = '1' 
+                    AND e.last_working_date >= '$firstDateOfMonth'
+                )
+            ) 
+            AND (
+                eas.active_id IS NULL
+                OR eas.is_active = '1'
+            )
+        GROUP BY e.emp_id
+        ORDER BY e.emp_code"); 
+
+$active_emp_count = count($employees);
 
 // Attrition
-$attrition = ($total_emp > 0) ? round(($exit_count / $total_emp) * 100, 2) : 0;
+$attrition = ($active_emp_count > 0) ? round(($exit_count / $active_emp_count) * 100, 2) : 0;
 
 if (isset($_POST['department_idd'])) {
     $department_id = $_POST['department_idd'];
@@ -188,15 +236,12 @@ if (isset($_POST['department_idd'])) {
                         </fieldset>
                     </div>
                     <div class="row mt-3">
-
                         <!-- Total Employees -->
-                        <div class="col-lg-3">
+                        <div class="col-lg-3 mb-3">
                             <a href="employee_report.php?unit_id=<?= $unit_id ?>&department_id=<?= $department_id ?>&submit=Search" class="text-decoration-none" target="_blank">
                                 <div class="card border-0 shadow-sm bg-info h-100">
                                     <div class="card-body text-center">
-
                                         <h6 class="text-white">Total Employees</h6>
-
                                         <h1 class="text-white fw-bold">
                                             <?= $total_emp ?>
                                         </h1>
@@ -209,9 +254,27 @@ if (isset($_POST['department_idd'])) {
                                 </div>
                             </a>
                         </div>
+                        <!-- Total active  Employees -->
+                        <div class="col-lg-3  mb-3">
+                            <a href="employee_report.php?unit_id=<?= $unit_id ?>&department_id=<?= $department_id ?>&is_active=1&submit=Search" class="text-decoration-none" target="_blank">
+                                <div class="card border-0 shadow-sm bg-info h-100">
+                                    <div class="card-body text-center">
+                                        <h6 class="text-white">Total Active Employees</h6>
+                                        <h1 class="text-white fw-bold">
+                                            <?= $active_emp_count ?>
+                                        </h1>
+
+                                        <small class="text-white">
+                                            Current Workforce
+                                        </small>
+
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
 
                         <!-- Employees Joined -->
-                        <div class="col-lg-3">
+                        <div class="col-lg-3  mb-3">
                             <a href="employee_report.php?unit_id=<?= $unit_id ?>&department_id=<?= $department_id ?>&month=<?= $month ?>&year=<?= $year ?>&submit=Search" class="text-decoration-none" target="_blank">
                                 <div class="card border-0 shadow-sm bg-success h-100">
                                     <div class="card-body text-center">
@@ -232,7 +295,7 @@ if (isset($_POST['department_idd'])) {
                         </div>
 
                         <!-- Employees Exit -->
-                        <div class="col-lg-3">
+                        <div class="col-lg-3  mb-3">
                             <a href="emp_separation_list.php?unit_id=<?= $unit_id ?>&month=<?= $month ?>&year=<?= $year ?>&submit=Search" class="text-decoration-none" target="_blank">
                                 <div class="card border-0 shadow-sm bg-danger h-100">
                                     <div class="card-body text-center">
@@ -249,7 +312,7 @@ if (isset($_POST['department_idd'])) {
                         </div>
 
                         <!-- Attrition Rate -->
-                        <div class="col-lg-3">
+                        <div class="col-lg-3  mb-3">
                             <div class="card border-0 shadow-sm bg-warning h-100">
                                 <div class="card-body text-center">
 

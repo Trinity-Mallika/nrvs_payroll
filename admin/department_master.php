@@ -11,8 +11,9 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 
 if (isset($_POST['submit'])) {
     // $category_id = $obj->test_input($_POST['category_id']);
-    $subdivision_id  = $obj->test_input($_POST['subdivision_id']);
+    $subdivision_id  = $obj->test_input($_POST['subdivision_id']??0);
     $department_name  = $obj->test_input($_POST['department_name']);
+    $emp_id  = $obj->test_input($_POST['emp_id']);
     $c_off_check = isset($_POST['c_off_check']) ? 1 : 0;
 
     $count = $obj->getvalfield($tblname, "count(*)", "department_name='$department_name' and subdivision_id='$subdivision_id' and unit_id='$unitid' and $tblpkey!='$keyvalue'");
@@ -21,6 +22,7 @@ if (isset($_POST['submit'])) {
         // "category_id" => $category_id,
         "subdivision_id" => $subdivision_id,
         "department_name" => $department_name,
+        "emp_id" => $emp_id,
         "c_off_check"   => $c_off_check,
         "createdby" => $loginid,
         "sessionid"   => $sessionid,
@@ -33,7 +35,18 @@ if (isset($_POST['submit'])) {
     } else {
         if ($keyvalue == 0) {
             $form_data["createdate"] = $createdate;
-            $obj->insert_record($tblname, $form_data);
+            $lastid = $obj->insert_record_lastid($tblname, $form_data);
+
+            $update_employee = [
+                'reporting_manager' => $emp_id
+            ];
+
+            $where_employee = [
+                'department_id' => $lastid,
+                'unit_id'       => $unitid
+            ];
+            $obj->update_record("employee_master", $where_employee, $update_employee);
+
             $action = 1;
             $process = "insert";
         } else {
@@ -41,6 +54,17 @@ if (isset($_POST['submit'])) {
             $form_data["updatedby"] = $loginid;
             $where = array($tblpkey => $keyvalue);
             $obj->update_record($tblname, $where, $form_data);
+
+            $update_employee = [
+                'reporting_manager' => $emp_id
+            ];
+
+            $where_employee = [
+                'department_id' => $keyvalue,
+                'unit_id'       => $unitid
+            ];
+            $obj->update_record("employee_master", $where_employee, $update_employee);
+
             $action = 2;
             $process = "updated";
         }
@@ -56,11 +80,13 @@ if (isset($_GET[$tblpkey])) {
     // $category_id = $sqledit['category_id'];
     $subdivision_id =  $sqledit['subdivision_id'];
     $department_name =  $sqledit['department_name'];
+    $emp_id =  $sqledit['emp_id'];
     $c_off_check   = $sqledit['c_off_check'];
 } else {
     // $category_id = "";
     $subdivision_id = "";
     $department_name = "";
+    $emp_id = "";
     $c_off_check   = 0;
 }
 ?>
@@ -108,7 +134,7 @@ if (isset($_GET[$tblpkey])) {
                                         
                                         <div class="col-lg-3 mb-3">
                                             <label for="subdivision_id" class="form-label">Sub Division Name<span
-                                                    class="text-danger fw-bold">*</span></label>
+                                                    class="text-danger fw-bold"> </span></label>
                                             <select class="form-select form-select-sm chosen-select"
                                                 name="subdivision_id" id="subdivision_id">
                                                 <option value="">Select</option>
@@ -144,12 +170,35 @@ if (isset($_GET[$tblpkey])) {
                                                 Click to allow C-Off for this department.
                                             </small>
                                         </div>
+
+                                         <div class="col-lg-3 col-12">
+                                            <label for="emp_id" class="form-label">Reporting Manager Name<span
+                                                    class="text-danger fw-bold">*</span></label>
+                                            <select class="form-select form-select-sm chosen-select" name="emp_id"
+                                                id="emp_id">
+                                                <option value="">Select Employee</option>
+                                                <?php
+                                                    //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
+                                                    $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
+                                                    foreach ($res as $key) { ?>
+                                                <option value="<?= $key['emp_id']; ?>">
+                                                    <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?>
+                                                    <?= ucfirst($key['last_name'] ?? ''); ?></option>
+                                                <?php } ?>
+                                            </select>
+                                            <script>
+                                            document.getElementById('emp_id').value =
+                                                '<?= $emp_id; ?>';
+                                            </script>
+                                        </div>
+
+                                        
                                         <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
                                         if ($chkadd == 1) {  ?>
                                             <div class="col-lg-4 mb-3 mt-2">
                                                 <br>
                                                 <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
-                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('subdivision_id,department_name')">
+                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('department_name,emp_id')">
                                                 <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
                                             </div>
                                         <?php } ?>

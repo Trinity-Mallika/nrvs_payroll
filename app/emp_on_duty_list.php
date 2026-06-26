@@ -123,14 +123,14 @@ $imgpath = "../admin/uploaded/on_duty/";
                                         <!-- Edit -->
                                         <div class="col-6">
                                             <a href="emp_on_duty.php?on_duty_id=<?= $row['on_duty_id'] ?>"
-                                                class="btn btn-sm btn-green w-100">
+                                                class="btn btn-sm btn-primary w-100">
                                                 <i class="fa fa-edit">Edit</i>
                                             </a>
                                         </div>
                                         <div class="col-6">
                                             <!-- Delete -->
                                             <button onclick="deleteOnDuty(<?= $row['on_duty_id'] ?>)"
-                                                class="btn btn-sm btn-red w-100">
+                                                class="btn btn-sm btn-primary w-100">
                                                 <i class="fa fa-trash">Delete</i>
                                             </button>
                                         </div>

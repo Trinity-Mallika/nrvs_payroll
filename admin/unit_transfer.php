@@ -72,7 +72,7 @@ if (isset($_POST['transfer_emp_id'])) {
         $new_emp_code =  $obj->getcode("employee_master", "emp_code",  "1=1");
         $new_bio_id = $obj->getcode("employee_master", "emp_code",  "1=1");
     }
-
+    
     $salary_count = $obj->getvalfield("salary_structure","count(*)","emp_id='$emp_id' AND month='$prev_month' AND year='$prev_year' and unit_id='$unitid'");
     
     if ($salary_count == 0) {
@@ -262,14 +262,7 @@ if (isset($_POST['department_iddd'])) {
 
                                                     </table>
                                                 </div>
-                                            </div>
-
-                                            <div class="col-lg-12 text-center">
-                                                <br>
-                                                <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
-                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('application_date,emp_id,on_duty_type')">
-                                                <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
-                                            </div>
+                                            </div> 
                                         </div>
                                     </div>
 

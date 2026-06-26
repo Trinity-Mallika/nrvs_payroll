@@ -1,8 +1,8 @@
 <?php include("../adminsession.php");
 $pagename = "excel_emp_opb_upload.php";
 $title = "Employee Openig Balance";
-$tblname = "salary_structure";
-$tblpkey = "salary_struc_id";
+$tblname = "emp_monthly_leave";
+$tblpkey = "month_leave_id";
 $module = "Employee Openig Balance";
 $submodule = "Employee Openig Balance List";
 $btn_name = "Save";
@@ -33,23 +33,25 @@ if (isset($_POST['upload_excel'])) {
                         $firstRow = false;
                         continue;
                     }
-                  
                     // columns
                     $emp_code      = trim($data[0] ?? '');
-                    $eoff          = trim($data[1] ?? '');
-                    $coff          = trim($data[2] ?? '');
-                    $opening_leave = trim($data[3] ?? '');
-
+                    // $eoff          = trim($data[1] ?? '');
+                    // $eoff2          = trim($data[2] ?? '');
+                    $coff          = trim($data[1] ?? '');
+                    // $lastColumnIndex = count($data) - 1;
+                    // $coff = trim($data[$lastColumnIndex] ?? '');
+              
+                    $month =3;
+                    $year = date('Y');
                     if (empty($emp_code)) {
                         continue;
                     }
 
                     $totalRecords++;
-
                     // default value
-                    $eoff          = $eoff === '' ? 0 : $eoff;
-                    $coff          = $coff === '' ? 0 : $coff;
-                    $opening_leave = $opening_leave === '' ? 0 : $opening_leave;
+                    
+                    $coff  = $coff === '' ? 0 : $coff;
+                   
 
                     // get emp id
                     $emp_id = $obj->getvalfield(
@@ -65,46 +67,39 @@ if (isset($_POST['upload_excel'])) {
                         continue;
                     }
 
-                    $empIds[] = $emp_id;
-
-                    // total leave
-                    $total_leave =
-                        floatval($eoff) +
-                        floatval($coff) +
-                        floatval($opening_leave);
-
-                    $insertRows[] = [
-
-                        "emp_id"         => $emp_id,
-                        "eoff"           => $eoff,
-                        "coff"           => $coff,
-                        "opening_leave"  => $opening_leave,
-                        "total_leave"    => $total_leave,
-
-                        "unit_id"        => $unitid,
-                        "sessionid"      => $sessionid,
-                        "createdby"      => $loginid,
-                        "ipaddress"      => $ipaddress,
-                        "createdate"     => $createdate
+                    $empIds[] = $emp_id; 
+                    $department_id = $obj->getvalfield("employee_master","department_id","emp_id='$emp_id'");
+                    $insertRows[]= [
+                        "emp_id" => $emp_id,
+                        "department_id" => $department_id,
+                        "month" => $month,
+                        "year" => $year, 
+                        "total_leave" => $coff,
+                        "remining_leave" => $coff,
+                        "is_opb" => 1,
+                        "leave_type" => 'earning',
+                        "unit_id" => $unitid,
+                        "createdby" => $loginid,
+                        "ipaddress" => $ipaddress,
+                        "sessionid" => $sessionid,
+                        "createdate" => date("Y-m-d H:i:s")
                     ];
 
                     $insertedCount++;
                 }
 
-                // DELETE OLD DATA
-                if (!empty($empIds)) {
-
-                    $empIds = array_unique($empIds);
-
-                    $obj->bulk_delete(
-                        'emp_leave_allotment',
-                        [
-                            'emp_id'   => $empIds,
-                            'unit_id'  => $unitid,
-                            'sessionid'=> $sessionid
-                        ]
-                    );
-                }
+                // // DELETE OLD DATA
+                // if (!empty($empIds)) {
+                //     $empIds = array_unique($empIds);
+                //     $obj->bulk_delete(
+                //         'emp_monthly_leave',
+                //         [
+                //             'emp_id'   => $empIds,
+                //             'unit_id'  => $unitid,
+                //             'sessionid'=> $sessionid
+                //         ]
+                //     );
+                // }
 
                 // INSERT NEW DATA
                 if (!empty($insertRows)) {
@@ -112,7 +107,7 @@ if (isset($_POST['upload_excel'])) {
                     foreach (array_chunk($insertRows, 500) as $chunk) {
 
                         $obj->bulk_insert(
-                            'emp_leave_allotment',
+                            'emp_monthly_leave',
                             $chunk
                         );
                     }

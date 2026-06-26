@@ -116,97 +116,101 @@ $fieldMap = [
         <div class="page-content">
             <div class="container-fluid">
                 <?php include('inc/bredcrum.php') ?>
-                <div class="row">
-                    <div class="col-lg-12">
-                        <fieldset class="mt-2">
-                            <form action="<?php echo $pagename; ?>" method="get">
-                                <div class="card">
-                                    <div class="card-header border-bottom-dashed">
-                                        <div class="row g-4 align-items-center">
-                                            <div class="col-sm">
-                                                <div>
-                                                    <h5 class="card-title mb-0"> <?= $module; ?></h5>
+                <?php if (!isset($_GET['search'])) { ?>
+                    <div class="row">
+
+                        <div class="col-lg-12">
+                            <fieldset class="mt-2">
+                                <form action="<?php echo $pagename; ?>" method="get">
+                                    <div class="card">
+                                        <div class="card-header border-bottom-dashed">
+                                            <div class="row g-4 align-items-center">
+                                                <div class="col-sm">
+                                                    <div>
+                                                        <h5 class="card-title mb-0"> <?= $module; ?></h5>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+
+                                                <div class="col-lg-3 mb-3">
+                                                    <label for="unit_id" class="form-label">Unit Name<span class="text-danger fw-bold">*</span></label>
+                                                    <select class="form-select chosen-select" name="unit_id" id="unit_id">
+
+                                                        <?php $res = $obj->executequery("Select * from unit_master order by unit_name asc");
+                                                        foreach ($res as $key) {
+                                                            echo "<option value='" . $key['unit_id'] . "'>" . $key['unit_name'] . "</option>";
+                                                        } ?>
+                                                    </select>
+                                                    <script>
+                                                        document.getElementById('unit_id').value = '<?= $unit_id; ?>';
+                                                    </script>
+                                                </div>
+                                                <div class="col-md-3 md-2">
+                                                    <strong><label for="Month">Month<span class="text-danger fw-bold">*</span></label></strong></br>
+                                                    <select name="month" class="chosen-select form-control form-control" id="month">
+                                                        <option value="">--Select Month--</option>
+                                                        <?php for ($iM = 1; $iM <= 12; $iM++) {
+                                                        ?>
+                                                            <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>"><?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?></option>
+
+                                                        <?php
+                                                        } ?>
+                                                    </select>
+                                                    <script>
+                                                        document.getElementById('month').value = '<?php echo $month; ?>';
+                                                    </script>
+                                                </div>
+
+                                                <div class="col-lg-3 col-12">
+                                                    <label for="year" class="form-label">Year<span class="text-danger fw-bold">*</span></label>
+                                                    <select class="form-select chosen-select" name="year" id="year">
+                                                        <option value="">Select</option>
+                                                        <?php
+                                                        $startYear = 2025;
+                                                        $endYear = 2100;
+                                                        for ($year1 = $startYear; $year1 <= $endYear; $year1++) {
+                                                            echo "<option value=\"$year1\">$year1</option>";
+                                                        } ?>
+                                                    </select>
+                                                    <script>
+                                                        document.getElementById('year').value = '<?php echo $year ?>'
+                                                    </script>
+                                                </div>
+
+                                                <div class="col-md-3 md-2">
+                                                    <strong><label for="Fields">Fields<span class="text-danger fw-bold"></span></label></strong>
+                                                    <select id="show_field" class="form-control" multiple>
+                                                        <!-- <option value="1">Mobile Number</option> -->
+                                                        <option value="2">Emp Code</option>
+                                                        <option value="3">Emp Name</option>
+                                                        <option value="4">Aadhaar No</option>
+                                                        <option value="5">Present Salary</option>
+                                                        <option value="6">Grade</option>
+                                                        <option value="7">Department</option>
+                                                        <option value="8">Designation</option>
+                                                        <option value="9">Date of Joining</option>
+                                                        <option value="10">Job Location</option>
+                                                        <option value="11">Shift Hours</option>
+                                                    </select>
+                                                </div>
+                                                <input type="hidden" name="show_field_encoded" id="show_field_encoded">
+
+                                                <div class="col-md-3 mt-4 ">
+                                                    <input type="submit" class="btn btn-primary add-btn" onclick="return checkinputmaster('unit_id,year,month')" name="search" value="Search">
+                                                    <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset" id="reset">Reset</a>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="card-body">
-                                        <div class="row">
-
-                                            <div class="col-lg-3 mb-3">
-                                                <label for="unit_id" class="form-label">Unit Name<span class="text-danger fw-bold">*</span></label>
-                                                <select class="form-select chosen-select" name="unit_id" id="unit_id">
-
-                                                    <?php $res = $obj->executequery("Select * from unit_master order by unit_name asc");
-                                                    foreach ($res as $key) {
-                                                        echo "<option value='" . $key['unit_id'] . "'>" . $key['unit_name'] . "</option>";
-                                                    } ?>
-                                                </select>
-                                                <script>
-                                                    document.getElementById('unit_id').value = '<?= $unit_id; ?>';
-                                                </script>
-                                            </div>
-                                            <div class="col-md-3 md-2">
-                                                <strong><label for="Month">Month<span class="text-danger fw-bold">*</span></label></strong></br>
-                                                <select name="month" class="chosen-select form-control form-control" id="month">
-                                                    <option value="">--Select Month--</option>
-                                                    <?php for ($iM = 1; $iM <= 12; $iM++) {
-                                                    ?>
-                                                        <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>"><?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?></option>
-
-                                                    <?php
-                                                    } ?>
-                                                </select>
-                                                <script>
-                                                    document.getElementById('month').value = '<?php echo $month; ?>';
-                                                </script>
-                                            </div>
-
-                                            <div class="col-lg-3 col-12">
-                                                <label for="year" class="form-label">Year<span class="text-danger fw-bold">*</span></label>
-                                                <select class="form-select chosen-select" name="year" id="year">
-                                                    <option value="">Select</option>
-                                                    <?php
-                                                    $startYear = 2025;
-                                                    $endYear = 2100;
-                                                    for ($year1 = $startYear; $year1 <= $endYear; $year1++) {
-                                                        echo "<option value=\"$year1\">$year1</option>";
-                                                    } ?>
-                                                </select>
-                                                <script>
-                                                    document.getElementById('year').value = '<?php echo $year ?>'
-                                                </script>
-                                            </div>
-
-                                            <div class="col-md-3 md-2">
-                                                <strong><label for="Fields">Fields<span class="text-danger fw-bold"></span></label></strong>
-                                                <select id="show_field" class="form-control" multiple>
-                                                    <!-- <option value="1">Mobile Number</option> -->
-                                                    <option value="2">Emp Code</option>
-                                                    <option value="3">Emp Name</option>
-                                                    <option value="4">Aadhaar No</option>
-                                                    <option value="5">Present Salary</option>
-                                                    <option value="6">Grade</option>
-                                                    <option value="7">Department</option>
-                                                    <option value="8">Designation</option>
-                                                    <option value="9">Date of Joining</option>
-                                                    <option value="10">Job Location</option>
-                                                    <option value="11">Shift Hours</option>
-                                                </select>
-                                            </div>
-                                            <input type="hidden" name="show_field_encoded" id="show_field_encoded">
-
-                                            <div class="col-md-3 mt-4 ">
-                                                <input type="submit" class="btn btn-primary add-btn" onclick="return checkinputmaster('unit_id,year,month')" name="search" value="Search">
-                                                <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset" id="reset">Reset</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </fieldset>
+                                </form>
+                            </fieldset>
+                        </div>
                     </div>
-                </div>
+                <?php } ?>
+
                 <?php if (isset($_GET['search'])) {   ?>
                     <div class="row mt-4 mb-4">
                         <div class="col-lg-12">
@@ -214,8 +218,20 @@ $fieldMap = [
                                 <div class="card-header border-bottom-dashed">
                                     <div class="row g-4 align-items-center">
                                         <div class="col-sm">
-                                            <div class="d-flex justify-content-between">
-                                                <h5 class="card-title mb-0"> <?= $submodule; ?></h5>
+                                            <div class="d-flex justify-content-between align-items-center">
+
+                                                <h5 class="card-title mb-0">
+                                                    <?php echo $submodule; ?>
+                                                </h5>
+
+                                                <h5 class="mb-0 fw-bold text-primary">
+                                                    <?= strtoupper(date('F', mktime(0, 0, 0, $month, 1))) . " - " . $year; ?>
+                                                </h5>
+
+                                                <a href="<?php echo $pagename; ?>" class="btn btn-primary btn-sm">
+                                                    Search Again
+                                                </a>
+
                                             </div>
                                         </div>
                                     </div>
@@ -225,17 +241,17 @@ $fieldMap = [
                                     $employees = $obj->executequery("SELECT e.emp_id,e.unit_id,e.department_id,e.is_esic,e.emp_code,e.first_name,e.last_name,e.mobile_no,e.aadhar_no,e.shift_id,
                                                         e.basic_salary,e.date_of_joining,e.job_location,g.grade_name,d.department_name,des.designation,s.working_hour AS shift_hours  FROM employee_master e
 
-                                                    LEFT JOIN grade_master g 
+                                                    LEFT JOIN grade_master g
                                                         ON g.grade_id = e.grade_id
 
-                                                    LEFT JOIN department_master d 
+                                                    LEFT JOIN department_master d
                                                         ON d.department_id = e.department_id
 
-                                                    LEFT JOIN designation_master des 
+                                                    LEFT JOIN designation_master des
                                                         ON des.designation_id = e.designation_id
 
-                                                    LEFT JOIN shift_master s 
-                                                        ON s.working_hour = e.shift_id 
+                                                    LEFT JOIN shift_master s
+                                                        ON s.working_hour = e.shift_id
 
                                                     $crit2 group by e.emp_id
                                                 ");
@@ -251,7 +267,7 @@ $fieldMap = [
 
                                     $currentDate = date("Y-m-d");
 
-                                    $summaryRows = $obj->executequery("SELECT 
+                                    $summaryRows = $obj->executequery("SELECT
                                         a.emp_id,
                                         a.attendance_date,
                                         a.attendance_status,
@@ -266,17 +282,17 @@ $fieldMap = [
                                         a.outtime,
                                         a.lastupdated,
                                         u.username,
-                                        u.fullname, 
-                                        u.mobile, 
+                                        u.fullname,
+                                        u.mobile,
                                         u.email,
                                         cu.username as c_username,
                                         cu.fullname as c_fullname,
                                         cu.mobile as c_mobile,
-                                        cu.email as c_email                                    
+                                        cu.email as c_email
                                     FROM attendance_entry a
-                                    LEFT JOIN user u 
+                                    LEFT JOIN user u
                                         ON u.userid = a.updateby
-                                    LEFT JOIN user cu 
+                                    LEFT JOIN user cu
                                         ON cu.userid = a.createdby
                                     WHERE a.emp_id IN ($empIdsStr)
                                     AND a.attendance_date BETWEEN '$fromDate' AND '$toDate'
@@ -349,7 +365,7 @@ $fieldMap = [
                                                                 echo "<td>{$value}</td>";
                                                             }
 
-                                                            echo "<td>" . $att['attendance_date'] . "</td>";
+                                                            echo "<td>" . $obj->dateformatindia($att['attendance_date'])  . "</td>";
                                                             echo "<td>" . $att['prev_attendance_status'] . "</td>";
                                                             echo "<td>" . $att['attendance_status'] . "</td>";
                                                             echo "<td>" . $att['intime'] . "</td>";
@@ -361,10 +377,10 @@ $fieldMap = [
                                                                 <strong>In Reason:</strong> " . ($att['in_remark'] ?: '-') . "<br>
                                                                 <strong>Out Reason:</strong> " . ($att['out_remark'] ?: '-') . "
                                                             </td>";
-                                                            echo "<td>" . $att['createdate'] . "</td>";
+                                                            echo "<td>" . $obj->dateformatindia($att['createdate'])  . "</td>";
                                                             echo "<td> ";
                                                             if (!empty($att['c_username'])) {
-                                                                echo " 
+                                                                echo "
                                                                 <strong>{$att['c_fullname']}</strong>
                                                                 <div style='font-size:12px;color:#666'>
                                                                     User: {$att['c_username']}<br>
@@ -376,7 +392,7 @@ $fieldMap = [
                                                             echo "</td> ";
                                                             echo "<td> ";
                                                             if (!empty($att['username'])) {
-                                                                echo " 
+                                                                echo "
                                                                 <strong>{$att['fullname']}</strong>
                                                                 <div style='font-size:12px;color:#666'>
                                                                     User: {$att['username']}<br>
@@ -386,7 +402,8 @@ $fieldMap = [
                                                              ";
                                                             }
                                                             echo "</td> ";
-                                                            echo "<td>" . $att['lastupdated'] . "</td>";
+                                                            echo "<td>" . $obj->dateformatindia($att['lastupdated'])  . "</td>";
+
                                                             echo "</tr>";
                                                         }
                                                     }

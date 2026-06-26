@@ -36,116 +36,7 @@ if (isset($_GET['on_duty_type'])) {
     $on_duty_type = "";
 };
 
-if (isset($_POST['updatess'])) {
-    $updates = $_POST['updatess'];
-    $emp_id = $obj->test_input($_POST['emp_id']);
-    $emp_data = $obj->select_record("employee_master", ['emp_id' => $emp_id]);
-    $department_id = $emp_data['department_id'];
-    $shift_hrs = $emp_data['shift_id'];
-    $unit_id = $emp_data['unit_id'];
-    $basic_salary = $emp_data['basic_salary'];
-
-
-    foreach ($updates as $row) {
-        $id = $row['id'];
-        $status = $row['status'];
-        $remark = $row['remark'];
-        $intime = $row['intime'];
-        $outtime = $row['outtime'];
-        $date = $row['date'];
-        $on_duty_type = $row['on_duty_type'];
-        $obj->update_record("on_duty_details", ['on_duty_details_id' => $id], ['status' => $status, 'updatedby' => $loginid, 'appr_remark' => $remark, 'lastupdated' => $createdate]);
-        if ($status == 1) {
-            $month = date('m', strtotime($date));
-            $year  = date('Y', strtotime($date));
-            $where = array(
-                'emp_id' => $emp_id,
-                'attendance_date'  => $date,
-                'year'   => $year,
-                'month'   => $month,
-                'unit_id'   => $unit_id
-            );
-
-            $obj->delete_record('attendance_entry', $where);
-            $sql = "SELECT shift_id, in_time, out_time,working_hour, is_cross_day,grace_time_in,grace_time_out,ABS(TIME_TO_SEC(TIMEDIFF(in_time, '$intime'))) AS time_diff FROM shift_master WHERE unit_id = '$unit_id' AND working_hour = '$shift_hrs' ORDER BY time_diff ASC LIMIT 1";
-
-            $res = $obj->executequery($sql);
-            if (empty($res)) continue;
-            $shift = $res[0];
-            $office_in_time = $shift['in_time'];
-            $office_out_time = $shift['out_time'];
-            $shift_id     = $shift['shift_id'];
-            $office_working_hour = $shift['working_hour'];
-            $in_margin = $shift['grace_time_in'];
-            $out_margin = $shift['grace_time_out'];
-
-            $actualIn  = new DateTime("$date $intime");
-            $actualOut = new DateTime("$date $outtime");
-
-            if ($actualOut <= $actualIn) {
-                $actualOut->modify('+1 day');
-            }
-
-            $workedMinutes = floor(
-                ($actualOut->getTimestamp() - $actualIn->getTimestamp()) / 60
-            );
-
-            $timeParts = explode(':', $shift['working_hour']);
-            $officeMinutes =
-                ((int)($timeParts[0] ?? 0) * 60) +
-                ((int)($timeParts[1] ?? 0));
-
-            $minimumRequired = $officeMinutes - ($in_margin + $out_margin);
-
-            $attendance_status = ($workedMinutes < $minimumRequired)
-                ? "Half Day"
-                : "Present";
-
-            $working_hours = gmdate("H:i:s", $workedMinutes * 60);
-
-
-            $form_date = [
-                'emp_id' => $emp_id,
-                'department_id' => $department_id,
-                'attendance_date' => $date,
-                'attendance_stamp' => $date . ' ' . $intime,
-                'month' => $month,
-                'working_hours' => $working_hours,
-                'year' => $year,
-                'attendance_status' => $attendance_status,
-                'shift_id' => $shift_id,
-                'intime' => $intime,
-                'outtime' => $outtime,
-                'entry_type' => $on_duty_type,
-                'entry_type_out' =>  $on_duty_type,
-                'in_status' => 'IN',
-                'out_status' => 'OUT',
-                'unit_id' => $unit_id,
-                'sessionid' => $sessionid,
-                'basic_salary' => $basic_salary,
-                'createdate' => date('Y-m-d'),
-                'createtime' =>  date('H:i:s'),
-                'ipaddress' => $ipaddress,
-            ];
-            $lastid = $obj->insert_record_lastid("attendance_entry", $form_date);
-            $form_data1 = array(
-                "primary_id" => $lastid,
-                "flag" => 'Punch IN and OUT Attendence',
-                "activity_type" => 'Attendence IN/OUT From On Duty',
-                "createdby" => $loginid,
-                "pagename" => $pagename,
-                "created_date" => $createdate,
-                "created_time" => date('H:i:s'),
-                "unit_id" => $unitid,
-                'ipaddress' => $ipaddress,
-                "sessionid" => $sessionid
-            );
-            $logactivity = $obj->insert_record("logactivity_master", $form_data1);
-        }
-    }
-    echo "success";
-    die;
-}
+ 
 ?>
 
 <!doctype html>
@@ -176,6 +67,7 @@ if (isset($_POST['updatess'])) {
                 <?php //include('inc/alert.php'); 
                 ?>
                 <div class="row">
+                      <?php if (!isset($_GET['submit'])) { ?>
 
                     <div class="col-lg-12">
                         <div class="card" id="customerList">
@@ -231,9 +123,7 @@ if (isset($_POST['updatess'])) {
                                                     value="<?= $od_date_to ?>">
                                             </div>
                                         </div>
-                                        <div class="col-lg-12 text-center mt-4">
-                                            <input type="hidden" name="<?php echo $tblpkey ?>"
-                                                value="<?php echo $keyvalue ?>">
+                                        <div class="col-lg-12 text-center mt-4"> 
                                             <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn"
                                                 value="<?php echo $btn_name ?> "
                                                 onClick="return checkinputmaster('application_date,emp_id,on_duty_type')">
@@ -245,9 +135,21 @@ if (isset($_POST['updatess'])) {
                             </div>
                         </div>
                     </div>
-
+                    <?php } ?>
+                    <?php if (isset($_GET['submit'])) { ?>
                     <div class="col-lg-12">
                         <div class="card" id="customerList">
+                            <div class="card-header border-bottom-dashed">
+                                    <div class="row g-4 align-items-center">
+                                        <div class="col-sm">
+                                            <div>
+                                                <h5 class="card-title mb-0"><?php echo $submodule; ?> <a href="on_duty_list.php"
+                                                        class="float-end btn btn-primary btn-sm ms-2">Search Again</a> <a href="on_duty.php"
+                                                    class="float-end btn btn-primary btn-sm">Add</a></h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-lg-12 mb-3">
@@ -280,54 +182,54 @@ if (isset($_POST['updatess'])) {
                                                     // $res = $obj->executequery("select od.*,em.first_name , em.last_name , em.emp_code from $tblname od left join employee_master as em on od.emp_id=em.emp_id left join on_duty_details odd on od.on_duty_id = odd.on_duty_id GROUP BY od.on_duty_id order by od.$tblpkey desc");
 
                                                     $res = $obj->executequery("
-    SELECT 
-        od.*,
-        em.first_name,
-        em.last_name,
-        em.emp_code,
-        MIN(odd.date) as from_date,
-        MAX(odd.date) as to_date,
-        COUNT(odd.on_duty_details_id) as total_day,
-        SUM(CASE WHEN odd.status = 1 THEN 1 ELSE 0 END) as approved_days,
-        SUM(CASE WHEN odd.status = 2 THEN 1 ELSE 0 END) as rejected_days,
-        SUM(CASE WHEN odd.status = 0 THEN 1 ELSE 0 END) as pending_days,
-          cu.fullname as created_name,
-         cu.username as created_username,
-         cu.mobile as created_mobile,
+                                                        SELECT 
+                                                            od.*,
+                                                            em.first_name,
+                                                            em.last_name,
+                                                            em.emp_code,
+                                                            MIN(odd.date) as from_date,
+                                                            MAX(odd.date) as to_date,
+                                                            COUNT(odd.on_duty_details_id) as total_day,
+                                                            SUM(CASE WHEN odd.status = 1 THEN 1 ELSE 0 END) as approved_days,
+                                                            SUM(CASE WHEN odd.status = 2 THEN 1 ELSE 0 END) as rejected_days,
+                                                            SUM(CASE WHEN odd.status = 0 THEN 1 ELSE 0 END) as pending_days,
+                                                            cu.fullname as created_name,
+                                                            cu.username as created_username,
+                                                            cu.mobile as created_mobile,
 
-         uu.fullname as updated_name,
-         uu.username as updated_username,
-         uu.mobile as updated_mobile
-    FROM on_duty_master od
-    LEFT JOIN employee_master em 
-        ON od.emp_id = em.emp_id
-        LEFT JOIN user cu 
-           ON od.createdby = cu.userid LEFT JOIN user uu ON od.updatedby = uu.userid
-    LEFT JOIN on_duty_details odd 
-        ON od.on_duty_id = odd.on_duty_id where od.unit_id='$unitid' and od.type='on_duty' $crit
-    GROUP BY od.on_duty_id
-    ORDER BY od.$tblpkey DESC
-");
+                                                            uu.fullname as updated_name,
+                                                            uu.username as updated_username,
+                                                            uu.mobile as updated_mobile
+                                                        FROM on_duty_master od
+                                                        LEFT JOIN employee_master em 
+                                                            ON od.emp_id = em.emp_id
+                                                            LEFT JOIN user cu 
+                                                            ON od.createdby = cu.userid LEFT JOIN user uu ON od.updatedby = uu.userid
+                                                        LEFT JOIN on_duty_details odd 
+                                                            ON od.on_duty_id = odd.on_duty_id where od.unit_id='$unitid' and od.type='on_duty' $crit
+                                                        GROUP BY od.on_duty_id
+                                                        ORDER BY od.$tblpkey DESC
+                                                    ");
                                                     foreach ($res as $row) {
 
                                                     ?>
                                                     <tr id="tr_<?= $row["on_duty_id"]; ?>" data-details="
-                                    <div style='background:#dafced; padding:4px;'>
-                                    <?php if (!empty($row['created_name'])): ?>
-                                    Added by (User: <?= $row['created_name'] ?>,
-                                    Username: <?= $row['created_username'] ?>,
-                                    Mobile: <?= $row['created_mobile'] ?>,
-                                     Date: <?= $row['createdate'] ?>,)<br>
-                                    <?php endif; ?>
+                                                        <div style='background:#dafced; padding:4px;'>
+                                                        <?php if (!empty($row['created_name'])): ?>
+                                                        Added by (User: <?= $row['created_name'] ?>,
+                                                        Username: <?= $row['created_username'] ?>,
+                                                        Mobile: <?= $row['created_mobile'] ?>,
+                                                        Date: <?= $row['createdate'] ?>,)<br>
+                                                        <?php endif; ?>
 
-                                    <?php if (!empty($row['updated_name'])): ?>
-                                    Last Edited by (User: <?= $row['updated_name'] ?>,
-                                    Username: <?= $row['updated_username'] ?>,
-                                    Mobile: <?= $row['updated_mobile'] ?>,
-                                    Date: <?= $row['lastupdated'] ?>) 
-                                    <?php endif; ?>
-                                     </div>
-                                ">
+                                                        <?php if (!empty($row['updated_name'])): ?>
+                                                        Last Edited by (User: <?= $row['updated_name'] ?>,
+                                                        Username: <?= $row['updated_username'] ?>,
+                                                        Mobile: <?= $row['updated_mobile'] ?>,
+                                                        Date: <?= $row['lastupdated'] ?>) 
+                                                        <?php endif; ?>
+                                                        </div>
+                                                    ">
                                                         <td class="details-control text-center" style="cursor:pointer;">
                                                             <?php echo $slno++; ?> <i
                                                                 class="ri-add-circle-fill text-primary"></i></td>
@@ -422,7 +324,7 @@ if (isset($_POST['updatess'])) {
 
                         </div>
                     </div>
-
+                <?php } ?>
                 </div>
                 <!--end col-->
             </div>
@@ -564,9 +466,19 @@ if (isset($_POST['updatess'])) {
 
     }
 
-    $(document).on('change', '.approve_chk', function() {
+   $(document).on('change', '.approve_chk', function() {
         let row = $(this).closest('tr');
         if ($(this).is(':checked')) {
+            row.find('.reject_chk').prop('checked', false);
+            row.find('.pending_chk').prop('checked', false);
+        }
+    });
+
+ 
+    $(document).on('change', '.pending_chk', function () {
+        let row = $(this).closest('tr');
+        if ($(this).is(':checked')) {
+            row.find('.approve_chk').prop('checked', false);
             row.find('.reject_chk').prop('checked', false);
         }
     });
@@ -575,41 +487,53 @@ if (isset($_POST['updatess'])) {
         let row = $(this).closest('tr');
         if ($(this).is(':checked')) {
             row.find('.approve_chk').prop('checked', false);
+            row.find('.pending_chk').prop('checked', false);
         }
-    }); // Approve All
-    $(document).on('change', '#appr_check', function() {
-
+    }); 
+    // Approve All
+    $(document).on('change', '#appr_check', function () {
         if ($(this).is(':checked')) {
-
             $('#rej_check').prop('checked', false);
+            $('#pen_check').prop('checked', false);
 
             $('.approve_chk:not(:disabled)').prop('checked', true);
             $('.reject_chk:not(:disabled)').prop('checked', false);
-
+            $('.pending_chk:not(:disabled)').prop('checked', false);
         } else {
-
             $('.approve_chk:not(:disabled)').prop('checked', false);
-
         }
-
     });
     // Reject All
-    $(document).on('change', '#rej_check', function() {
-
+    $(document).on('change', '#rej_check', function () {
         if ($(this).is(':checked')) {
 
             $('#appr_check').prop('checked', false);
+            $('#pen_check').prop('checked', false);
+
+            $('.approve_chk').prop('checked', false);
+            $('.pending_chk').prop('checked', false);
 
             $('.reject_chk:not(:disabled)').prop('checked', true);
-            $('.approve_chk:not(:disabled)').prop('checked', false);
 
         } else {
-
             $('.reject_chk:not(:disabled)').prop('checked', false);
-
         }
-
     });
+     // pending All
+    $(document).on('change', '#pen_check', function () {
+        if ($(this).is(':checked')) {
+            $('#appr_check').prop('checked', false);
+            $('#rej_check').prop('checked', false);
+            // Sabko uncheck karo
+            $('.approve_chk').prop('checked', false);
+            $('.reject_chk').prop('checked', false);
+            // Sirf enabled pending ko check karo
+            $('.pending_chk:not(:disabled)').prop('checked', true);
+        } else {
+            $('.pending_chk:not(:disabled)').prop('checked', false);
+        }
+    });
+
 
 
     function updateOnDutyStatus() {
@@ -617,13 +541,26 @@ if (isset($_POST['updatess'])) {
         let updates = [];
         $('.detail_row').each(function() {
             let id = $(this).data('id');
-            let approveChecked = $(this).find('.approve_chk').is(':checked');
-            let rejectChecked = $(this).find('.reject_chk').is(':checked');
-            let status = 0;
+            let approveBox = $(this). find('.approve_chk');
+            let rejectBox  = $(this). find('.reject_chk');
+            let pendingBox = $(this).find('.pending_chk');
 
-            if (approveChecked) status = 1;
-            else if (rejectChecked) status = 2;
-            else return;
+            let approveChecked = approveBox.is(':checked');
+            let rejectChecked = rejectBox.is(':checked');
+            let pendingChecked = pendingBox.is(':checked');
+            
+
+            let status = 0;
+            if (approveChecked) {
+                status = 1;
+            } else if (rejectChecked) {
+                status = 2;
+            } else if (pendingChecked) {
+                status = 0;
+            } else {
+                return;
+            }
+
 
             let remark = $('#modal_appr_remark_' + id).val();
             let intime = $('#modal_intime_' + id).val();
@@ -650,25 +587,53 @@ if (isset($_POST['updatess'])) {
         btn.prop("disabled", true);
         btn.html('<i class="fa fa-spinner fa-spin"></i> Saving...');
 
+ 
+
         $.ajax({
-            url: "",
+            url: "on_duty_approve.php",
             type: "POST",
             data: {
                 updatess: updates,
                 emp_id: emp_id
             },
             success: function(response) {
-                console.log(response);
-                Swal.fire({
-                    title: "Success!",
-                    text: "Updated Successfully",
-                    icon: "success",
-                    showConfirmButton: false,
-                    timer: 1500,
-                    timerProgressBar: true
-                }).then(() => {
-                    location.reload();
-                });
+                console.log('response',response);
+               let res = JSON.parse(response);
+                let message = '';
+                if (res.pendingCount > 0) {
+                    message += res.pendingCount + ' leave(s) moved to pending successfully.<br>';
+                }
+                if (res.approvedCount > 0) {
+                    message += res.approvedCount + ' leave(s) approved successfully.<br>';
+                }
+                if (res.rejectedCount > 0) {
+                    message += res.rejectedCount + ' leave(s) rejected successfully.<br>';
+                }
+                if (res.errors.length > 0) {
+                    message += '<br><b>Skipped Records:</b><br>';
+                    res.errors.forEach(function(item) {
+                        let formattedDate = item.date.split('-').reverse().join('-');
+                        message += formattedDate + ' - ' + item.reason + '<br>';
+                    });
+                    Swal.fire({
+                        title: "Completed With Warnings",
+                        html: message,
+                        icon: "warning",
+                        width: 700
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: "Success",
+                        html: message,
+                        icon: "success"
+                    }).then(() => {
+                        location.reload();
+                    });
+                }
+                btn.prop("disabled", false);
+                btn.html("Update");
 
             },
             error: function() {

@@ -13,7 +13,7 @@ $emp_code_list = [];
 /* ================= CASE HANDLING ================= */
 
 if (!empty($department_id) && empty($emp_ids)) {
-    // ✅ Case 1: Only Department selected
+    
 
     $res = $obj->executequery("SELECT emp_id,emp_code FROM employee_master WHERE department_id='$department_id' AND unit_id='$unitid'");
     foreach ($res as $row) {
@@ -121,7 +121,7 @@ $emp_ids_final = implode(',', $emp_id_list);
 $check = $obj->getvalfield(
     "attendance_entry",
     "COUNT(*)",
-    "emp_id IN ($emp_ids_final)
+    "emp_id IN ($emp_ids_final) AND entry_type='machine'
      AND attendance_date BETWEEN '$from_date' AND '$to_date'
      AND unit_id='$unitid'"
 );

@@ -63,7 +63,7 @@
                 wrapper.appendChild(scrollbar);
 
                 function updateWidth() {
-                    inner.style.width = table.scrollWidth + "px";
+                    inner.style.width = (table.scrollWidth + 200) + "px";
                 }
 
                 updateWidth();
@@ -78,7 +78,13 @@
                 });
 
                 // Resize support
+                setTimeout(updateWidth, 1000);
+
                 window.addEventListener("resize", updateWidth);
+
+                $(window).on('load', function() {
+                    updateWidth();
+                });
 
             });
 

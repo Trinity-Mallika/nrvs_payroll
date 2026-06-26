@@ -12,9 +12,26 @@ $emp_id = (isset($_GET['emp_id'])) ? $obj->test_input($_GET['emp_id']) : '';
 $imgpath1 = 'uploaded/on_duty/';
 $current_date = date('Y-m-d');
 
-$app_month = date('m', strtotime($current_date));
+$app_month = date('n', strtotime($current_date));
 $app_year  = date('Y', strtotime($current_date));
 
+
+if($emp_id > 0){
+    $extra_off_data = $obj->getExtraOffBalance($emp_id,$app_month,$app_year);
+    $extra_off = $extra_off_data['balance'] ?? 0;
+    //$opening_leave_balance = $obj->get_opening_leave_balance($emp_id,$sessionid,$app_month,$app_year);
+    $opening_leave_balance = 0;
+    $earn_leave = $obj->getEarningLeave($emp_id,$sessionid,$app_month,$app_year );
+    $c_off = $obj->getEmpCoffLeave($emp_id, $sessionid, $app_month,$app_year);
+ 
+}else{
+
+    $extra_off = 0;
+    $opening_leave_balance = 0;
+    $earn_leave = 0;
+    $c_off = 0;
+}
+ 
 if (isset($_POST['submit'])) {
     $application_date  = $obj->test_input($_POST['application_date']);
     $emp_id = $obj->test_input($_POST['emp_id']);
@@ -25,8 +42,7 @@ if (isset($_POST['submit'])) {
     $total_day = $obj->test_input($_POST['total_day']);
     $extra_off = $obj->test_input($_POST['extra_off']);
     $earn_leave = $obj->test_input($_POST['earn_leave']);
-    $opening_leave_balance = $obj->test_input($_POST['opening_leave_balance']);
-
+   
     $doc_file = $_FILES["doc_file"] ?? '';
 
     $allowedTypes = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'jfif', 'xlsx'];
@@ -44,6 +60,7 @@ if (isset($_POST['submit'])) {
         "leave_address" => $leave_address,
         "contact_no" => $contact_no,
         "substitute_emp_id" => $substitute_emp_id,
+        "entry_by" => 'hr',
         "total_day" => $total_day,
         "unit_id" => $unitid,
         "createdby" => $loginid,
@@ -145,9 +162,7 @@ if (isset($_GET[$tblpkey])) {
     $leave_address = "";
     $substitute_emp_id = "";
     $reason = "";
-    $extra_off = "0";
-    $opening_leave_balance = "0";
-    $earn_leave = "0";
+    
     $doc_file = "";
     $img = "doc_file";
      
@@ -293,12 +308,13 @@ if (isset($_POST['leave_apply_id'])) {
                                         </div>
                                         <div class="col-lg-2 mb-2">
                                             <div class="p-2 border rounded bg-light text-center">
-                                                <small class="text-muted">Opening Leave</small><br>
-                                                <input type="text" name="opening_leave_balance" id="opening_leave_balance" value="<?=$opening_leave_balance?>"
+                                                <small class="text-muted">C Off</small><br>
+                                                <input type="text" name="c_off" id="c_off" value="<?=$c_off?>"
                                                     class="form-control form-control-sm text-center fw-bold border-0 bg-light"
                                                     readonly>
                                             </div>
                                         </div>
+                                        
                                     </div>
                                 </div>
                             </div>
@@ -311,7 +327,6 @@ if (isset($_POST['leave_apply_id'])) {
                                 <div class="card" id="customerList">
                                     <div class="card-body">
                                         <div class="row">
-
                                             <!-- TOP BAR -->
                                             <div class="table-responsive">
                                                 <table class="display table table-sm table-bordered" style="width:100%">
@@ -335,20 +350,21 @@ if (isset($_POST['leave_apply_id'])) {
                                                             <input type="number" id="no_of_days" class="form-control form-control-sm" style="width:70px;" value="1">
                                                         </td>
                                                         <td>
-                                                            <select class="form-select form-select-sm chosen-select" id="multi_leave_day">
+                                                            <select class="form-select form-select-sm chosen-select"            id="multi_leave_day">
                                                                 <option value="FD">Full Day</option>
                                                                 <option value="FHD">First Half Day</option>
-                                                                <option value="SHD">Second Half Day</option>
+                                                                <option value="SHD">Second Half Day</option>  
                                                                 <!-- <option value="SL">Sick Leave</option> -->
                                                             </select>
                                                         </td>
                                                         <td>
                                                             <select class="form-select form-select-sm chosen-select" id="multi_leave_type">
                                                                 <option value="EL">EARNED LEAVE</option>
-                                                                <!-- <option value="WL">WEEKLY LEAVE</option> -->
+                                                                 <!-- <option value="WL">WEEKLY LEAVE</option>   -->
                                                                 <option value="EO">EXTRA OFF</option>
-                                                                <option value="L">OPENING LEAVE</option>
-                                                                <option value="LWP">LEAVE WITHOUT PAY</option> 
+                                                                <option value="CO">C-OFF</option>
+                                                                <!-- <option value="L">OPENING LEAVE</option> -->
+                                                                <!-- <option value="LWP">LEAVE WITHOUT PAY</option>  -->
                                                             </select>
                                                         </td>
                                                         <td>
@@ -358,10 +374,8 @@ if (isset($_POST['leave_apply_id'])) {
                                                             <button type="button" class="btn btn-sm btn-success" onclick="save_multi_leave_details();" id="ajax_multi_btn">Add</button>
                                                         </td>
                                                     </tbody>
-
                                                 </table>
                                             </div>
-
                                         </div>
                                     </div>
                                 </div>
@@ -372,7 +386,7 @@ if (isset($_POST['leave_apply_id'])) {
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-lg-12 mb-3">
-                                            <!-- TOP BAR -->
+                                            <!-- TOP BAR --> 
                                             <div class="table-responsive">
                                                 <table class="display table table-sm table-bordered" style="width:100%">
                                                     <thead>
@@ -394,7 +408,7 @@ if (isset($_POST['leave_apply_id'])) {
                                                             <select class="form-select form-select-sm chosen-select" id="leave_day">
                                                                 <option value="FD">Full Day</option>
                                                                 <option value="FHD">First Half Day</option>
-                                                                <option value="SHD">Second Half Day</option>
+                                                                <option value="SHD">Second Half Day</option>  
                                                                 <!-- <option value="SL">Sick Leave</option> -->
                                                             </select>
                                                         </td>
@@ -402,8 +416,9 @@ if (isset($_POST['leave_apply_id'])) {
                                                             <select class="form-select form-select-sm chosen-select" id="leave_type">
                                                                 <option value="EL">EARNED LEAVE</option>
                                                                 <option value="EO">EXTRA OFF</option>
-                                                                <option value="L">OPENING LEAVE</option>
-                                                                <option value="LWP">LEAVE WITHOUT PAY</option>
+                                                                <option value="CO">C-OFF</option>
+                                                                <!-- <option value="L">OPENING LEAVE</option>
+                                                                <option value="LWP">LEAVE WITHOUT PAY</option> -->
                                                             </select>
                                                         </td>
                                                         <td>
@@ -636,7 +651,7 @@ if (isset($_POST['leave_apply_id'])) {
                 },
                 success: function(response) {
                     let res = JSON.parse(response);
-                    console.log('res', res);
+                   
                     if (res.status === "success") {
                         Swal.fire({
                             icon: 'success',

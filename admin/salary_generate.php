@@ -16,6 +16,7 @@ $year = date('Y');
 $emp_id =  $department_id = "";
 $unit_pf_rate = $obj->getvalfield("unit_master", "pf_rate", "unit_id='$unitid'");
 $unit_esic_rate = $obj->getvalfield("unit_master", "esic_rate", "unit_id='$unitid'");
+ 
 function roundVal($v)
 {
     return round((float)$v);
@@ -32,10 +33,7 @@ if (isset($_POST['month'], $_POST['year'])) {
     } else {
         $prev_month = $month - 1;
         $prev_year  = $year;
-    }
-
-
-
+    } 
     $department_id = (isset($_POST['department_id'])) ? $obj->test_input($_POST['department_id']) : 0;
     $deleteWhere = [
         'month'   => $month,
@@ -52,16 +50,16 @@ if (isset($_POST['month'], $_POST['year'])) {
     }
     $totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 
-    $overtimeRows = $obj->executequery("
-    SELECT emp_id, no_of_overtime
-    FROM emp_overtime
-    WHERE month='$month' AND year='$year'
-");
+//     $overtimeRows = $obj->executequery("
+//     SELECT emp_id, no_of_overtime
+//     FROM emp_overtime
+//     WHERE month='$month' AND year='$year'
+// ");
 
-    $overtimeMap = [];
-    foreach ($overtimeRows as $r) {
-        $overtimeMap[$r['emp_id']] = $r['no_of_overtime'];
-    }
+//     $overtimeMap = [];
+//     foreach ($overtimeRows as $r) {
+//         $overtimeMap[$r['emp_id']] = $r['no_of_overtime'];
+//     }
 
 
     $loanAdvanceRows = $obj->executequery("
@@ -76,127 +74,296 @@ if (isset($_POST['month'], $_POST['year'])) {
         $loanMap[$r['emp_id']][$r['type']] = $r;
     }
 
-    // $where = array(
-    //     'month'  => $month,
-    //     'department_id'  => $department_id,
-    //     'year'   => $year,
-    //     'unit_id'   => $unitid
-    // );
+$is_locked = $obj->getvalfield("salary_structure","count(*)","payment_status=2 and month='$month' and year='$year' $crit and unit_id='$unitid'");
+if ($is_locked > 0) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Some salaries are locked. Please unlock the locked salary records before generating salary again.'
+    ]);
+    die;
+}
 
-    $obj->delete_record('salary_structure', $deleteWhere);
+ 
 
-    //$employees = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' $crit");
-    $employees = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' $crit AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
+
+
+$obj->delete_record('salary_structure', $deleteWhere);
+
+$form_data1_del = array(
+    "primary_id" => 0,
+    "flag" => 'Multiple Record Deleted Successfully',
+    "activity_type" => 'Deleted',
+    "createdby" => $loginid,
+    "pagename" => 'salary_generate.php',
+    "created_date" => $createdate,
+    "created_time" => date('H:i:s'),
+    "unit_id" => $unitid,
+    'ipaddress' => $ipaddress,
+    "sessionid" => $sessionid
+);
+$logactivity = $obj->insert_record("logactivity_master", $form_data1_del);
+
+ 
+$firstDateOfMonth = date("Y-m-01", strtotime("$year-$month-01"));
+$lastDateOfMonth = date("Y-m-t", strtotime("$year-$month-01")); 
+$employees = $obj->executequery("
+    SELECT 
+        e.*
+    FROM employee_master e
+    /* Last active/inactive status till selected month */
+    LEFT JOIN (
+        SELECT a1.*
+        FROM emp_active_status a1
+        INNER JOIN (
+            SELECT 
+                emp_id,
+                MAX(active_id) AS last_id
+            FROM emp_active_status
+            WHERE (
+                    YEAR(last_inactive_date) < '$year'
+                    OR (
+                        YEAR(last_inactive_date) = '$year'
+                        AND MONTH(last_inactive_date) <= '$month'
+                    )
+                )
+            GROUP BY emp_id
+        ) a2 
+            ON a1.active_id = a2.last_id
+    ) eas 
+        ON eas.emp_id = e.emp_id
+    WHERE 
+        e.unit_id = '$unitid'
+        AND e.is_active = '1'
+        AND e.date_of_joining <= '$lastDateOfMonth'
+        $crit
+        AND (
+            e.resign_status != '1'
+            OR (
+                e.resign_status = '1'
+                AND e.last_working_date >='$firstDateOfMonth'
+            )
+        )
+        /* Show employee if:
+           1. No record in emp_active_status => Active
+           2. Last record is active
+        */
+        AND (
+            eas.active_id IS NULL
+            OR eas.is_active = '1'
+        )   
+    GROUP BY e.emp_id
+    ORDER BY e.first_name ASC
+"); 
+ 
+    if(count($employees) > 0){
+        $empIds = array_column($employees, 'emp_id');
+        $empIdsStr = implode(",", $empIds);
+
+        $summaryRows = $obj->executequery("
+        SELECT emp_id,
+            SUM(attendance_status='Present') AS present,
+            SUM(attendance_status='Half Day') AS half,
+            SUM(attendance_status IN('Weekly Leave','Earning Leave','C Off','Leave','Public Holiday')) AS paid_leave_day,
+            SUM(attendance_status IN('Half Weekly Leave','Half Earning Leave','Half C Off','Half Leave')) AS tot_half_day,
+            SUM(attendance_status IN('Weekly Leave','Earning Leave','C Off','Leave','Extra Off','Public Holiday')) AS paid_leave,
+            SUM(attendance_status IN('Half Weekly Leave','Half Earning Leave','Half C Off','Half Leave','Half Extra Off')) AS tot_half,
+            SUM(attendance_status ='Half Extra Off') AS half_extra_off,
+            SUM(attendance_status ='Extra Off') AS full_extra_off,
+            SUM(
+                CASE 
+                    WHEN attendance_status = 'Leave' THEN 1
+                    WHEN attendance_status = 'Half Leave' THEN 0.5
+                    ELSE 0
+                END
+            ) AS total_opening_leave
+        FROM attendance_entry
+        WHERE emp_id IN ($empIdsStr) AND month='$month' AND year='$year' AND unit_id='$unitid' GROUP BY emp_id
+        ");
+
+        $summary = [];
+
+        foreach($summaryRows as $row){
+            $summary[$row['emp_id']] = $row;
+        }
+
+        $earningLeaveRows = $obj->executequery("
+        SELECT
+            emp_id,
+
+            SUM(
+                CASE
+                    WHEN attendance_status='Earning Leave' THEN 1
+                    WHEN attendance_status='Half Earning Leave' THEN 0.5
+                    ELSE 0
+                END
+            ) AS used_leave
+
+            FROM attendance_entry
+
+            WHERE emp_id IN ($empIdsStr)
+
+            AND sessionid='$sessionid'
+
+            AND (
+                year < '$year'
+                OR (year='$year' AND month <= '$month')
+            )
+
+            GROUP BY emp_id
+        ");
+
+        $usedEarnMap = [];
+
+        foreach($earningLeaveRows as $r){
+            $usedEarnMap[$r['emp_id']] = $r['used_leave'];
+        }
+ 
+        // EARNING LEAVE UPLOADED 
+        $earningUploadRows = $obj->executequery("
+            SELECT
+                emp_id,
+
+                SUM(total_leave) AS total_leave
+
+            FROM emp_monthly_leave
+
+            WHERE emp_id IN ($empIdsStr)
+
+            AND leave_type='earning'
+
+            AND sessionid='$sessionid'
+
+            AND (
+                year < '$year'
+                OR (year='$year' AND month < '$month')
+            )
+
+            GROUP BY emp_id
+        ");
+
+        $earningUploadMap = [];
+
+        foreach($earningUploadRows as $r){
+            $earningUploadMap[$r['emp_id']] = $r['total_leave'];
+        }
+
+        $departments = $obj->executequery("SELECT * FROM department_master");
+
+        $departmentMap = [];
+
+        foreach($departments as $d){
+            $departmentMap[$d['department_id']] = $d;
+        }
+
+
+        $deductionRows = $obj->executequery("
+    SELECT
+        emp_id, 
+        IFNULL(SUM(lpg_ded + shoes_ded + other),0) AS total_other_deduction
+    FROM emp_deduction
+    WHERE month='$month'
+    AND year='$year'
+    AND emp_id IN ($empIdsStr)
+    GROUP BY emp_id
+");
+
+$deductionMap = [];
+foreach ($deductionRows as $row) {
+    $deductionMap[$row['emp_id']] = $row;
+}
+
+        
+
+    }
 
     $salaryRows = [];
-
+    $overtimeLeaveRows = [];
+    $earningLeaveRows  = [];
+    $processedEmpIds = [];
     if (count($employees) > 0) {
         $count_generated = 0;
 
         foreach ($employees as $emp) {
             $emp_id   = $emp['emp_id'];
+            $processedEmpIds[$emp_id] = true;
             $depart_id   = $emp['department_id'];
             $allow_weekly_off = $emp['allow_weekly_off'];
             $is_pf   = $emp['is_pf'];
             $is_esic   = $emp['is_esic'];
             $opening_balance_save = $emp['used_opening_balance'];
-            $opening_balance_date = $emp['opening_date'];
-
-            $depart_data  = $obj->select_record('department_master', array('department_id' => $depart_id));
+            $opening_balance_date = $emp['opening_date']; 
+            $is_perform_incen = $emp['is_perform_incen'];
+            $depart_data = $departmentMap[$depart_id] ?? []; 
             $is_allow_c_off = $depart_data['c_off_check'] ?? '0';
+            $allow_earn_leave_carry = $depart_data['earn_leave_check'] ?? '';
+            $date_of_joining = $emp['date_of_joining'] ?? '';
  
 
             $loan_amt = $loanMap[$emp_id]['Loan']['amount'] ?? 0;
             $loan_details_id = $loanMap[$emp_id]['Loan']['loan_details_id'] ?? 0;
             $advance_amt = $loanMap[$emp_id]['Advance']['amount'] ?? 0;
             $advance_details_id = $loanMap[$emp_id]['Advance']['loan_details_id'] ?? 0;
-
-
-            // $allow_weekly_off = $depart_data['allow_weekly_off'] ?? '0';
-
-
-            // $present_days = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' AND month='$month' AND year='$year'");
+            $otherDeduction = isset($deductionMap[$emp_id]) ? $deductionMap[$emp_id]['total_other_deduction'] : 0;
+            
+            //$emp_deduction = $obj->getvalfield("emp_deduction", "count(*)", "emp_id='$emp_id' AND month='$month' AND year='$year'");
             // if ($present_days == 0) continue;
 
             $presentSalary = $emp['basic_salary'];
-
-            $attendance = $obj->executequery("
-    SELECT
-        SUM(attendance_status='Present') AS present,
-        SUM(attendance_status='Half Day') AS half,
-        SUM(attendance_status IN('Weekly Leave','Earning Leave','C Off','Leave','Extra Off')) AS paid_leave,
-        SUM(attendance_status IN('Half Weekly Leave','Half Earning Leave','Half C Off','Half Leave','Half Extra Off')) AS tot_half,
-        SUM(attendance_status ='Half Extra Off') AS half_extra_off,
-        SUM(attendance_status ='Extra Off') AS full_extra_off,
-        SUM(
-            CASE 
-                WHEN attendance_status = 'Leave' THEN 1
-                WHEN attendance_status = 'Half Leave' THEN 0.5
-                ELSE 0
-            END
-        ) AS total_opening_leave
-    FROM attendance_entry
-    WHERE emp_id='$emp_id' AND month='$month' AND year='$year' AND unit_id='$unitid'
-");
-
-            $a = $attendance[0] ?? [];
-
+            $a = $summary[$emp_id] ?? []; 
             $total_present1 = $a['present'] ?? 0;
             $total_half1    = $a['half'] ?? 0;
             $total_present  = ($a['present'] ?? 0) + ($a['paid_leave'] ?? 0);
             $total_half     = ($a['tot_half'] ?? 0) + ($a['half'] ?? 0);
-            $half_extra_off = $a['full_extra_off'] ?? 0;
+            $half_extra_off = $a['half_extra_off'] ?? 0;
             $full_extra_off = $a['full_extra_off'] ?? 0;
             $total_opening_leave = $a['total_opening_leave'] ?? 0;
 
+            $total_present_day  = ($a['present'] ?? 0) + ($a['paid_leave_day'] ?? 0);
+            $total_half_day     = ($a['tot_half_day'] ?? 0) + ($a['half'] ?? 0);
+
             $used_extra_off = $full_extra_off+($half_extra_off/2);
+            $present_day_total = $total_present_day +($total_half_day/2);
 
-            // $overtime_days = $obj->getvalfield("emp_overtime", "no_of_overtime", "emp_id='$emp_id' and month='$month' and year='$year'");
-            $overtime_days = $overtimeMap[$emp_id] ?? 0;
+            $real_total_working_day = $total_present1 + ($total_half1 / 2); 
 
-            $real_total_working_day = $total_present1 + ($total_half1 / 2);
-
-            $total_working_day = $total_present + ($total_half / 2);
+            $total_working_day = $total_present + ($total_half / 2); 
+         
             $setting_type = ($emp['is_esic']  == 1) ? 'ESIC' : 'Non ESIC';
 
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year) ?? 31;
 
             $increment     = 0;
             $revisedSalary = roundVal($presentSalary + $increment);
+
             $daysWorked = $total_working_day ? $total_working_day : $totalDaysInMonth;
-            $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_working_day, $allow_weekly_off);
+
+            $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_working_day, $emp_id,$month, $year);
             $earn_leave_present =  $real_total_working_day+$week_leave;
             $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
-            
-
-            $holidayData = $obj->getHolidayCountWithSandwichRule(
-                $emp_id,
-                $unitid,
-                $month,
-                $year
-            );
-            $holiday     = $holidayData['total'] ?? 0;
-           // $three_month_leave = $obj->getLeave($emp_id, $month, $year);
-
-            $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
+         
+            $total_earning_leave = ($earningUploadMap[$emp_id] ?? 0) - ($usedEarnMap[$emp_id] ?? 0); 
             $result = $obj->calculateWorkingDays([
                 'daysInMonth' => $totalDaysInMonth,
                 'present'     => $total_working_day,
-                'holiday'     => $holiday,
+                'holiday'     => 0,
                 //'advance'     => $total_att_leave,
                 'weekly'      => $week_leave,
                 'monthly'     => $monthly_leave,
                 //'c_off'       => $three_month_leave,
-                'used_extra_off'    => $used_extra_off,
+                'used_extra_off'    =>0,
                 'allow_c_off' => $is_allow_c_off,
-                'add_all_leave' => $is_all_leave_add
+                'add_all_leave' => $is_all_leave_add,
+                'allow_earn_leave_carry' => $allow_earn_leave_carry, 
+                'joining_date' => $date_of_joining, 
+                'month' => $month, 
+                'year' => $year, 
+                
             ]);
-
+          
             $totalWorkingDays = $result['total_working_days'];
             $usedCOff         = $result['used_c_off'];
             $usedWeekly       = $result['used_weekly'];
             $usedMonthly      = $result['used_monthly'];
-          
 
             $overtimeDays = $week_leave - $usedWeekly;
             $remining_earn_leave = $monthly_leave - $usedMonthly;
@@ -215,8 +382,8 @@ if (isset($_POST['month'], $_POST['year'])) {
                 "ipaddress" => $ipaddress,
                 "sessionid" => $sessionid,
                 "createdate" => date("Y-m-d H:i:s")
-            ];
-            //$previous_remining_leave = $previous_earn_leave + $remining_earn_leave;
+            ]; 
+
             $remining_earn_leave_data = [
                 "emp_id" => $emp_id,
                 "department_id" => $depart_id,
@@ -233,28 +400,12 @@ if (isset($_POST['month'], $_POST['year'])) {
                 "createdate" => date("Y-m-d H:i:s")
             ];
 
-            if ($overtimeDays > 0  && $is_allow_c_off == '1') {
-                $where = array(
-                    'emp_id' => $emp_id,
-                    'month'  => $month,
-                    'year'   => $year,
-                    'leave_type'   => 'weekly',
-                    'unit_id'   => $unitid
-                );
-                $obj->delete_record('emp_monthly_leave', $where);
-                $obj->insert_record('emp_monthly_leave', $overtime_data);
+            if ($overtimeDays > 0  && $is_allow_c_off == '1' && $is_perform_incen==0) {
+                $overtimeLeaveRows[] = $overtime_data;
             }
 
-            if ($remining_earn_leave > 0  && $is_allow_c_off == '1') {
-                $where = array(
-                    'emp_id' => $emp_id,
-                    'month'  => $month,
-                    'year'   => $year,
-                    'leave_type'   => 'earning',
-                    'unit_id'   => $unitid
-                );
-                $obj->delete_record('emp_monthly_leave', $where);
-                $obj->insert_record('emp_monthly_leave', $remining_earn_leave_data);
+            if ($remining_earn_leave > 0  && $allow_earn_leave_carry == '1') {
+                $earningLeaveRows[] = $remining_earn_leave_data; 
             }
 
             $slab = null;
@@ -345,7 +496,7 @@ if (isset($_POST['month'], $_POST['year'])) {
                 // }
             }
             $total_net_salary = $totalSalary - $pf_emp - $esic_emp;
-            $total_pay_sal_after_ded =  $total_net_salary - $loan_amt - $advance_amt;
+            $total_pay_sal_after_ded =  $total_net_salary - $loan_amt - $advance_amt - $otherDeduction;
 
             $form_data = [
                 "emp_id" => $emp_id,
@@ -362,7 +513,7 @@ if (isset($_POST['month'], $_POST['year'])) {
                 "esic_rate"      => $basicRate,
                 "pf_paid_basic"      => $pf_paid_basic,
                 "esic_paid_basic"      => $esic_paid_basic_val,
-                "overtime_days"      => $overtime_days,
+                //"overtime_days"      => $overtime_days,
                 "total_working_days" => $totalWorkingDays,
                 
                 "basic_da" => $basicDA,
@@ -383,8 +534,8 @@ if (isset($_POST['month'], $_POST['year'])) {
                 "sessionid" => $sessionid,
                 "createdate" => date("Y-m-d H:i:s"),
 
-                "paid_holiday"      => $holiday,
-                "present_day"      => $total_working_day,
+                //"paid_holiday"      => $holiday,
+                "present_day"      => $present_day_total,
                 "weekly_off"      => $usedWeekly,
                 "leave_days"      => $usedMonthly,
                 "total_week_leave"  => $week_leave,
@@ -394,6 +545,7 @@ if (isset($_POST['month'], $_POST['year'])) {
                 "used_extra_off" => $used_extra_off,
                 "total_opening_leave" => $total_opening_leave,
                 //"total_c_off" => $three_month_leave,
+                "other_deduction" => $otherDeduction,
                 "loan_amt" => $loan_amt,
                 "total_pay_sal_after_ded" => $total_pay_sal_after_ded,
                 "advance_amt" => $advance_amt
@@ -410,6 +562,38 @@ if (isset($_POST['month'], $_POST['year'])) {
 
             $count_generated++;
         }
+
+        if (!empty($processedEmpIds)) {
+            $empIdStr = implode(',', array_keys($processedEmpIds));
+            $obj->bulk_delete('emp_monthly_leave', [
+                'emp_id'  => array_keys($processedEmpIds),
+                'month'   => $month,
+                'year'    => $year,
+                'is_opb'   => 0,
+                'leave_type'   => 'weekly',
+                'unit_id' => $unitid
+            ]);
+            $obj->bulk_delete('emp_monthly_leave', [
+                'emp_id'  => array_keys($processedEmpIds),
+                'month'   => $month,
+                'year'    => $year,
+                'is_opb'   => 0,
+                'leave_type'   => 'earning',
+                'unit_id' => $unitid
+            ]); 
+        } 
+
+        if (!empty($overtimeLeaveRows)) {
+            foreach (array_chunk($overtimeLeaveRows, 500) as $chunk) {
+                $obj->bulk_insert('emp_monthly_leave', $chunk);
+            }
+        }
+        if (!empty($earningLeaveRows)) {
+            foreach (array_chunk($earningLeaveRows, 500) as $chunk) {
+                $obj->bulk_insert('emp_monthly_leave', $chunk);
+            }
+        }
+
         foreach (array_chunk($salaryRows, 500) as $chunk) {
             $bulk_lastid = $obj->bulk_insert('salary_structure', $chunk);
             $form_data1 = array(
@@ -436,7 +620,8 @@ if (isset($_POST['month'], $_POST['year'])) {
 
 ?>
 <!doctype html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
+    data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
 
 <head>
     <meta charset="utf-8" />
@@ -444,10 +629,10 @@ if (isset($_POST['month'], $_POST['year'])) {
     <?php include('inc/css.php') ?>
 </head>
 <style>
-    .table-borderless tr td {
-        border: 0px !important;
-        padding-bottom: 0px;
-    }
+.table-borderless tr td {
+    border: 0px !important;
+    padding-bottom: 0px;
+}
 </style>
 
 <body>
@@ -466,7 +651,9 @@ if (isset($_POST['month'], $_POST['year'])) {
                                 <div class="row g-4 align-items-center">
                                     <div class="col-sm">
                                         <div>
-                                            <h5 class="card-title mb-0"> <?= $module; ?> <a href="salary_generate_report.php" class="float-end btn btn-primary btn-sm">Salary Report</a></h5>
+                                            <h5 class="card-title mb-0"> <?= $module; ?> <a
+                                                    href="salary_generate_report.php"
+                                                    class="float-end btn btn-primary btn-sm">Salary Report</a></h5>
                                         </div>
                                     </div>
                                 </div>
@@ -477,24 +664,27 @@ if (isset($_POST['month'], $_POST['year'])) {
                                         <!-- Employee -->
 
                                         <div class="col-lg-3 mb-3">
-                                            <label for="emp_id" class="form-label">Department<span class="text-danger fw-bold"> </span></label>
-                                            <select class="form-select form-select-sm chosen-select" name="department_id" id="department_id">
+                                            <label for="emp_id" class="form-label">Department<span
+                                                    class="text-danger fw-bold"> </span></label>
+                                            <select class="form-select form-select-sm chosen-select"
+                                                name="department_id" id="department_id">
                                                 <option value="">All</option>
                                                 <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_id asc");
                                                 foreach ($res as $key) { ?>
-                                                    <option value="<?= $key['department_id']; ?>">
-                                                        <?= $key['department_name']; ?> </option>
+                                                <option value="<?= $key['department_id']; ?>">
+                                                    <?= $key['department_name']; ?> </option>
                                                 <?php } ?>
                                             </select>
                                             <script>
-                                                document.getElementById('department_id').value =
-                                                    '<?= $department_id; ?>';
+                                            document.getElementById('department_id').value =
+                                                '<?= $department_id; ?>';
                                             </script>
                                         </div>
 
                                         <!-- Month -->
                                         <div class="col-lg-3 mb-3">
-                                            <label for="month" class="form-label">Month<span class="text-danger fw-bold">*</span></label>
+                                            <label for="month" class="form-label">Month<span
+                                                    class="text-danger fw-bold">*</span></label>
                                             <select class="form-select chosen-select" name="month" id="month">
                                                 <option value="">Select</option>
                                                 <?php
@@ -518,13 +708,14 @@ if (isset($_POST['month'], $_POST['year'])) {
                                                 ?>
                                             </select>
                                             <script>
-                                                document.getElementById('month').value = '<?php echo $month ?>'
+                                            document.getElementById('month').value = '<?php echo $month ?>'
                                             </script>
                                         </div>
 
                                         <!-- Year -->
                                         <div class="col-lg-3 mb-3">
-                                            <label for="year" class="form-label">Year<span class="text-danger fw-bold">*</span></label>
+                                            <label for="year" class="form-label">Year<span
+                                                    class="text-danger fw-bold">*</span></label>
                                             <select class="form-select chosen-select" name="year" id="year">
                                                 <option value="">Select</option>
                                                 <?php
@@ -535,15 +726,17 @@ if (isset($_POST['month'], $_POST['year'])) {
                                                 } ?>
                                             </select>
                                             <script>
-                                                document.getElementById('year').value = '<?php echo $year ?>'
+                                            document.getElementById('year').value = '<?php echo $year ?>'
                                             </script>
                                         </div>
                                         <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
                                         if ($chkadd == 1) {  ?>
-                                            <div class="col-lg-4 mt-4">
-                                                <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="Generate" onClick="return checkinputmaster('month,year')">
-                                                <a href="<?php echo $pagename ?>" class="btn btn-sm btn-danger add-btn">Reset</a>
-                                            </div>
+                                        <div class="col-lg-4 mt-4">
+                                            <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn"
+                                                value="Generate" onClick="return checkinputmaster('month,year')">
+                                            <a href="<?php echo $pagename ?>"
+                                                class="btn btn-sm btn-danger add-btn">Reset</a>
+                                        </div>
                                         <?php } ?>
                                     </div>
                                 </form>
@@ -568,78 +761,78 @@ if (isset($_POST['month'], $_POST['year'])) {
 
 
     <script>
-        $(document).ready(function() {
-            $('#example').DataTable();
-            $(".chosen-select").select2({
-                width: '100%',
-            });
-            document.querySelectorAll("#tablesss tbody tr")
-                .forEach(row => calculateRow(row));
+    $(document).ready(function() {
+        $('#example').DataTable();
+        $(".chosen-select").select2({
+            width: '100%',
         });
+        document.querySelectorAll("#tablesss tbody tr")
+            .forEach(row => calculateRow(row));
+    });
 
 
-        $("form").off('submit').on("submit", function(e) {
-            e.preventDefault();
+    $("form").off('submit').on("submit", function(e) {
+        e.preventDefault();
 
 
-            let department_id = $("#department_id").val();
-            let emp_id = $("#emp_id").val();
-            let month = $("#month").val();
-            let year = $("#year").val();
+        let department_id = $("#department_id").val();
+        let emp_id = $("#emp_id").val();
+        let month = $("#month").val();
+        let year = $("#year").val();
 
-            if (month == "" || year == "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Oops...',
-                    text: 'Please select Month and Year!'
-                });
-                return false;
-            }
-
+        if (month == "" || year == "") {
             Swal.fire({
-                title: 'Generating salaries...',
-                html: 'Please wait while we process the salaries.',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
+                icon: 'warning',
+                title: 'Oops...',
+                text: 'Please select Month and Year!'
             });
+            return false;
+        }
 
-            $.ajax({
-                url: '', // same page ajax
-                type: 'POST',
-                data: {
-                    month: month,
-                    department_id: department_id,
-                    emp_id: emp_id,
-                    year: year
-                },
-                dataType: 'json',
-                success: function(response) {
-                    console.log(response);
-
-                    Swal.close();
-                    Swal.fire({
-                        icon: response.status == 'success' ? 'success' : 'error',
-                        title: response.status == 'success' ? 'Done!' : 'Error!',
-                        text: response.message
-                    }).then((result) => {
-                        if (response.status === 'success') {
-                            location = "salary_generate_report.php";
-                        }
-                    });
-                },
-                error: function(err) {
-                    console.log("error", err);
-                    Swal.close();
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'Something went wrong. Please try again.'
-                    });
-                }
-            });
+        Swal.fire({
+            title: 'Generating salaries...',
+            html: 'Please wait while we process the salaries.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
         });
+
+        $.ajax({
+            url: '', // same page ajax
+            type: 'POST',
+            data: {
+                month: month,
+                department_id: department_id,
+                emp_id: emp_id,
+                year: year
+            },
+            dataType: 'json',
+            success: function(response) {
+                console.log(response);
+
+                Swal.close();
+                Swal.fire({
+                    icon: response.status == 'success' ? 'success' : 'error',
+                    title: response.status == 'success' ? 'Done!' : 'Error!',
+                    text: response.message
+                }).then((result) => {
+                    if (response.status === 'success') {
+                        //location = "salary_generate_report.php";
+                    }
+                });
+            },
+            error: function(err) {
+                console.log("error", err);
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Something went wrong. Please try again.'
+                });
+            }
+        });
+    });
     </script>
 
 </body>

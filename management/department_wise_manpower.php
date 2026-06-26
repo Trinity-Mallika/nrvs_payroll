@@ -13,19 +13,12 @@ $crit = 'where 1=1';
 if (isset($_GET['unit_id'])) {
     $unit_id = $obj->test_input($_GET['unit_id']);
     if ($unit_id != '') {
-        $crit .= " and em.unit_id='$unit_id'";
+        $crit .= " and dm.unit_id='$unit_id'";
     }
 } else {
     $unit_id = $unitid;
 };
-if (isset($_GET['designation_id'])) {
-    $designation_id = $obj->test_input($_GET['designation_id']);
-    if ($designation_id != '') {
-        $crit .= " and em.designation_id='$designation_id'";
-    }
-} else {
-    $designation_id = "";
-};
+ 
 if (isset($_GET['department_id'])) {
     $department_id = $obj->test_input($_GET['department_id']);
     if ($department_id != '') {
@@ -34,49 +27,7 @@ if (isset($_GET['department_id'])) {
 } else {
     $department_id = "";
 };
-if (isset($_GET['grade_id'])) {
-    $grade_id = $obj->test_input($_GET['grade_id']);
-    if ($grade_id != '') {
-        $crit .= " and em.grade_id='$grade_id'";
-    }
-} else {
-    $grade_id = "";
-};
-if (isset($_GET['shift_id'])) {
-    $shift_id = $obj->test_input($_GET['shift_id']);
-    if ($shift_id != '') {
-        $crit .= " and em.shift_id='$shift_id'";
-    }
-} else {
-    $shift_id = "";
-};
-if (isset($_GET['gender'])) {
-    $gender = $obj->test_input($_GET['gender']);
-    if ($gender != '') {
-        $crit .= " and em.gender='$gender'";
-    }
-} else {
-    $gender = "";
-};
-if (isset($_GET['month']) && isset($_GET['year'])) {
-
-    $month = $obj->test_input($_GET['month']);
-    $year  = $obj->test_input($_GET['year']);
-
-    if ($month != '' && $year != '') {
-        $crit .= " AND MONTH(em.date_of_joining)='$month' 
-                   AND YEAR(em.date_of_joining)='$year'";
-    }
-} else {
-    $month = "";
-    $year = "";
-}
-
-
-
-
-
-
+  
 
 if (isset($_POST['department_idd'])) {
     $department_id = $_POST['department_idd'];
@@ -127,85 +78,87 @@ if (isset($_POST['department_idd'])) {
                 <?php include('inc/bredcrum.php') ?>
                 <?php include('inc/alert.php'); ?>
                 <div class="row">
-                    <div class="col-lg-12">
-                        <div class="card" id="customerList">
-                            <div class="card-header border-bottom-dashed">
-                                <div class="row g-4 align-items-center">
-                                    <div class="col-sm">
-                                        <div>
-                                            <h5 class="card-title mb-0"> <?= $module; ?> <a href="depart_manpower_details.php" class="float-end btn btn-primary btn-sm">View Details</a></h5>
+                    <?php if (!isset($_GET['submit'])) { ?>
+                        <div class="col-lg-12">
+                            <div class="card" id="customerList">
+                                <div class="card-header border-bottom-dashed">
+                                    <div class="row g-4 align-items-center">
+                                        <div class="col-sm">
+                                            <div>
+                                                <h5 class="card-title mb-0"> <?= $module; ?> <a href="depart_manpower_details.php" class="float-end btn btn-primary btn-sm">View Details</a></h5>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="card-body">
-                                <form method="get">
-                                    <div class="row">
-                                        <div class="col-lg-3 mb-3">
-                                            <label for="unit_id" class="form-label">Unit Name<span class="text-danger fw-bold">*</span></label>
-                                            <select class="form-select chosen-select" name="unit_id" id="unit_id" onchange="get_department(this.value);">
+                                <div class="card-body">
+                                    <form method="get">
+                                        <div class="row">
+                                            <div class="col-lg-3 mb-3">
+                                                <label for="unit_id" class="form-label">Unit Name<span class="text-danger fw-bold">*</span></label>
+                                                <select class="form-select chosen-select" name="unit_id" id="unit_id" onchange="get_department(this.value);">
 
-                                                <?php $res = $obj->executequery("Select * from unit_master order by unit_name asc");
-                                                foreach ($res as $key) {
-                                                    echo "<option value='" . $key['unit_id'] . "'>" . $key['unit_name'] . "</option>";
-                                                } ?>
-                                            </select>
-                                            <script>
-                                                document.getElementById('unit_id').value = '<?= $unit_id; ?>';
-                                            </script>
+                                                    <?php $res = $obj->executequery("Select * from unit_master order by unit_name asc");
+                                                    foreach ($res as $key) {
+                                                        echo "<option value='" . $key['unit_id'] . "'>" . $key['unit_name'] . "</option>";
+                                                    } ?>
+                                                </select>
+                                                <script>
+                                                    document.getElementById('unit_id').value = '<?= $unit_id; ?>';
+                                                </script>
+                                            </div>
+
+                                            <div class="col-lg-3 mb-3">
+                                                <label for="department_id" class="form-label">Department Name<span class="text-danger fw-bold"> </span></label>
+                                                <select class="form-select form-select-sm chosen-select" name="department_id" id="department_id">
+                                                    <option value="">Select</option>
+
+                                                </select>
+                                                <script>
+                                                    document.getElementById('department_id').value =
+                                                        '<?= $department_id; ?>';
+                                                </script>
+                                            </div>
+
+                                            <div class="col-lg-3 mt-4">
+                                                <input type="submit" name="submit" class="btn btn-primary add-btn" value="Search" onclick="return checkinputmaster('unit_id')">
+                                                <a href="<?php echo $pagename ?>" class="btn btn-danger add-btn">Reset</a>
+                                            </div>
                                         </div>
-
-                                        <div class="col-lg-3 mb-3">
-                                            <label for="department_id" class="form-label">Department Name<span class="text-danger fw-bold"> </span></label>
-                                            <select class="form-select form-select-sm chosen-select" name="department_id" id="department_id">
-                                                <option value="">Select</option>
-
-                                            </select>
-                                            <script>
-                                                document.getElementById('department_id').value =
-                                                    '<?= $department_id; ?>';
-                                            </script>
-                                        </div>
-
-                                        <div class="col-lg-3 mt-4">
-                                            <input type="submit" name="submit" class="btn btn-primary add-btn" value="Search" onclick="return checkinputmaster('unit_id')">
-                                            <a href="<?php echo $pagename ?>" class="btn btn-danger add-btn">Reset</a>
-                                        </div>
-                                    </div>
-                                </form>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    <?php } ?>
                     <?php
                     if (isset($_GET['submit'])) {
 
                         $res = $obj->executequery("
-                            SELECT 
+                            SELECT
                                 dm.department_name,
                                 dm.department_id,
 
                                 COUNT(em.emp_id) AS actual_employees,
 
-                                SUM(CASE WHEN em.employee_type='Permanent' THEN 1 ELSE 0 END) 
+                                SUM(CASE WHEN em.employee_type='Permanent' THEN 1 ELSE 0 END)
                                 AS permanent_employees,
 
-                                SUM(CASE WHEN em.employee_type='Contract' THEN 1 ELSE 0 END) 
+                                SUM(CASE WHEN em.employee_type='Contract' THEN 1 ELSE 0 END)
                                 AS contract_employees,
 
-                                 SUM(CASE WHEN em.employee_type='Part-Time' THEN 1 ELSE 0 END) 
+                                 SUM(CASE WHEN em.employee_type='Part-Time' THEN 1 ELSE 0 END)
                                 AS part_time_employees,
 
-                                SUM(CASE WHEN em.employee_type='Trainee' THEN 1 ELSE 0 END) 
+                                SUM(CASE WHEN em.employee_type='Trainee' THEN 1 ELSE 0 END)
                                 AS trainee_employees
 
                             FROM employee_master em
 
-                            LEFT JOIN department_master dm 
+                            LEFT JOIN department_master dm
                             ON em.department_id = dm.department_id
 
-                            $crit
-
-                            GROUP BY em.department_id
+                            $crit 
+                            and (em.resign_status != '1' OR (em.resign_status = '1' AND em.last_working_date >= CURDATE()))
+                            GROUP BY dm.department_id
 
                             ORDER BY dm.department_name
                         ");
@@ -217,8 +170,12 @@ if (isset($_POST['department_idd'])) {
                                 <div class="card-header border-bottom-dashed">
                                     <div class="row g-4 align-items-center">
                                         <div class="col-sm">
-                                            <div>
+                                            <div class="d-flex justify-content-between">
                                                 <h5 class="card-title mb-0"><?php echo $submodule; ?> </h5>
+                                                <a href="<?php echo $pagename; ?>" class="btn btn-primary btn-sm">
+                                                    Search Again
+                                                </a>
+
                                             </div>
                                         </div>
                                     </div>
@@ -254,9 +211,7 @@ if (isset($_POST['department_idd'])) {
                                                     $contract = $row['contract_employees'];
                                                     $permanent = $row['permanent_employees'];
                                                     $part_time = $row['part_time_employees'];
-                                                    $trainee = $row['trainee_employees'];
-
-                                                    // Total calculation
+                                                    $trainee = $row['trainee_employees']; 
                                                     $total_actual += $actual;
                                                     $total_contract += $contract;
                                                     $total_permanent += $permanent;
@@ -265,7 +220,7 @@ if (isset($_POST['department_idd'])) {
                                                 ?>
                                                     <tr>
                                                         <td><?= $slno++ ?></td>
-                                                        <td class="text-center"><?= $row['department_name'] ?> </td>
+                                                        <td class="text-center"><?= $row['department_name'] ?>  </td>
                                                         <td class="text-center"></td>
                                                         <td class="text-center"><?= $actual ?></td>
                                                         <td class="text-center"></td>

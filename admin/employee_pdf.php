@@ -14,11 +14,11 @@ $mpdf = new \Mpdf\Mpdf([
 $pageHeight = 297;
 $headerHeight = 40;
 $footerHeight = 40;
-$imgpath1 = 'uploaded/emp_documents/';
-//$unit_imgpath = 'uploaded/unit_logo/';
-$unit_imgpath = '../management/uploaded/emp_documents/';
 
-
+// $imgpath1 = 'uploaded/emp_documents/';
+// $unit_imgpath = '../management/uploaded/emp_documents/';
+$imgpath1 = __DIR__ . '/uploaded/emp_documents/';
+$unit_imgpath = __DIR__ . '/../management/uploaded/emp_documents/';
 $tblname = "employee_master";
 $tblpkey = "emp_id";
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
@@ -104,25 +104,38 @@ if (isset($_GET[$tblpkey])) {
         $$field = isset($row[$field]) ? $row[$field] : '';
     }
 
+    $department = $obj->select_record(
+        "department_master",
+        ["department_id" => $department_id]
+    );
+
+    $is_allow_c_off = $department['c_off_check'] ?? 0;
+    $department_name = $department['department_name'] ?? 0;
+    $allow_earn_leave_carry = $department['earn_leave_check'] ?? 0;
+
+   
+
     $designation = $obj->getvalfield("designation_master", "designation", "designation_id='$designation_id'");
     $employer_designation = $obj->getvalfield("designation_master", "designation", "designation_id='$employer_designation_id'");
-
-    $department_name = $obj->getvalfield("department_master", "department_name", "department_id='$department_id'");
-    $is_allow_c_off = $obj->getvalfield("department_master", "c_off_check", "department_id='$department_id'");
-    $is_all_leave_add = $obj->getvalfield("unit_master", "add_leave", "unit_id='$unitid'");
-
+ 
     $grade_name = $obj->getvalfield("grade_master", "grade_name", "grade_id='$grade_id'");
     $bank_name = $obj->getvalfield("bank_master", "bank_name", "bank_id='$bank_id'");
     $shift_name = $obj->getvalfield("shift_master", "shift_name", "shift_id='$shift_id'");
-    $unit_logo = $obj->getvalfield("unit_master", "logo_image", "unit_id='$unit_id'");
 
-    $unit_name    = $obj->getvalfield("unit_master", "unit_name", "unit_id='$unit_id'");
-    $head_name    = $obj->getvalfield("unit_master", "unithead", "unit_id='$unit_id'");
-    $unit_mobile  = $obj->getvalfield("unit_master", "mobile", "unit_id='$unit_id'");
-    $unit_email   = $obj->getvalfield("unit_master", "email_id", "unit_id='$unit_id'");
-    $unit_address = $obj->getvalfield("unit_master", "address", "unit_id='$unit_id'");
+    $unit = $obj->select_record(
+        "unit_master",
+        ["unit_id" => $unit_id]
+        );
 
-$setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
+    $is_all_leave_add = $unit['add_leave'] ?? 0;
+    $unit_logo        = $unit['logo_image'] ?? '';
+    $unit_name        = $unit['unit_name'] ?? '';
+    $head_name        = $unit['unithead'] ?? '';
+    $unit_mobile      = $unit['mobile'] ?? '';
+    $unit_email       = $unit['email_id'] ?? '';
+    $unit_address     = $unit['address'] ?? '';  
+
+    $setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
 
     $checkedDocs = [];
     if (!empty($document_checked_ids)) {
@@ -237,14 +250,13 @@ ob_start();
 
     <div class="container">
 
-        <!-- Header Section -->
 
         <table class="header-table">
 
             <tr>
 
                 <td width="25%">
-                    <?php if (!empty($unit_logo) && file_exists($unit_imgpath . $unit_logo)) { ?>
+                    <?php if (!empty($unit_logo)) { ?>
                         <img src="<?php echo $unit_imgpath . $unit_logo; ?>" class="logo">
                     <?php } ?>
 
@@ -275,7 +287,6 @@ ob_start();
         </table>
 
         <hr>
-        <!-- Employee Basic Info -->
 
         <table>
 
@@ -290,14 +301,14 @@ ob_start();
                     <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                             <td align="center">
-                                <?php if (!empty($profile_image) && file_exists($imgpath1 . $profile_image)) { ?>
-                                    <img src="<?php echo $imgpath1 . $profile_image; ?>" class="photo">
+                                <?php if (!empty($profile_image)) { ?>
+                                    <img src="<?php echo realpath($imgpath1 . $profile_image); ?>" class="photo">
                                 <?php } ?>
                             </td>
 
                             <td align="center">
-                                <?php if (!empty($emp_sign) && file_exists($imgpath1 . $emp_sign)) { ?>
-                                    <img src="<?php echo $imgpath1 . $emp_sign; ?>" class="sign">
+                                <?php if (!empty($emp_sign)) { ?>
+                                    <img src="<?php echo realpath($imgpath1 . $emp_sign); ?>" class="sign">
                                 <?php } ?>
                             </td>
                         </tr>
@@ -318,7 +329,6 @@ ob_start();
                 <td class="label">Company Name</td>
                 <td class="colon">:</td>
                 <td class="value"><?php echo $unit_name; ?></td>
-                <!-- <td class="value">AGRAWAL INFRABUILD PRIVATE LIMITED</td> -->
             </tr>
 
             <tr>
@@ -343,7 +353,6 @@ ob_start();
         </table>
 
 
-        <!-- Personal Details -->
 
         <div class="heading">Personal Details</div>
 
@@ -424,7 +433,6 @@ ob_start();
         </table>
 
 
-        <!-- HR Details -->
 
         <div class="heading">HR Details</div>
 
@@ -512,7 +520,6 @@ ob_start();
 
         </table>
 
-        <!-- Document Details -->
         <h3>Document Details</h3>
 
         <table border="1" width="100%" cellpadding="5" cellspacing="0">
@@ -562,7 +569,6 @@ ob_start();
 
 
         <pagebreak />
-        <!-- Educations Details -->
 
         <h3>Education Details</h3>
 
@@ -572,11 +578,9 @@ ob_start();
                 <th style="text-align:left;"> <small> SNo</small> </th>
                 <th style="text-align:left;"> <small> Degree Of Exam</small> </th>
                 <th style="text-align:left;"> <small> University/College/School</small> </th>
-                <!-- <th> <small> Division</small> </th> -->
                 <th style="text-align:left;"> <small> Percentage Of Marks</small> </th>
                 <th style="text-align:left;"> <small> Passing Year</small> </th>
                 <th style="text-align:left;"> <small> Subject</small> </th>
-                <!--<th> <small> Remark</small> </th> -->
             </tr>
 
             <?php
@@ -591,7 +595,6 @@ ob_start();
                         <td><small><?= $edu['percentage']; ?>%</small></td>
                         <td><small><?= $edu['pass_year']; ?></small></td>
                         <td><small><?= $edu['subject']; ?></small></td>
-                        <!-- <td><small>-</small></td> -->
                     </tr>
             <?php
                 }
@@ -602,7 +605,6 @@ ob_start();
 
         </table>
         <br>
-        <!-- Prevous Orgination Details -->
         <h3>Previous Organization Details</h3>
 
         <table border="1" width="100%" cellpadding="5" cellspacing="0">
@@ -652,7 +654,6 @@ ob_start();
         </table>
 
 
-        <!-- Branch Details -->
         <br>
         <h3>Branch Details</h3>
 
@@ -702,7 +703,6 @@ ob_start();
         </table>
 
 
-        <!-- Loan Advance -->
         <br>
         <h3>Loan Advance</h3>
 
@@ -729,9 +729,9 @@ ob_start();
 
                         <td>
                             <small>
-                            <?= (!empty($bt['loan_date']) && $bt['loan_date'] != '0000-00-00')
-                                ? $obj->dateformatindia($bt['loan_date'])
-                                : '' ?>
+                                <?= (!empty($bt['loan_date']) && $bt['loan_date'] != '0000-00-00')
+                                    ? $obj->dateformatindia($bt['loan_date'])
+                                    : '' ?>
                             </small>
                         </td>
                         <td>
@@ -745,19 +745,19 @@ ob_start();
                                 <?= date("M", mktime(0, 0, 0, $bt['last_month'], 1)) . '-' . $bt['last_year']; ?>
                             </small>
                         </td>
-                        
-                        <td><small><?= $bt['loan_adv_amt']. ' + '. $bt['interest_amount']; ?><br><?= ' ( '. $bt['type'] .' ) '; ?></small></td>
+
+                        <td><small><?= $bt['loan_adv_amt'] . ' + ' . $bt['interest_amount']; ?><br><?= ' ( ' . $bt['type'] . ' ) '; ?></small></td>
                         <td><small><?= $bt['no_of_inst']; ?></small></td>
                         <?php
-                            $paid_amount = $obj->getvalfield(
-                                "loan_advance_details",
-                                "SUM(amount)",
-                                "loan_advance_id='" . $bt['loan_advance_id'] . "' AND is_paid='1'"
-                            );
+                        $paid_amount = $obj->getvalfield(
+                            "loan_advance_details",
+                            "SUM(amount)",
+                            "loan_advance_id='" . $bt['loan_advance_id'] . "' AND is_paid='1'"
+                        );
 
-                            $paid_amount = ($paid_amount != "") ? $paid_amount : 0;
+                        $paid_amount = ($paid_amount != "") ? $paid_amount : 0;
 
-                            $balance_amount = $bt['total_amount'] - $paid_amount;
+                        $balance_amount = $bt['total_amount'] - $paid_amount;
                         ?>
 
                         <td><small><?= number_format($paid_amount, 2); ?></small></td>
@@ -775,7 +775,7 @@ ob_start();
         </table>
 
 
-          <h3>Paid Salary Detail</h3>
+        <h3>Paid Salary Detail</h3>
 
         <table border="1" width="100%" cellpadding="5" cellspacing="0">
 
@@ -787,30 +787,28 @@ ob_start();
                 <th style="text-align:left;"> <small>Increment</small> </th>
                 <th style="text-align:left;"> <small>Revised Salary</small></th>
                 <th style="text-align:left;"> <small>TD</small> </th>
-                <th style="text-align:left;"> <small>P</small> </th> 
+                <th style="text-align:left;"> <small>P</small> </th>
                 <th style="text-align:left;"> <small>WO</small> </th>
-                <th style="text-align:left;"> <small>EL</small> </th>  
+                <th style="text-align:left;"> <small>EL</small> </th>
                 <th style="text-align:left;"> <small>TWD</small> </th>
                 <th style="text-align:left;"> <small>Gross</small> </th>
                 <th style="text-align:left;"> <small>PF</small> </th>
                 <th style="text-align:left;"> <small>ESIC</small> </th>
                 <th style="text-align:left;"> <small>Loan/Advance</small> </th>
                 <th style="text-align:left;"> <small>Tot.Add</small> </th>
-                <th style="text-align:left;"> <small>Tot.Ded</small> </th>
+                <th style="text-align:left;"> <small>Other.Ded</small> </th>
                 <th style="text-align:left;"> <small>TDS</small> </th>
                 <th style="text-align:left;"> <small>Payable Salary</small> </th>
-            
             </tr>
-
             <?php
-                $salary_details = $obj->executequery("select * from salary_structure where emp_id='$keyvalue' order by month asc");
-                $i=1;
-                foreach ($salary_details as $row) {
-                    $month = $row['month'];
-                    $year  = $row['year'];
-                    $emp_id  = $row['emp_id'];
+            $salary_details = $obj->executequery("select * from salary_structure where emp_id='$keyvalue' order by month asc");
+            $i = 1;
+            foreach ($salary_details as $row) {
+                $month = $row['month'];
+                $year  = $row['year'];
+                $emp_id  = $row['emp_id'];
 
-                    $attendance = $obj->executequery("
+                $attendance = $obj->executequery("
                         SELECT 
                             SUM(CASE 
                                 WHEN attendance_status = 'Present' THEN 1 
@@ -835,75 +833,81 @@ ob_start();
                         FROM attendance_entry
                         WHERE emp_id = '$emp_id' 
                         AND month = '$month' 
-                        AND year = '$year' AND unit_id='$unitid'
+                        AND year = '$year' AND unit_id='$unit_id'
                     ");
 
-                    $att = $attendance[0] ?? [];
-                                    
-                    $total_present1 = $att['total_present1'] ?? 0;
-                    $total_half1    = $att['total_half1'] ?? 0;
+                $att = $attendance[0] ?? [];
 
-                    $total_present  = $att['total_present'] ?? 0;
-                    $total_half     = $att['total_half'] ?? 0;
+                $total_present1 = $att['total_present1'] ?? 0;
+                $total_half1    = $att['total_half1'] ?? 0;
 
-                    $real_total_attandence = $total_present1 + ($total_half1 / 2);
-                    $total_attandence      = $total_present + ($total_half / 2);
+                $total_present  = $att['total_present'] ?? 0;
+                $total_half     = $att['total_half'] ?? 0;
 
-                    $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $allow_weekly_off);
-                    $earn_leave_present =  $real_total_attandence+$week_leave;
-                    $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
-                    $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+                $real_total_attandence = $total_present1 + ($total_half1 / 2);
+                $total_attandence      = $total_present + ($total_half / 2);
 
-                    $result = $obj->calculateLeaveUsage(
-                        $daysInMonth,
-                        $total_attandence,
-                        $week_leave,
-                        $monthly_leave,
-                        $is_allow_c_off,
-                        $is_all_leave_add
-                    );
-                     $total_payable_days = $result['total_working_days'];
+                $week_leave = $obj->totalWeeklyLeave($unit_id, $real_total_attandence, $emp_id,$month,$year);
+                $earn_leave_present =  $real_total_attandence + $week_leave;
+                $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unit_id);
+                $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+
+                $result = $obj->calculateLeaveUsage(
+                    $daysInMonth,
+                    $total_attandence,
+                    $week_leave,
+                    $monthly_leave,
+                    $is_allow_c_off,
+                    $is_all_leave_add,
+                    $allow_earn_leave_carry,0,0,$date_of_joining,$month,$year
+                );
+                $total_payable_days = $result['total_working_days'];
             ?>
-                    <tr>
-                        <td><small><?= $i++; ?></small></td>
+                <tr>
+                    <td><small><?= $i++; ?></small></td>
 
-                        <td>  <?= date("F", mktime(0, 0, 0, $row['month'], 1)) ?></td>
-                        <td>  <?= $row['year'] ?> </td>
-                        <td>  <?= $row['basic_salary'] ?> </td>
-                        <td>  <?= $row['increment'] ?> </td>
-                        <td>  <?= $row['revised_salary'] ?> </td> 
-                        <td> <?=$daysInMonth?>  </td> 
-                        <td> <?=$total_attandence?>  </td> 
-                        <td> <?=$week_leave?>  </td> 
-                        <td> <?=$monthly_leave?>  </td>  
-                        <td> <?=$total_payable_days?>  </td>   
-                        <td>  <?= $row['total_salary'] ?> </td>
-                        <td>  <?= $row['pf_emp'] ?> </td>
-                        <td>  <?= $row['esic_emp'] ?> </td>
-                        <td>  <?= $row['loan_amt'] ?> <?= $row['advance_amt'] ?> </td> 
-                        <td>  <?= $row['additional_payment'] ?> </td>
-                        <td>  <?= $row['other_deduction'] ?> </td>
-                        <td>  <?= $row['tds_deduction'] ?> </td>
-                        <td>  <?= $row['total_pay_sal_after_ded'] ?> </td>
-                    </tr>
+                    <td> <?= date("F", mktime(0, 0, 0, $row['month'], 1)) ?></td>
+                    <td> <?= $row['year'] ?> </td>
+                    <td> <?= $row['basic_salary'] ?> </td>
+                    <td> <?= $row['increment'] ?> </td>
+                    <td> <?= $row['revised_salary'] ?> </td>
+                    <td> <?= $daysInMonth ?> </td>
+                    <td> <?= $total_attandence ?> </td>
+                    <td> <?= $week_leave ?> </td>
+                    <td> <?= $monthly_leave ?> </td>
+                    <td> <?= $total_payable_days ?> </td>
+                    <td> <?= $row['total_salary'] ?> </td>
+                    <td> <?= $row['pf_emp'] ?> </td>
+                    <td> <?= $row['esic_emp'] ?> </td>
+                    <td> <?= $row['loan_amt'] ?> <?= $row['advance_amt'] ?> </td>
+                    <td> <?= $row['additional_payment'] ?> </td>
+                    <td> <?= $row['other_deduction'] ?> </td>
+                    <td> <?= $row['tds_deduction'] ?> </td>
+                    <td> <?= $row['total_pay_sal_after_ded'] ?> </td>
+                </tr>
 
-            <?php 
+            <?php
             }
             ?>
-
-
         </table>
-
-
     </div>
-
 </body>
 
 </html>
 
-
 <?php
+
 $html = ob_get_clean();
-$mpdf->WriteHTML($html); 
- 
-$mpdf->Output(); ?>
+
+error_reporting(0);
+ini_set('display_errors', 0);
+
+$mpdf->WriteHTML($html);
+
+while (ob_get_level()) {
+    ob_end_clean();
+}
+
+$mpdf->Output('employee.pdf', 'I');
+exit;
+?>

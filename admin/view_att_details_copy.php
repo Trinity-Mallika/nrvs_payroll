@@ -69,7 +69,7 @@ $three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
 // die;
 $chkedit = $obj->check_editBtn($pagename, $loginid);
 $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $real_total_attandence, $unitid);
-$week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $allow_weekly_off);
+$week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $emp_id, $currentMonth, $currentYear);
 $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
 $total_curr_week_leave = $obj->getCurrentWeekLeave($emp_id, $currentMonth, $currentYear);
 

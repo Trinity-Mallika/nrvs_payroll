@@ -81,8 +81,7 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
                                             </select>
 
                                         </div>
-                                        <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
-                                        if ($chkadd == 1) {  ?>
+                                        
                                             <div class="col-lg-4 mb-3 mt-2">
                                                 <br>
                                                 <input type="hidden" name="<?php echo $tblpkey ?>"
@@ -92,7 +91,7 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
                                                 <a href=" <?php echo $pagename ?>" type="button"
                                                     class="btn btn-sm btn-danger add-btn">Reset</a>
                                             </div>
-                                        <?php } ?>
+                                        
                                     </div>
                                 </div>
                             </div>
@@ -121,6 +120,7 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
                                                 
                                                 <th>Sub Division</th>
                                                 <th>Department Name</th>
+                                                <th>Reporting Manager Name</th>
                                                 <th>C-Off</th>
 
                                                 <th>Actions</th>
@@ -145,6 +145,8 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
                                                 $res = $obj->executequery("
                                                     SELECT 
                                                         t.*,
+                                                        em.first_name,
+                                                        em.emp_code,
 
                                                         cu.fullname as created_name,
                                                         cu.username as created_username,
@@ -159,6 +161,9 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 
                                                     LEFT JOIN user cu 
                                                         ON t.createdby = cu.userid
+
+                                                    LEFT JOIN employee_master em 
+                                                        ON t.emp_id = em.emp_id
 
                                                     LEFT JOIN user uu 
                                                         ON t.updatedby = uu.userid
@@ -201,11 +206,10 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
                                                     
                                                     <td><?php echo $row["subdivision_name"]; ?></td>
                                                     <td><?php echo $row["department_name"]; ?></td>
+                                                    <td><?= $row["emp_code"].'-'. $row["first_name"]; ?></td>
                                                     <td>
                                                         <?= ($row['c_off_check'] == 1) ? 'Allowed' : 'Not Allowed' ?>
                                                     </td>
-
-
 
                                                     <td>
                                                         <ul class="list-inline hstack gap-2 mb-0">

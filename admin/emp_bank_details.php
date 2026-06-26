@@ -9,7 +9,6 @@ $btn_name = "Save";
 
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
-
 ?>
 
 

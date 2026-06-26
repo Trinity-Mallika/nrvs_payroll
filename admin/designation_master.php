@@ -11,7 +11,7 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 
 if (isset($_POST['submit'])) {
     $designation  = $obj->test_input($_POST['designation']);
-    $grade_id  = $obj->test_input($_POST['grade_id']);
+    $grade_id  = $obj->test_input($_POST['grade_id']??0);
     $department_id  = $obj->test_input($_POST['department_id']);
     $count = $obj->getvalfield($tblname, "count(*)", "designation='$designation' and department_id='$department_id' and unit_id='$unitid' and $tblpkey!='$keyvalue'");
 
@@ -42,6 +42,7 @@ if (isset($_POST['submit'])) {
             $process = "updated";
         }
     }
+  
     echo "<script>location='$pagename?action=$action'</script>";
 }
 

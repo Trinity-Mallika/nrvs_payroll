@@ -160,7 +160,7 @@ if (isset($_POST['month'], $_POST['year'])) {
             $daysWorked = $total_working_day ? $total_working_day : $totalDaysInMonth;
 
             $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $real_total_working_day, $unitid);
-            $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_working_day, $allow_weekly_off);
+            $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_working_day,$emp_id, $month, $year);
 
             $holidayData = $obj->getHolidayCountWithSandwichRule(
                 $emp_id,
@@ -182,7 +182,8 @@ if (isset($_POST['month'], $_POST['year'])) {
                 'c_off'       => $three_month_leave,
                 'overtime'    => $overtime_days,
                 'allow_c_off' => $is_allow_c_off,
-                'add_all_leave' => $is_all_leave_add
+                'add_all_leave' => $is_all_leave_add,
+                 
             ]);
 
             $totalWorkingDays = $result['total_working_days'];

@@ -38,6 +38,8 @@ if (isset($_POST['submit'])) {
     $aadhar_no = $obj->test_input($_POST['aadhar_no']);
     $pan_no = $obj->test_input($_POST['pan_no']);
     $driving_license = $obj->test_input($_POST['driving_license']);
+    $driving_licence_cat_id = $obj->test_input($_POST['driving_licence_cat_id']??0);
+    $driving_lic_expiry_date = $obj->test_input($_POST['driving_lic_expiry_date']);
     $passport_no = $obj->test_input($_POST['passport_no']);
     $identification_masks = $obj->test_input($_POST['identification_masks']);
 
@@ -60,6 +62,7 @@ if (isset($_POST['submit'])) {
     $last_salary = $obj->test_input($_POST['last_salary']);
 
     $basic_salary = $obj->test_input($_POST['basic_salary']??0);
+    $emp_category = $obj->test_input($_POST['emp_category']??"");
     $opening_balance = $obj->test_input($_POST['opening_balance']??0);
     $coff = $obj->test_input($_POST['coff']??0);
     $ecoff = $obj->test_input($_POST['ecoff']??0);
@@ -69,6 +72,8 @@ if (isset($_POST['submit'])) {
     $is_esic = $obj->test_input($_POST['is_esic'] ?? 0);
     $is_rejoin = $obj->test_input($_POST['is_rejoin'] ?? 0);
     $allow_weekly_off = $obj->test_input($_POST['allow_weekly_off'] ?? 0);
+    $is_perform_incen = $obj->test_input($_POST['is_perform_incen'] ?? 0);
+    $is_active = $obj->test_input($_POST['is_active'] ?? 0);
 
     $pf_uan = $obj->test_input($_POST['pf_uan']);
     $uan_no = $obj->test_input($_POST['uan_no']);
@@ -87,6 +92,30 @@ if (isset($_POST['submit'])) {
     $profile_image =  $_FILES['profile_image'] ?? '';
     $emp_sign =  $_FILES['emp_sign'] ?? '';
 
+    
+    $form_data_emp_status = array( 
+        'unit_id' => $unitid,     
+        'is_active' => $is_active,
+        'last_inactive_date' => $createdate,
+        'last_inactive_month' => date('n'),
+        "createdate" => $createdate,
+        "createdby" => $loginid,
+        "ipaddress" => $ipaddress,
+        "sessionid" => $sessionid
+    );
+
+     $form_data_emp_week_status = array( 
+        'unit_id' => $unitid,     
+        'type' => 'allow_weekoff',     
+        'is_allow' => $allow_weekly_off, 
+        'last_inactive_month' => date('n'),
+        'last_inactive_year' => date('Y'),
+        "createdate" => $createdate,
+        "createdby" => $loginid,
+        "ipaddress" => $ipaddress,
+        "sessionid" => $sessionid
+    );
+    
 
 
     $form_data = array(
@@ -115,6 +144,8 @@ if (isset($_POST['submit'])) {
         "aadhar_no" => $aadhar_no,
         "pan_no" => $pan_no,
         "driving_license" => $driving_license,
+        "driving_licence_cat_id" => $driving_licence_cat_id,
+        "driving_lic_expiry_date" => $driving_lic_expiry_date,
         "passport_no" => $passport_no,
         "identification_masks" => $identification_masks,
 
@@ -137,6 +168,7 @@ if (isset($_POST['submit'])) {
         "form21_last_date" => $form21_last_date,
         "is_form21_last_date" => $is_form21_last_date,
         "basic_salary" => $basic_salary,
+        "emp_category" => $emp_category,
         "opening_balance" => $opening_balance,
         "used_opening_balance" => $opening_balance,
         "ecoff" => $ecoff,
@@ -145,6 +177,9 @@ if (isset($_POST['submit'])) {
         "is_pf" => $is_pf,
         "is_esic" => $is_esic,
         "allow_weekly_off" => $allow_weekly_off,
+        "is_perform_incen" => $is_perform_incen,
+        "is_active" => $is_active,
+        "last_active_date" => $createdate,
         "is_rejoin" => $is_rejoin,
         "pf_uan" => $pf_uan,
         "uan_no" => $uan_no,
@@ -251,7 +286,6 @@ if (isset($_POST['submit'])) {
             $form_data["emp_code"] = $emp_code;
             $form_data["biomatric_id"] = $biomatric_id;
 
-
             $lastid = $obj->insert_record_lastid($tblname, $form_data);
 
             $obj->update_record("emp_family_details", array("emp_id" => 0, 'unit_id' => $unitid, "sessionid" => $sessionid, 'createdby' => $loginid), array("emp_id" => $lastid));
@@ -284,9 +318,16 @@ if (isset($_POST['submit'])) {
            
             $form_data_unit_transfer["emp_id"] = $lastid;
             $form_data_emp_promotion["emp_id"] = $lastid;
-           $obj->insert_record("emp_branch_transfer", $form_data_unit_transfer);
-           $obj->insert_record("emp_promotion", $form_data_emp_promotion);
+            $obj->insert_record("emp_branch_transfer", $form_data_unit_transfer);
+            $obj->insert_record("emp_promotion", $form_data_emp_promotion);
+ 
+             
+            $form_data_emp_status["emp_id"] = $lastid;
+            $obj->insert_record("emp_active_status", $form_data_emp_status);
 
+            $form_data_emp_week_status["emp_id"] = $lastid;
+            $obj->insert_record("emp_allow_week_status", $form_data_emp_week_status);
+           
         } else {
             if (!empty($imageName) && in_array($imageFileType, $allowedTypes)) {
                 $old = $obj->getvalfield($tblname, "profile_image", "emp_id='$keyvalue'");
@@ -317,6 +358,12 @@ if (isset($_POST['submit'])) {
             $obj->update_record('emp_branch_transfer', $where2, $form_data_unit_transfer);
             $obj->update_record('emp_promotion', $where2, $form_data_emp_promotion);
  
+            $form_data_emp_status["emp_id"] = $keyvalue;
+            $obj->insert_record("emp_active_status", $form_data_emp_status); 
+            
+            $form_data_emp_week_status["emp_id"] = $keyvalue;
+            $obj->insert_record("emp_allow_week_status", $form_data_emp_week_status);
+           
             $where2 = array('emp_id' => $keyvalue,'unit_id'=>$unitid);
 
             $form_data1 = array(
@@ -374,6 +421,8 @@ if (isset($_GET[$tblpkey])) {
     $aadhar_no = $sqledit['aadhar_no'];
     $pan_no = $sqledit['pan_no'];
     $driving_license = $sqledit['driving_license'];
+    $driving_licence_cat_id = $sqledit['driving_licence_cat_id'];
+    $driving_lic_expiry_date = $sqledit['driving_lic_expiry_date'];
     $passport_no = $sqledit['passport_no'];
     $identification_masks = $sqledit['identification_masks'];
 
@@ -384,7 +433,7 @@ if (isset($_GET[$tblpkey])) {
     $job_location = $sqledit['job_location'] ?? 'Raigarh';
     $shift_id = $sqledit['shift_id'];
     $employee_type = $sqledit['employee_type'];
-    $reporting_manager = $sqledit['reporting_manager'];
+   $reporting_manager = ($sqledit['reporting_manager'] == 0) ? '' : $sqledit['reporting_manager'];
 
     $employer_name = $sqledit['employer_name'];
     $employer_designation_id = $sqledit['employer_designation_id'];
@@ -395,6 +444,7 @@ if (isset($_GET[$tblpkey])) {
     $last_salary = $sqledit['last_salary'];
 
     $basic_salary = $sqledit['basic_salary'];
+    $emp_category = $sqledit['emp_category'];
     $opening_balance = $sqledit['opening_balance'];
     $ecoff = $sqledit['ecoff'];
     $coff = $sqledit['coff'];
@@ -403,6 +453,8 @@ if (isset($_GET[$tblpkey])) {
     $is_pf = $sqledit['is_pf'];
     $is_esic = $sqledit['is_esic'];
     $allow_weekly_off = $sqledit['allow_weekly_off'];
+    $is_perform_incen = $sqledit['is_perform_incen'];
+    $is_active = $sqledit['is_active'];
     $is_rejoin = $sqledit['is_rejoin'];
     $form21_last_date = $sqledit['form21_last_date'];
     $is_form21_last_date = $sqledit['is_form21_last_date'];
@@ -423,7 +475,7 @@ if (isset($_GET[$tblpkey])) {
     // die;
 } else {
     $emp_code = $biomatric_id = $obj->getcode("employee_master", "emp_code",  "1='1'");
-    $first_name = $last_name = $father_name  = $gender = $dob = $age = $blood_group = $marital_status =   $religion = $caste = $mobile_no = $alt_mobile_no = $email_id = $present_address = $permanent_address = $emer_contact_name = $emer_contact_relation = $emer_contact_no = $aadhar_no = $pan_no = $driving_license = $passport_no = $identification_masks = $department_id = $designation_id = $grade_id = $date_of_joining =   $shift_id = $employee_type = $reporting_manager = $employer_name = $employer_designation_id = $service_from = $service_to = $reason = $job_responsibility = $last_salary = $profile_image = $emp_sign = $basic_salary = $opening_balance = $opening_date = $hra = $da = $conveyance = $medical_allowance = $special_allowance = $is_pf = $is_esic =$allow_weekly_off= $is_rejoin = $is_pt = $is_lwf = $ctc = $gross_salary = $net_salary =  $pf_uan = $uan_no = $esic_no = $pf_joining_date = $esic_joining_date = $document_ids = $form21_last_date =  $last_name = '';
+    $first_name = $last_name = $father_name  = $gender = $dob = $age = $blood_group = $marital_status =   $religion = $caste = $mobile_no = $alt_mobile_no = $email_id = $present_address = $permanent_address = $emer_contact_name = $emer_contact_relation = $emer_contact_no = $aadhar_no = $pan_no = $driving_license=$driving_licence_cat_id =$driving_lic_expiry_date= $passport_no = $identification_masks = $department_id = $designation_id = $grade_id = $date_of_joining =   $shift_id = $employee_type = $reporting_manager = $employer_name = $employer_designation_id = $service_from = $service_to = $reason = $job_responsibility = $last_salary = $profile_image = $emp_sign = $basic_salary =$emp_category= $opening_balance = $opening_date = $hra = $da = $conveyance = $medical_allowance = $special_allowance = $is_pf = $is_esic =$allow_weekly_off= $is_perform_incen= $is_active=$is_rejoin = $is_pt = $is_lwf = $ctc = $gross_salary = $net_salary = $anniversary_date= $pf_uan = $uan_no = $esic_no = $pf_joining_date = $esic_joining_date = $document_ids = $form21_last_date =  $last_name = '';
     $is_form21_last_date = $ecoff=$coff ='0';
     $nationality = 'INDIAN';
     $job_location = 'Raigarh';
@@ -517,14 +569,14 @@ td {
                                         <ul class="nav nav-tabs nav-justified mb-4" id="stepTabs">
                                             <li class="nav-item cursor-pointer"><a class="nav-link p-1 active fw-bold"
                                                     data-step="0">EMPLOYEE INFORMATION</a></li>
+                                            <!-- <li class="nav-item cursor-pointer"><a class="nav-link p-1 fw-bold"
+                                                    data-step="1">BANK DETAILS</a></li> -->
                                             <li class="nav-item cursor-pointer"><a class="nav-link p-1 fw-bold"
-                                                    data-step="1">BANK DETAILS</a></li>
+                                                    data-step="1">CONTACT</a></li>
                                             <li class="nav-item cursor-pointer"><a class="nav-link p-1 fw-bold"
-                                                    data-step="2">CONTACT</a></li>
+                                                    data-step="2">FAMILY/DOCUMENTS/LANGUAGE</a></li>
                                             <li class="nav-item cursor-pointer"><a class="nav-link p-1 fw-bold"
-                                                    data-step="3">FAMILY/DOCUMENTS/LANGUAGE</a></li>
-                                            <li class="nav-item cursor-pointer"><a class="nav-link p-1 fw-bold"
-                                                    data-step="4">CHECK LIST</a></li>
+                                                    data-step="3">CHECK LIST</a></li>
                                         </ul>
 
                                         <!-- ⭐ FORM START -->
@@ -567,7 +619,8 @@ td {
                                                 </div> -->
 
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Father’s Name</label>
+                                                    <label class="form-label">Father’s Name <span class="text-danger">
+                                                            *</span></label>
                                                     <input type="text" class="form-control form-control-sm"
                                                         name="father_name" id="father_name" value="<?= $father_name ?>"
                                                         placeholder="Enter Father Name">
@@ -609,7 +662,7 @@ td {
                                                         value="<?= $date_of_joining  ?>" max="<?= date('Y-m-d') ?>">
                                                 </div>
 
-                                                <div class="col-md-1 mt-4">
+                                                <div class="col-md-3 mt-4">
                                                     <div class="form-check">
                                                         <input class="form-check-input" type="checkbox" name="is_rejoin"
                                                             id="is_rejoin" value="1"
@@ -620,7 +673,7 @@ td {
                                                     </div>
                                                 </div>
 
-                                                <div class="col-md-3">
+                                                <div class="col-md-2">
                                                     <label>Present Salary<span
                                                             class="text-danger fw-bold">*</span></label>
                                                     <input type="text" class="form-control form-control-sm"
@@ -629,20 +682,57 @@ td {
                                                         placeholder="Enter Basic Salary">
                                                 </div>
 
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Date of Birth</label>
+                                                <div class="col-lg-2 ">
+                                                    <label for="emp_category" class="form-label">Employee category<span
+                                                            class="text-danger fw-bold">*</span></label>
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="emp_category" id="emp_category">
+                                                        <option value="">Select</option> 
+                                                        <option value="Skilled">Skilled</option>
+                                                        <option value="Unskilled">Unskilled</option>
+                                                        <option value="Semiskilled">Semiskilled</option> 
+                                                        <option value="Highskilled">Highskilled</option> 
+                                                    </select>
+                                                    <script>
+                                                    document.getElementById('emp_category').value =
+                                                        '<?= $emp_category; ?>';
+                                                    </script>
+                                                </div>
+
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Date of Birth <span
+                                                            class="text-danger fw-bold">*</span></label>
                                                     <input type="date" class="form-control form-control-sm" name="dob"
                                                         id="dob" value="<?= $dob ?>" onkeyup="calculateAge()">
                                                 </div>
 
-                                                <div class="col-md-3">
+                                                <div class="col-md-2">
                                                     <label class="form-label">Age</label>
                                                     <input type="text" class="form-control form-control-sm" name="age"
                                                         id="age" value="<?= $age ?>" placeholder="Enter Age"
                                                         autocomplete="off" onkeypress="numberOnly(event);" maxlength="3"
                                                         readonly>
+                                                </div> 
+                                                 <div class="col-md-2">
+                                                    <label class="form-label">Blood Group  <span
+                                                            class="text-danger fw-bold"> *</span></label>
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="blood_group" id="blood_group">
+                                                        <option value="">Select Blood Group</option>
+                                                        <option value="A+">A+</option>
+                                                        <option value="A-">A-</option>
+                                                        <option value="B+">B+</option>
+                                                        <option value="B-">B-</option>
+                                                        <option value="O+">O+</option>
+                                                        <option value="O-">O-</option>
+                                                        <option value="AB+">AB+</option>
+                                                        <option value="AB-">AB-</option>
+                                                    </select>
+                                                    <script>
+                                                    document.getElementById('blood_group').value = '<?= $blood_group ?>'
+                                                    </script>
                                                 </div>
-                                                <div class="col-md-3">
+                                                <div class="col-md-2">
                                                     <label class="form-label">Mobile Number <span class="text-danger">
                                                             *</span> </label>
                                                     <input type="text" class="form-control form-control-sm"
@@ -668,7 +758,7 @@ td {
                                                         name="aadhar_no" id="aadhar_no" value="<?= $aadhar_no ?>"
                                                         placeholder="Enter Aadhaar Number"
                                                         onchange="checkDuplicateAadhar(this.value)"
-                                                        onkeypress="numberOnly(event);">
+                                                        onkeypress="numberOnly(event);" maxlength="12">
                                                 </div>
 
                                                 <div class="col-md-3">
@@ -676,42 +766,8 @@ td {
                                                     <input type="text" class="form-control form-control-sm"
                                                         name="pan_no" id="pan_no" value="<?= $pan_no ?>"
                                                         placeholder="Enter PAN Number"
-                                                        onchange="checkDuplicatePanCard(this.value)">
+                                                        onchange="checkDuplicatePanCard(this.value)" maxlength="10">
                                                 </div>
-
-                                                <!-- <div class="col-md-3">
-                                                    <label>Opening Leave<span
-                                                            class="text-danger fw-bold"></span></label>
-                                                    <input type="text" class="form-control form-control-sm"
-                                                        name="opening_balance" id="opening_balance"
-                                                        value="<?= $opening_balance  ?>" onkeypress="numberOnly(event);"
-                                                        placeholder="Enter Opening Balance">
-                                                </div>
-                                                  <div class="col-md-3">
-                                                    <label>Extra Off <span
-                                                            class="text-danger fw-bold"></span></label>
-                                                    <input type="text" class="form-control form-control-sm"
-                                                        name="ecoff" id="ecoff"
-                                                        value="<?= $ecoff  ?>" onkeypress="numberOnly(event);"
-                                                        placeholder="Enter Extra Off Balance">
-                                                </div>
-                                                  <div class="col-md-3">    
-                                                    <label>C-Off <span
-                                                            class="text-danger fw-bold"></span></label>
-                                                    <input type="text" class="form-control form-control-sm"
-                                                        name="coff" id="coff"
-                                                        value="<?= $coff  ?>" onkeypress="numberOnly(event);"
-                                                        placeholder="Enter C-Off Balance">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label>Opening Leave Date<span
-                                                            class="text-danger fw-bold"></span></label>
-                                                    <input type="date" class="form-control form-control-sm"
-                                                        name="opening_date" id="opening_date"
-                                                        value="<?= !empty($opening_date) ? $opening_date : date('Y-m-d'); ?>"
-                                                        placeholder="">
-                                                </div> -->
-
                                                 <div class="col-lg-3 ">
                                                     <label for="grade_id" class="form-label">Grade<span
                                                             class="text-danger fw-bold"></span></label>
@@ -745,33 +801,67 @@ td {
                                                     document.getElementById('shift_id').value = '<?= $shift_id; ?>';
                                                     </script>
                                                 </div>
-
-                                                <div class="col-md-1 mt-4">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="is_pf"
-                                                            id="is_pf" value="1" <?= ($is_pf == 1) ? 'checked' : '' ?>>
-                                                        <label class="form-check-label" for="is_pf">
-                                                            Is PF
-                                                        </label>
-                                                    </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Is PF<span
+                                                            class="text-danger fw-bold">*</span> </label>
+                                                    <select class="form-select form-select-sm chosen-select" name="is_pf" id="is_pf">
+                                                        <option value="">Select</option>
+                                                        <option value="1">YES</option>
+                                                        <option value="0">NO</option>
+                                                    </select>
+                                                    <script>
+                                                    document.getElementById('is_pf').value = '<?php echo $is_pf; ?>';
+                                                    </script>
                                                 </div>
-                                                <div class="col-md-1 mt-4">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="is_esic"
-                                                            id="is_esic" value="1"
-                                                            <?= ($is_esic == 1) ? 'checked' : '' ?>>
-                                                        <label class="form-check-label" for="is_esic">
-                                                            Is ESI
-                                                        </label>
-                                                    </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Is ESI<span
+                                                            class="text-danger fw-bold">*</span> </label>
+                                                    <select class="form-select form-select-sm chosen-select" name="is_esic"
+                                                        id="is_esic">
+                                                        <option value="">Select</option>
+                                                        <option value="1">YES</option>
+                                                        <option value="0">NO</option>
+                                                    </select>
+                                                    <script>
+                                                    document.getElementById('is_esic').value =
+                                                    '<?php echo $is_esic; ?>';
+                                                    </script>
                                                 </div>
-
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Allow Weekly Off<span
+                                                            class="text-danger fw-bold">*</span> </label>
+                                                    <select class="form-select form-select-sm chosen-select" name="allow_weekly_off"
+                                                        id="allow_weekly_off">
+                                                        <option value="">Select</option>
+                                                        <option value="1">YES</option>
+                                                        <option value="0">NO</option>
+                                                    </select>
+                                                    <script>
+                                                    document.getElementById('allow_weekly_off').value =
+                                                        '<?php echo $allow_weekly_off; ?>';
+                                                    </script>
+                                                </div>
+                                                 <div class="col-md-2">
+                                                    <label class="form-label">Performance Incentive<span
+                                                            class="text-danger fw-bold">*</span> </label>
+                                                    <select class="form-select form-select-sm chosen-select" name="is_perform_incen"
+                                                        id="is_perform_incen">
+                                                        <option value="">Select</option>
+                                                        <option value="1">YES</option>
+                                                        <option value="0">NO</option>
+                                                    </select>
+                                                    <script>
+                                                    document.getElementById('is_perform_incen').value =
+                                                        '<?php echo $is_perform_incen; ?>';
+                                                    </script>
+                                                </div>
                                                 <div class="col-md-2 mt-4">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="allow_weekly_off"
-                                                            id="allow_weekly_off" value="1" <?= ($allow_weekly_off == 1) ? 'checked' : '' ?>>
-                                                        <label class="form-check-label" for="allow_weekly_off">
-                                                            Allow Weekly Off
+                                                        <input class="form-check-input" type="checkbox" name="is_active"
+                                                            id="is_active" value="1"
+                                                            <?= ($is_active == 1) ? 'checked' : '' ?>>
+                                                        <label class="form-check-label" for="is_active">
+                                                            Is Active
                                                         </label>
                                                     </div>
                                                 </div>
@@ -780,12 +870,13 @@ td {
                                                         name="pf_uan" id="pf_uan" value="<?= $pf_uan ?>"></div>
                                                 <div class="col-md-2"><label>UAN NO.</label><input
                                                         class="form-control form-control-sm" placeholder="Enter UAN NO."
-                                                        name="uan_no" id="uan_no" value="<?= $uan_no ?>"></div>
+                                                        name="uan_no" id="uan_no" value="<?= $uan_no ?>" maxlength="12">
+                                                </div>
 
                                                 <div class="col-md-2"><label>ESIC Number</label><input
                                                         class="form-control form-control-sm"
                                                         placeholder="Enter ESIC Number" name="esic_no" id="esic_no"
-                                                        value="<?= $esic_no ?>"></div>
+                                                        value="<?= $esic_no ?>" maxlength="10"></div>
 
                                                 <div class="col-md-3"><label>PF Joining Date</label><input type="date"
                                                         class="form-control form-control-sm"
@@ -796,25 +887,74 @@ td {
                                                         class="form-control form-control-sm" name="esic_joining_date"
                                                         id="esic_joining_date" value="<?= $esic_joining_date ?>"></div>
 
+                                                <div class="col-md-3">
+                                                    <label>Reporting Manager<span
+                                                            class="text-danger fw-bold">*</span></label>
+
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="reporting_manager" id="reporting_manager">
+                                                        <option value="">Select</option>
+                                                        <?php
+                                                        $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
+                                                        foreach ($res as $key) { ?>
+                                                        <option value="<?= $key['emp_id']; ?>">
+                                                            <?= $key['emp_code']; ?> -
+                                                            <?= ucfirst($key['first_name'] ?? ''); ?>
+                                                            <?= ucfirst($key['last_name'] ?? ''); ?></option>
+                                                        <?php } ?>
+                                                    </select>
+                                                    <script>
+                                                    document.getElementById('reporting_manager').value =
+                                                        '<?= $reporting_manager; ?>';
+                                                    </script>
+
+                                                </div>
+
+                                                 <div class="col-md-3">
+                                                    <label class="form-label">Marital Status<span
+                                                            class="text-danger fw-bold">*</span></label>
+                                                    <select class="form-select form-select-sm chosen-select" name="marital_status"
+                                                        id="marital_status" onchange="toggleAnniversary()">
+                                                        <option value="">Select</option>
+                                                        <option value="Unmarried">Unmarried</option>
+                                                        <option value="Married">Married</option>
+                                                        <option value="Divorced">Divorced</option>
+                                                    </select>
+                                                    <script>
+                                                    document.getElementById('marital_status').value =
+                                                        '<?php echo ucfirst(strtolower($marital_status)); ?>';
+                                                    </script>
+                                                </div>
+                                                <div class="col-md-3" id="anniversary_div" style="display: none;">
+                                                    <label class="form-label" for="anniversary_date">Anniversary
+                                                        Date</label>
+                                                    <input type="date" class="form-control form-control-sm"
+                                                        name="anniversary_date" id="anniversary_date"
+                                                        value="<?= $anniversary_date ?>">
+                                                </div>
+
 
 
                                                 <div class="col-md-6">
-                                                    <label class="form-label">Present Address</label>
+                                                    <label class="form-label">Present Address <span
+                                                            class="text-danger fw-bold">*</span> </label>
                                                     <textarea class="form-control form-control-sm" rows="1"
                                                         name="present_address"
                                                         id="present_address"><?= $present_address ?></textarea>
                                                 </div>
 
                                                 <div class="col-md-6">
-                                                    <label class="form-label">Permanent Address</label>
+                                                    <label class="form-label">Permanent Address<span
+                                                            class="text-danger fw-bold">*</span> </label>
                                                     <textarea class="form-control form-control-sm" rows="1"
                                                         name="permanent_address"
                                                         id="permanent_address"><?= $permanent_address ?></textarea>
                                                 </div>
 
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Gender</label>
-                                                    <select class="form-select form-select-sm" name="gender"
+                                                    <label class="form-label">Gender<span
+                                                            class="text-danger fw-bold">*</span> </label>
+                                                    <select class="form-select form-select-sm chosen-select" name="gender"
                                                         id="gender">
                                                         <option value="">Select</option>
                                                         <option value="Male">Male</option>
@@ -828,7 +968,8 @@ td {
                                                 </div>
 
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Profile Image</label>
+                                                    <label class="form-label">Profile Image <span
+                                                            class="text-danger fw-bold">*</span></label>
                                                     <input type="file" class="form-control form-control-sm"
                                                         name="profile_image" id="profile_image" accept="image/*">
                                                     <?php if ($profile_image != "") {
@@ -840,7 +981,8 @@ td {
                                                 </div>
 
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Employee Signature</label>
+                                                    <label class="form-label">Employee Signature <span
+                                                            class="text-danger fw-bold"> </span></label>
                                                     <input type="file" class="form-control form-control-sm"
                                                         name="emp_sign" id="emp_sign" accept="image/*">
                                                     <?php if ($emp_sign != "") {
@@ -852,22 +994,7 @@ td {
                                                 </div>
 
 
-
-                                            </div>
-
-                                            <div class="mt-4 text-end">
-                                                <button type="button" class="btn btn-primary btn-next"
-                                                    data-validate="emp_code,biomatric_id,first_name,department_id,designation_id,date_of_joining,basic_salary,mobile_no,aadhar_no,shift_id">Next
-                                                    →</button>
-                                            </div>
-                                        </div>
-
-                                        <!-- ⭐ STEP 2 : CONTACT DETAILS -->
-
-                                        <div class="form-step">
-
-                                            <div class="row g-3">
-                                                <div class="table-responsive" style="height:250px;">
+                                                 <div class="table-responsive" style="height:250px;">
                                                     <?php if ($keyvalue > 0) { ?>
                                                     <div class="mb-2">
                                                         <button onclick="exportTableToExcel('exportExcel')"
@@ -940,19 +1067,21 @@ td {
                                                         </tbody>
                                                     </table>
                                                 </div>
+
+
+
                                             </div>
 
-                                            <div class="mt-4 d-flex justify-content-between">
-                                                <button type="button" class="btn btn-secondary btn-prev">←
-                                                    Previous</button>
+                                            <div class="mt-4 text-end">
                                                 <button type="button" class="btn btn-primary btn-next"
-                                                    data-validate="">Next
+                                                    data-validate="emp_code,biomatric_id,first_name,father_name,department_id,designation_id,date_of_joining,basic_salary,emp_category,dob,blood_group,mobile_no,aadhar_no,shift_id,is_pf,is_esic,allow_weekly_off,is_perform_incen,reporting_manager,marital_status,present_address,permanent_address,gender,profile_image">Next
                                                     →</button>
                                             </div>
                                         </div>
 
+                                        <!-- ⭐ STEP 2 : CONTACT DETAILS -->
 
-                                        <!-- ⭐ STEP 3 -->
+                                       
                                         <div class="form-step">
 
                                             <div class="row g-3">
@@ -1018,6 +1147,31 @@ td {
                                                         value="<?= $driving_license ?>"
                                                         placeholder="Enter Driving License">
                                                 </div>
+                                                 <div class="col-lg-3 ">
+                                                    <label for="driving_licence_cat_id" class="form-label">Driving License Category<span
+                                                            class="text-danger fw-bold"> </span></label>
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="driving_licence_cat_id" id="driving_licence_cat_id"
+                                                        onchange="get_designation(this.value);">
+                                                        <option value="">Select</option>
+                                                        <?php $res = $obj->executequery("Select * from  driving_licence_cat order by driving_licence_cat_id asc");
+                                                        foreach ($res as $key) { ?>
+                                                        <option value="<?= $key['driving_licence_cat_id']; ?>">
+                                                            <?= $key['short_name']; ?>- <?= $key['licence_cat_name']; ?></option>
+                                                        <?php } ?>
+                                                    </select>
+                                                    <script>
+                                                    document.getElementById('driving_licence_cat_id').value =
+                                                        '<?= $driving_licence_cat_id; ?>';
+                                                    </script>
+                                                </div>
+
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Driving License Expiry Date</label>
+                                                    <input type="date" class="form-control form-control-sm"
+                                                        name="driving_lic_expiry_date" id="driving_lic_expiry_date"
+                                                        value="<?= $driving_lic_expiry_date ?>">
+                                                </div>
 
                                                 <div class="col-md-3">
                                                     <label class="form-label">Passport No</label>
@@ -1037,68 +1191,7 @@ td {
                                                     <input type="text" class="form-control form-control-sm"
                                                         name="nationality" id="nationality" value="<?= $nationality ?>"
                                                         placeholder="Enter Nationality">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Blood Group</label>
-                                                    <select class="form-select form-select-sm chosen-select"
-                                                        name="blood_group" id="blood_group">
-                                                        <option value="">Select Blood Group</option>
-                                                        <option value="A+">A+</option>
-                                                        <option value="A-">A-</option>
-                                                        <option value="B+">B+</option>
-                                                        <option value="B-">B-</option>
-                                                        <option value="O+">O+</option>
-                                                        <option value="O-">O-</option>
-                                                        <option value="AB+">AB+</option>
-                                                        <option value="AB-">AB-</option>
-                                                    </select>
-                                                    <script>
-                                                    document.getElementById('blood_group').value = '<?= $blood_group ?>'
-                                                    </script>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Marital Status</label>
-                                                    <select class="form-select form-select-sm" name="marital_status"
-                                                        id="marital_status" onchange="toggleAnniversary()">
-                                                        <option value="">Select</option>
-                                                        <option value="Unmarried">Unmarried</option>
-                                                        <option value="Married">Married</option>
-                                                        <option value="Divorced">Divorced</option>
-                                                    </select>
-                                                    <script>
-                                                    document.getElementById('marital_status').value =
-                                                        '<?php echo ucfirst(strtolower($marital_status)); ?>';
-                                                    </script>
-                                                </div>
-                                                <div class="col-md-3" id="anniversary_div" style="display: none;">
-                                                    <label class="form-label" for="anniversary_date">Anniversary
-                                                        Date</label>
-                                                    <input type="date" class="form-control form-control-sm"
-                                                        name="anniversary_date" id="anniversary_date"
-                                                        value="<?= $anniversary_date ?>">
-                                                </div>
-
-                                                <div class="col-md-3">
-                                                    <label>Reporting Manager</label>
-
-                                                    <select class="form-select form-select-sm chosen-select"
-                                                        name="reporting_manager" id="reporting_manager">
-                                                        <option value="">Select</option>
-                                                        <?php
-                                                        $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
-                                                        foreach ($res as $key) { ?>
-                                                        <option value="<?= $key['emp_id']; ?>">
-                                                            <?= $key['emp_code']; ?> -
-                                                            <?= ucfirst($key['first_name'] ?? ''); ?>
-                                                            <?= ucfirst($key['last_name'] ?? ''); ?></option>
-                                                        <?php } ?>
-                                                    </select>
-                                                    <script>
-                                                    document.getElementById('reporting_manager').value =
-                                                        '<?= $reporting_manager; ?>';
-                                                    </script>
-
-                                                </div>
+                                                </div> 
 
                                                 <div class="col-md-3">
                                                     <label>Employment Type</label>
@@ -2773,11 +2866,10 @@ td {
 
 
     function validateForm() {
-
         const steps = [{
                 tab: 'EMPLOYEE INFORMATION',
-                fields: ['emp_code', 'biomatric_id', 'first_name', 'department_id', 'designation_id',
-                    'date_of_joining', 'basic_salary', 'mobile_no', 'aadhar_no', 'shift_id'
+                fields: ['emp_code', 'biomatric_id', 'first_name', 'father_name', 'department_id', 'designation_id',
+                    'date_of_joining', 'basic_salary','emp_category', 'dob','blood_group', 'mobile_no', 'aadhar_no', 'shift_id', 'is_pf','is_esic', 'allow_weekly_off','is_perform_incen','reporting_manager','marital_status','present_address', 'permanent_address', 'gender','profile_image' 
                 ]
             },
             {

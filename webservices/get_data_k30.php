@@ -7,7 +7,7 @@ $sessionid = $obj->getvalfield("m_session", "sessionid", "status=1");
 $inputJSON = file_get_contents('php://input');
 // 6728322120001025 out
 // 6728322120001144 in
-$inputJSON = '{"EmployeeID":"2213","SerialNo":"6728322120001144","AttendanceDate":"2026-05-03","PunchTime":"2026-05-03T06:00:01"}';
+$inputJSON = '{"EmployeeID":"1001","SerialNo":"6728322120001025","AttendanceDate":"2026-06-16","PunchTime":"2026-06-16T10:02:01"}';
 //$inputJSON = '{"EmployeeID":"1031","SerialNo":"6728422090000160","AttendanceDate":"2026-04-01","PunchTime":"2026-04-01T14:35:36"}';
 
 // if ($inputJSON != "") {
@@ -216,7 +216,7 @@ LIMIT 1;";
 
 
             /* ================= CHECK WITHIN LIMIT ================= */
-
+            
             if ($outDateTime <= $max_out_time) {
 
                 // always keep LAST OUT

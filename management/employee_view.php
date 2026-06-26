@@ -1,5 +1,5 @@
 <?php include("../adminsession.php");
-$pagename = "employee_attendence_report.php";
+$pagename = "employee_view.php";
 $title = "Employee Attendence Report";
 $tblname = "";
 $tblpkey = "";
@@ -10,7 +10,6 @@ $imgpath = "uploaded/emp_documents/";
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 $crit = ' and 1=1';
-
 
 $currentMonth = isset($_GET['month']) ? $_GET['month'] : date('m');
 $currentYear  = isset($_GET['year']) ? $_GET['year'] : date('Y');
@@ -27,10 +26,13 @@ if ($emp_id > 0) {
     $allow_weekly_off     = $emp_data['allow_weekly_off'] ?? '';
     $department_id = $emp_data['department_id'] ?? '';
     $shift_working_hour = $emp_data['shift_id'] ?? '';
+    $date_of_joining = $emp_data['date_of_joining'];
     $is_esic = $emp_data['is_esic'];
     $setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
-    $department_name = $obj->getvalfield("department_master", "department_name", "department_id='$department_id'");
-    $is_allow_c_off = $obj->getvalfield("department_master", "c_off_check", "department_id='$department_id'");
+    $depart_data = $obj->select_record("department_master", ['department_id' => $department_id]);
+    $department_name = $depart_data['department_name']??'';  
+    $is_allow_c_off = $depart_data['c_off_check']??'';  
+    $allow_earn_leave_carry = $depart_data['earn_leave_check']??'';  
 
     $shift_data = $obj->select_record("shift_master", ['shift_id' => $shift_id]);
     $shift_in_time  = $shift_data['in_time'] ?? '';
@@ -217,54 +219,73 @@ if ($emp_id > 0) {
                             $max_day = date('d', strtotime($last_day_of_month));
                         }
 
+                         
+                        $extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear); 
+                        $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid, $currentMonth, $currentYear);
+                        $pending_coff =$obj->getEmpCoffLeave($emp_id, $sessionid, $currentMonth, $currentYear);
+
                         $res = $obj->executequery("
-    SELECT 
-        SUM(CASE 
-            WHEN attendance_status = 'Present' THEN 1 
-            ELSE 0 
-        END) AS total_present1,
+                            SELECT 
+                                SUM(CASE 
+                                    WHEN attendance_status = 'Present' THEN 1 
+                                    ELSE 0 
+                                END) AS total_present1,
 
-        SUM(CASE 
-            WHEN attendance_status = 'Half Day' THEN 1 
-            ELSE 0 
-        END) AS total_half1,
+                                SUM(CASE 
+                                    WHEN attendance_status = 'Half Day' THEN 1 
+                                    ELSE 0 
+                                END) AS total_half1,
 
-        SUM(CASE 
-            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave') THEN 1 
-            ELSE 0 
-        END) AS total_present,
+                                SUM(CASE 
+                                    WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave','Public Holiday') THEN 1 
+                                    ELSE 0 
+                                END) AS total_present,
 
-        SUM(CASE 
-            WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave') THEN 1 
-            ELSE 0 
-        END) AS total_half
+                                SUM(CASE 
+                                    WHEN attendance_status IN ('Extra Off') THEN 1 
+                                    WHEN attendance_status IN ('Half Extra Off') THEN 0.5 
+                                    ELSE 0 
+                                END) AS tot_extra,
 
-    FROM attendance_entry
-    WHERE emp_id = '$emp_id' 
-    AND month = '$currentMonth' 
-    AND year = '$currentYear' AND unit_id='$unitid'
-");
+                                SUM(CASE 
+                                    WHEN attendance_status IN ('C Off') THEN 1 
+                                    WHEN attendance_status IN ('Half C Off') THEN 0.5 
+                                    ELSE 0 
+                                END) AS tot_coff,
 
-$row = $res[0] ?? [];
+                                SUM(CASE 
+                                    WHEN attendance_status IN ('Earning Leave') THEN 1 
+                                    WHEN attendance_status IN ('Half Earning Leave') THEN 0.5 
+                                    ELSE 0 
+                                END) AS tot_earning,
 
-                        // $total_present1 = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status='Present'");
+                                SUM(CASE 
+                                    WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave') THEN 1 
+                                    ELSE 0 
+                                END) AS total_half
 
-                        // $total_half1 = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status='Half Day'");
-
-                        // $total_present = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status IN('Present','Weekly Leave','Earning Leave','C Off')");
-
-                        // $total_half = $obj->getvalfield("attendance_entry", "count(*)", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' and attendance_status IN('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off')");
-
+                            FROM attendance_entry
+                            WHERE emp_id = '$emp_id' 
+                            AND month = '$currentMonth' 
+                            AND year = '$currentYear' AND unit_id='$unitid'
+                        ");
+  
+                        $row = $res[0] ?? [];
+ 
                         $total_present1 = $row['total_present1'] ?? 0;
                         $total_half1    = $row['total_half1'] ?? 0;
                         $total_present  = $row['total_present'] ?? 0;
                         $total_half     = $row['total_half'] ?? 0;
+                        $tot_extra     = $row['tot_extra'] ?? 0;
+                        $tot_coff     = $row['tot_coff'] ?? 0;
+                        $tot_earning     = $row['tot_earning'] ?? 0; 
+ 
 
                         $real_total_attandence = $total_present1 + ($total_half1 / 2);
                         $total_attandence      = $total_present + ($total_half / 2);
  
 
-                        $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $allow_weekly_off);
+                        $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $emp_id,$currentMonth ,$currentYear);
                         $earn_leave_day = $real_total_attandence + $week_leave;
 
                         $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_day, $unitid);
@@ -277,9 +298,7 @@ $row = $res[0] ?? [];
                         $holiday_national  = $holidayData['national'] ?? 0;
                         $holiday_religious = $holidayData['religious'] ?? 0;
                         $holiday_seasonal  = $holidayData['seasonal'] ?? 0;
-
                         // $total_payable_days = $total_attandence + $week_leave + $monthly_leave;
-
 
                         $result = $obj->calculateLeaveUsage(
                             $max_day,
@@ -288,7 +307,7 @@ $row = $res[0] ?? [];
                             $monthly_leave,
                             //$three_month_leave,
                             $is_allow_c_off,
-                            $is_all_leave_add
+                            $is_all_leave_add,$allow_earn_leave_carry,0,0,$date_of_joining,$currentMonth,$currentYear
                         );
 
                         $total_payable_days = $result['total_working_days'];
@@ -297,9 +316,13 @@ $row = $res[0] ?? [];
                         <div class="card card-body pt-2 pb-2">
                             <table class="table table-borderless mb-0">
                                 <tr>
-                                    <td class="fs-13">Total Present: <b><?= $real_total_attandence ?></b></td>
-                                    <td class="fs-13">Total Attendance With Leave: <?= $total_attandence ?></td>
-                                    
+                                    <td class="fs-13">Present: <b><?= $real_total_attandence ?></b></td>
+                                    <td class="fs-13">
+                                        Attendance With Availed Leave : <?= $total_attandence ?></b> <br>
+                                        <span class="text-secondary">EO : <?= $tot_extra ?> | C :
+                                            <?= $tot_coff ?> | L : <?= $tot_earning ?></span>
+                                    </td>
+
                                     <td class="fs-13">Weekly Off : <b><?= $week_leave ?></b></td>
                                     <td class="fs-13">Earn Leave : <?= $monthly_leave ?></td>
                                     <td class="fs-13">Total Payable Days : <b><?= $total_payable_days ?></b> </td>
@@ -311,6 +334,17 @@ $row = $res[0] ?? [];
                                 </tr>
                             </table>
                         </div>
+                        <h6 class="bg-body-secondary border-bottom-outset fs-15 mt-3 p-3 rounded-2 shadow-lg d-flex justify-content-between align-items-center"
+                            style="background: linear-gradient(90deg, #edf2b7, #ffffff); border-color:#7696ff;">
+
+                            <span>Extra Off : <?= $extra_off['balance'] ?></span>
+
+                            <span>C-Off : <?= $pending_coff ?></span>
+                            <!-- <span>Opening Leave Balance : <$opening_leave_balance ?></span> -->
+
+                            <span>Pending Earn leave : <?= $total_earning_leave ?></span>
+
+                        </h6>
                     </div>
                     <?php } ?>
                     <?php if ($search && $emp_id > 0) {
@@ -445,31 +479,7 @@ $row = $res[0] ?? [];
             width: '100%'
         });
     });
-
-    function funDel(id) {
-        $('#deleteRecordModal').modal('show');
-        tblname = '<?php echo $tblname; ?>';
-        tblpkey = '<?php echo $tblpkey; ?>';
-        imgpath = '<?php echo $imgpath; ?>';
-        pagename = '<?php echo $pagename; ?>';
-        submodule = '<?php echo $submodule; ?>';
-        $('#delete-record').click(function() {
-            $.ajax({
-                type: 'POST',
-                url: 'ajax/delete_master_emp.php',
-                data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&imgpath=' +
-                    imgpath + '&submodule=' + submodule + '&pagename=' + pagename,
-                dataType: 'html',
-                success: function(data) {
-                    $("#tr_" + id).hide();
-                    // alert(data);
-                    // location.reload();
-                }
-            });
-            $('#deleteRecordModal').modal('hide');
-        });
-    };
-
+ 
     function numberOnly(evt) {
         var theEvent = evt || window.event;
 

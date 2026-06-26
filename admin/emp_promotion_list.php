@@ -111,6 +111,9 @@ if (isset($_GET['year'])) {
                 <?php include('inc/bredcrum.php') ?>
                 <?php include('inc/alert.php'); ?>
                 <div class="row">
+                     <?php
+                    if (!isset($_GET['submit'])) {
+                    ?>
                      <div class="col-lg-12">
                         <div class="card" id="customerList">
                             <div class="card-header border-bottom-dashed">
@@ -234,12 +237,22 @@ if (isset($_GET['year'])) {
                             </div>
                         </div>
                     </div>
+<?php } ?>
                     <?php
                     if (isset($_GET['submit'])) {
                     ?>
                         <div class="col-lg-12">
                             <div class="card" id="customerList">
-                                
+                                <div class="card-header border-bottom-dashed">
+                                    <div class="row g-4 align-items-center">
+                                        <div class="col-sm">
+                                            <div>
+                                                <h5 class="card-title mb-0"><?php echo $submodule; ?> <a href="emp_promotion_list.php"
+                                                        class="float-end btn btn-primary btn-sm">Search Again</a></h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="card-body">
                                     <div class="auto-scroll-wrapper">
                                         <div class="table-responsive">
@@ -257,7 +270,11 @@ if (isset($_GET['year'])) {
                                                         <th>Department</th>
                                                         <th>Designation</th>
                                                         <th>Promotion Date</th>
-                                                    
+                                                        <th>Prev Salary</th>
+                                                        <th>Promotion Amt</th>
+                                                        <th>New Salary</th>
+                                                        <th>Effected Month/Year</th>
+                                                       
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -268,22 +285,22 @@ if (isset($_GET['year'])) {
 
                                                     ?>
                                                     <tr id="tr_<?= $row["emp_promotion_id"]; ?>" data-details="
-                                        <div style='background:#dafced; padding:4px;'>
-                                        <?php if (!empty($row['created_name'])): ?>
-                                        Added by (User: <?= $row['created_name'] ?>,
-                                        Username: <?= $row['created_username'] ?>,
-                                        Mobile: <?= $row['created_mobile'] ?>,
-                                        Date: <?= $row['createdate'] ?>,)<br>
-                                        <?php endif; ?>
+                                                        <div style='background:#dafced; padding:4px;'>
+                                                        <?php if (!empty($row['created_name'])): ?>
+                                                        Added by (User: <?= $row['created_name'] ?>,
+                                                        Username: <?= $row['created_username'] ?>,
+                                                        Mobile: <?= $row['created_mobile'] ?>,
+                                                        Date: <?= $row['createdate'] ?>,)<br>
+                                                        <?php endif; ?>
 
-                                        <?php if (!empty($row['updated_name'])): ?>
-                                        Last Edited by (User: <?= $row['updated_name'] ?>,
-                                        Username: <?= $row['updated_username'] ?>,
-                                        Mobile: <?= $row['updated_mobile'] ?>,
-                                        Date: <?= $row['lastupdated'] ?>) 
-                                        <?php endif; ?>
-                                        </div>
-                                    ">
+                                                        <?php if (!empty($row['updated_name'])): ?>
+                                                        Last Edited by (User: <?= $row['updated_name'] ?>,
+                                                        Username: <?= $row['updated_username'] ?>,
+                                                        Mobile: <?= $row['updated_mobile'] ?>,
+                                                        Date: <?= $row['lastupdated'] ?>) 
+                                                        <?php endif; ?>
+                                                        </div>
+                                                    ">
                                                         <td class="details-control text-center" style="cursor:pointer;">
                                                             <?php echo $slno++; ?>
                                                             <i class="ri-add-circle-fill text-primary"></i>
@@ -313,9 +330,10 @@ if (isset($_GET['year'])) {
                                                                 class="<?= $row['status'] == 1 ? 'badge bg-success' : ($row['status'] == 2 ? 'badge bg-danger' : 'badge bg-warning text-dark') ?>"
                                                                 
                                                                 <?= $row['status'] == 0 
-                                                                    ? "style='cursor:pointer;' onclick=\"updatePromotionStatus('{$row['emp_promotion_id']}', '{$row['emp_id']}', '{$row['department_id']}', '{$row['designation_id']}', '{$row['basic_salary']}', '{$row['status']}')\"" 
+                                                                    ? "style='cursor:pointer;' onclick=\"updatePromotionStatus('{$row['emp_promotion_id']}', '{$row['emp_id']}', '{$row['department_id']}', '{$row['designation_id']}', '{$row['basic_salary']}', '{$row['status']}', '{$row['effected_month']}', '{$row['effected_year']}')\"" 
                                                                     : "style='cursor:not-allowed;'" 
                                                                 ?>
+                                                                
                                                             >
                                                                 <?= $row['status'] == 1 ? 'Approved' : ($row['status'] == 2 ? 'Rejected' : 'Pending') ?>
                                                             </span>
@@ -329,6 +347,13 @@ if (isset($_GET['year'])) {
                                                         <td><?php echo $row['department_name']; ?></td>
                                                         <td><?php echo $row['designation']; ?></td>
                                                         <td><?php echo $obj->dateformatindia($row["promotion_date"]); ?>
+                                                        </td>
+                                                        
+                                                        <td><?php echo $row['prev_salary']; ?></td>
+                                                        <td><?php echo $row['promote_amt']; ?></td>
+                                                        <td><?php echo $row['basic_salary']; ?></td>
+                                                        <td>
+                                                            <?= date("M Y", mktime(0, 0, 0, $row['effected_month'], 1, $row['effected_year'])) ?>
                                                         </td>
                                                         
                                                     </tr>
@@ -427,7 +452,7 @@ if (isset($_GET['year'])) {
         });
 
     });
-    function updatePromotionStatus(promotion_id, emp_id, department_id, designation_id, basic_salary, status) {
+    function updatePromotionStatus(promotion_id, emp_id, department_id, designation_id, basic_salary, status,effected_month,effected_year) {
 
         // already processed check
         if (status == 1) {
@@ -471,9 +496,11 @@ if (isset($_GET['year'])) {
                     department_id: department_id,
                     designation_id: designation_id,
                     basic_salary: basic_salary,
+                    effected_month: effected_month,
+                    effected_year: effected_year, 
                     action: action
                 },
-                success: function(res) {
+                success: function(res) { 
                     if(res.trim() == 'success'){
                         Swal.fire('Success!', 'Action completed successfully.', 'success')
                             .then(() => location.reload());

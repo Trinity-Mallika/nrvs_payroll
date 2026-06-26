@@ -82,7 +82,7 @@
                             <span><i class="bi bi-calendar-minus"></i></span>&nbsp; Leave Application
                         </li>
                     </a>
-  <a href="approval_leave_list.php" class="mt-2">
+                    <a href="approval_leave_list.php" class="mt-2">
                         <li class="list-group-item border-0">
                             <span><i class="bi bi-briefcase"></i></span>&nbsp; Leave Requests for Approval
                         </li>
@@ -92,6 +92,11 @@
                             <span><i class="bi bi-briefcase"></i></span>&nbsp; On Duty Application
                         </li>
                     </a> 
+                    <a href="approval_on_duty_list.php" class="mt-2">
+                        <li class="list-group-item border-0">
+                            <span><i class="bi bi-briefcase"></i></span>&nbsp;On Duty Requests for Approval
+                        </li>
+                    </a>
                     <!-- <a href="manage-gatepass.php" class="mt-2">
                         <li class="list-group-item border-0"><span> <i class="bi bi-file-text"></i></span>&nbsp; Manage Gate Pass</li>
                     </a>

@@ -134,11 +134,11 @@ $skipReasons = [];
                         $obj->timeToHours($shift_wh) / 2
                     );
                 } elseif ($status === 'L') {
-                    $row['attendance_status'] = 'Earning Leave';
+                    $row['attendance_status'] = 'Leave';
                 } elseif ($status === 'C') {
                     $row['attendance_status'] = 'C Off';
                 } elseif ($status === 'HL') {
-                    $row['attendance_status'] = 'Half Earning Leave';
+                    $row['attendance_status'] = 'Half Leave';
                 } elseif ($status === 'HC') {
                     $row['attendance_status'] = 'Half C Off';
                 }

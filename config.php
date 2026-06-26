@@ -1,27 +1,28 @@
 <?php
 date_default_timezone_set('Asia/Kolkata');
+
 class Database
 {
-	public $con;
-	public function __construct()
-	{
-		// echo $_SERVER["SERVER_NAME"];
-		if ($_SERVER["SERVER_NAME"] == "localhost"  || $_SERVER["SERVER_NAME"] == "trinity" || $_SERVER["SERVER_NAME"] == "192.168.1.8") {
-			//echo "asdfasd";die;
-			$dbhost = "localhost";
-			$dbuser = "root";
-			$dbpass = "";
-			$db = "nrvs_payroll";
-			$this->con = mysqli_connect($dbhost, $dbuser, $dbpass, $db);
-		} else {
-			$dbhost = "localhost";
-			$dbuser = "u612877078_nrvs";
-			$dbpass = "4h!Ybg00";
-			$db = "u612877078_nrvs";
-			$this->con = mysqli_connect($dbhost, $dbuser, $dbpass, $db);
-		}
-		if (!$this->con) {
-			die('Could not connect:' . mysqli_connect_error());
-		}
-	}
+    public $con;
+
+    public function __construct()
+    {
+        if ($_SERVER["SERVER_NAME"] == "localhost" || $_SERVER["SERVER_NAME"] == "trinity" || $_SERVER["SERVER_NAME"] == "192.168.1.8") {
+            $dbhost = "localhost";
+            $dbuser = "root";
+            $dbpass = "";
+            $db = "nrvs_payroll";
+        } else {
+            $dbhost = "p:127.0.0.1"; // persistent connection
+            $dbuser = "u612877078_nrvs";
+            $dbpass = "4h!Ybg00";
+            $db = "u612877078_nrvs";
+        }
+
+        $this->con = mysqli_connect($dbhost, $dbuser, $dbpass, $db);
+
+        if (!$this->con) {
+            die('Could not connect: ' . mysqli_connect_error());
+        }
+    }
 }

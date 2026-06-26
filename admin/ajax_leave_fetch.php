@@ -18,6 +18,7 @@ $leaveTypeArr = [
     'EO' => 'EXTRA OFF',
     'L' => 'OPENING LEAVE',
     'WL' => 'Weekly Leave',
+    'CO' => 'C Off',
     'LWP' => 'Leave Without Pay'
 ];
 foreach ($details as $row) {
@@ -37,6 +38,12 @@ foreach ($details as $row) {
                         class="ri-delete-bin-5-line label-icon align-middle fs-14 "></i>Del</button>
                 <button type="button" class="btn btn-primary btn-sm"
                     onclick="editLeave('<?= $row['leave_details_id']; ?>','<?= $row['date']; ?>','<?= $row['leave_day']; ?>','<?= $row['leave_type']; ?>','<?= $row['remark']; ?>');">Edit</button>
+            <?php } elseif ($row['status'] == 1) { ?>
+                <span class="badge bg-success text-white">Approved</span>
+            <?php } elseif ($row['status'] == 2) { ?>
+                <span class="badge bg-danger text-white">Rejected</span>
+            <?php } else { ?>
+                <span class="badge bg-warning text-white">Pending</span>
             <?php } ?>
         </td>
     </tr>

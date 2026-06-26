@@ -32,6 +32,8 @@ $imgpath = "../admin/uploaded/on_duty/";
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title><?= $title ?></title>
     <?php include("inc/css-file.php"); ?>
+    <link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css">
 </head>
 
 <body class="dashboard">
@@ -52,17 +54,19 @@ $imgpath = "../admin/uploaded/on_duty/";
                 <div class="card">
                     <div class="col-12">
                         <label class="form-label small">From Date</label>
-                        <input type="date" id="from_date" class="form-control form-control-sm"
-                            value="<?= date("Y-m-01"); ?>">
+                        <input type="text" id="from_date"
+                        class="form-control form-control-sm datepicker"
+                        value="<?= date('01-m-Y'); ?>">
                     </div>
 
                     <div class="col-12">
                         <label class="form-label small">To Date</label>
-                        <input type="date" id="to_date" class="form-control form-control-sm"
-                            value="<?= date("Y-m-d"); ?>">
+                        <input type="text" id="to_date"
+                    class="form-control form-control-sm datepicker"
+                    value="<?= date('d-m-Y'); ?>">
                     </div>
 
-                    <div class="col-12">
+                    <div class="col-12 mt-2">
                         <button class="btn btn-primary btn-sm w-100" onclick="filterByDate()">
                             Filter
                         </button>
@@ -96,9 +100,14 @@ $imgpath = "../admin/uploaded/on_duty/";
     <?php include("inc/js-file.php"); ?>
 
 </body>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/js/bootstrap-datepicker.min.js"></script>
 <script>
     $(document).ready(function() {
+        $('.datepicker').datepicker({
+    format: 'dd-mm-yyyy',
+    autoclose: true,
+    todayHighlight: true
+});
         let from_date = $('#from_date').val();
         let to_date = $('#to_date').val();
 

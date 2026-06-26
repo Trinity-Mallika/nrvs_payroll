@@ -60,10 +60,9 @@ if (isset($_GET[$tblpkey])) {
     $gst = $unit_data["gstin_no"] ?? "";
     $currentYear  = date('Y', strtotime($application_date));
     $currentMonth = date('m', strtotime($application_date));
-    $opening_leave_balance =$obj->get_opening_leave_balance($emp_id, $sessionid);
-    $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
-     
-    $extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear);
+    $opening_leave_balance = $obj->get_opening_leave_balance($emp_id, $sessionid, $currentMonth, $currentYear);
+    $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid, $currentMonth, $currentYear);
+    $extra_off = $obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear);
 }
 $total_days  = $obj->getvalfield(
     "leave_apply_detail",
@@ -79,68 +78,70 @@ $total_days  = $obj->getvalfield(
 );
 $unit_imgpath = 'uploaded/unit_logo/';
 $logo_html = '';
+$mpdf->SetWatermarkImage(__DIR__ . '/assets/images/water-mark.png', 0.2, "", [65, 40]);
+$mpdf->showWatermarkImage = true;
 
 ob_start();
 ?>
 <style>
-    body {
-        font-family: sans-serif;
-        font-size: 12px;
-    }
+body {
+    font-family: sans-serif;
+    font-size: 12px;
+}
 
-    .header {
-        text-align: center;
-        font-weight: bold;
-    }
+.header {
+    text-align: center;
+    font-weight: bold;
+}
 
-    .title {
-        text-align: center;
-        font-size: 14px;
-        font-weight: bold;
-        margin-top: 25px;
-    }
+.title {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 25px;
+}
 
-    .table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-    }
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
 
-    .table th,
-    .table td {
-        border: 1px solid #000;
-        padding: 5px;
-        font-size: 11px;
-    }
+.table th,
+.table td {
+    border: 1px solid #000;
+    padding: 5px;
+    font-size: 11px;
+}
 
-    .no-border td {
-        border: none;
-    }
+.no-border td {
+    border: none;
+}
 
-    .section {
-        margin-top: 10px;
-    }
+.section {
+    margin-top: 10px;
+}
 
-    .sign {
-        margin-top: 40px;
-    }
+.sign {
+    margin-top: 40px;
+}
 
-    .sign-row {
-        width: 100%;
-        overflow: hidden;
-        margin-bottom: 40px;
-    }
+.sign-row {
+    width: 100%;
+    overflow: hidden;
+    margin-bottom: 40px;
+}
 
-    .sign-col {
-        width: 48%;
-        float: left;
-        font-weight: bold;
-    }
+.sign-col {
+    width: 48%;
+    float: left;
+    font-weight: bold;
+}
 
-    .sign-col.right {
-        float: right;
-        text-align: right;
-    }
+.sign-col.right {
+    float: right;
+    text-align: right;
+}
 </style>
 
 <div class="header">
@@ -191,13 +192,13 @@ ob_start();
     foreach ($leave_details as $row) {
         $approve_by = $obj->getvalfield("user", "username", "userid='$row[approve_by]'");
     ?>
-        <tr>
-            <td><?= $i++ ?></td>
-            <td><?= $obj->dateformatindia($row['date']) ?></td>
-            <td><?= date('l', strtotime($row['date'])) ?></td>
-            <td><?= $row['leave_type'] ?></td>
-            <td><?= $row['leave_day'] ?></td>
-            <td> <?php
+    <tr>
+        <td><?= $i++ ?></td>
+        <td><?= $obj->dateformatindia($row['date']) ?></td>
+        <td><?= date('l', strtotime($row['date'])) ?></td>
+        <td><?= $row['leave_type'] ?></td>
+        <td><?= $row['leave_day'] ?></td>
+        <td> <?php
                     if ($row['status'] == 0) {
                         echo 'Pending';
                     } elseif ($row['status'] == 1) {
@@ -206,15 +207,17 @@ ob_start();
                         echo 'Rejected';
                     }
                     ?></td>
-            <td><?= $approve_by ?></td>
-            <td><?= $obj->dateformatindia($row['approve_date']) ?></td>
-        </tr>
+        <td><?= $approve_by ?></td>
+        <td><?= $obj->dateformatindia($row['approve_date']) ?></td>
+    </tr>
     <?php } ?>
 </table>
 
 <table class="table no-border">
     <tr>
-        <td><b>Bal Leave:</b> Opening Leave Balance - <?= $opening_leave_balance; ?> <br>Extra Off : <?= $extra_off['balance'] ?>
+        <td><b>Bal Leave As Per (<?= $application_date ?>):</b> Opening Leave Balance : <?= $opening_leave_balance; ?>
+            <br>Extra Off :
+            <?= $extra_off['balance'] ?>
         </td>
         <td><b>Earn Leave :</b> <?= $total_earning_leave ?></td>
     </tr>

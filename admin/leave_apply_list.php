@@ -36,162 +36,36 @@ if (isset($_GET['status1'])) {
     $status1 = "";
 };
 
-if (isset($_POST['updatess'])) {
-    $updates = $_POST['updatess'];
-    $emp_id = $obj->test_input($_POST['emp_id']);
-    $emp_data = $obj->select_record("employee_master", ['emp_id' => $emp_id]);
-    $department_id = $emp_data['department_id'];
-    $shift_hrs = $emp_data['shift_id'];
-    $unit_id = $emp_data['unit_id'];
-    $basic_salary = $emp_data['basic_salary'];
-
-
-    foreach ($updates as $row) {
-        $id = $row['id'];
-        $status = $row['status'];
-        $remark = $row['remark'];
-        $leave_type = $row['leave_type'];
-        $leave_day = $row['leave_day'];
-        $date = $row['date'];
-
-        $obj->update_record("leave_apply_detail", ['leave_details_id' => $id], ['status' => $status, 'updatedby' => $loginid, 'appr_remark' => $remark, 'lastupdated' => $createdate, 'approve_date' => $createdate, 'approve_by' => $loginid]);
-        if ($status == 1) {
-            $month = date('m', strtotime($date));
-            $year  = date('Y', strtotime($date));
-            $where = array(
-                'emp_id' => $emp_id,
-                'attendance_date'  => $date,
-                'year'   => $year,
-                'month'   => $month,
-                'unit_id'   => $unit_id
-            );
-            $obj->delete_record('attendance_entry', $where);
-
-            $obj->delete_record('attendance_log', $where);
-            if ($leave_type == 'LWP') {
-                continue;
-            }
-            $leave_data = array(
-                "emp_id" => $emp_id,
-                "department_id" => $department_id,
-                "month" => (int)$month,
-                "year" => (int)$year,
-                "basic_salary" => $basic_salary,
-                "unit_id" => $unit_id,
-                "createdby" => $loginid,
-                "ipaddress" => $ipaddress,
-                "sessionid" => $sessionid,
-                "createdate" => date("Y-m-d H:i:s")
-            );
-
-
-            $punch_status = '';
-            if ($leave_day == 'FD' || $leave_day == 'SL') {
-
-                if ($leave_type == 'WL') {
-                    $punch_status = 'weekly_leave';
-                } elseif ($leave_type == 'EL') {
-                    $punch_status = 'earn_leave';
-                } elseif ($leave_type == 'EO') {
-                    $punch_status = 'extra_off';
-                } elseif ($leave_type == 'L') {
-                    $punch_status = 'leave';
-                }
-            } elseif ($leave_day == 'FHD' || $leave_day == 'SHD') {
-
-                if ($leave_type == 'WL') {
-                    $punch_status = 'half_weekly_leave';
-                } elseif ($leave_type == 'EL') {
-                    $punch_status = 'half_earn_leave';
-                } elseif ($leave_type == 'EO') {
-                    $punch_status = 'half_extra_off';
-                } elseif ($leave_type == 'L') {
-                    $punch_status = 'half_leave';
-                }
-            }
-
-            $sql = "SELECT shift_id, in_time, out_time,working_hour, is_cross_day,grace_time_in,grace_time_out FROM shift_master WHERE unit_id = '$unit_id' AND working_hour = '$shift_hrs' ORDER BY shift_id ASC LIMIT 1";
-
-            $res = $obj->executequery($sql);
-            if (empty($res)) continue;
-            $shift = $res[0];
-            $office_in_time = $shift['in_time'];
-            $office_out_time = $shift['out_time'];
-            $shift_id     = $shift['shift_id'];
-            $office_working_hour = $shift['working_hour'];
-            $in_margin = $shift['grace_time_in'];
-            $out_margin = $shift['grace_time_out'];
-
-
-
-            $form_date = [
-                'emp_id' => $emp_id,
-                'department_id' => $department_id,
-                'attendance_date' => $date,
-                'attendance_stamp' => $date,
-                "month" => (int)$month,
-                "year" => (int)$year,
-                'shift_id' => $shift_id,
-                'entry_type' => 'manual',
-                'entry_type_out' => 'manual',
-                'in_status' => 'IN',
-                'out_status' => 'OUT',
-                'unit_id' => $unit_id,
-                'sessionid' => $sessionid,
-                'in_remark' => $remark,
-                'basic_salary' => $basic_salary,
-                'createdate' => date('Y-m-d'),
-                'createtime' => $current_time,
-                'createdby' => $loginid,
-                'updateby' => $loginid,
-                'lastupdated' => date('Y-m-d'),
-                'ipaddress' => $ipaddress,
-            ];
-
-            if ($punch_status == 'weekly_leave') {
-                $form_date['attendance_status'] = 'Weekly Leave'; 
-            } elseif ($punch_status == 'earn_leave') { 
-                $form_date['attendance_status'] = 'Earning Leave'; 
-            } elseif ($punch_status == 'half_weekly_leave') { 
-                $form_date['attendance_status'] = 'Half Weekly Leave'; 
-            } elseif ($punch_status == 'half_earn_leave') { 
-                $form_date['attendance_status'] = 'Half Earning Leave'; 
-            }elseif ($punch_status == 'half_extra_off') { 
-                $form_date['attendance_status'] = 'Half Extra Off'; 
-            } elseif ($punch_status == 'extra_off') { 
-                $form_date['attendance_status'] = 'Extra Off'; 
-            }elseif ($punch_status == 'leave') { 
-                $form_date['attendance_status'] = 'Leave'; 
-            } elseif ($punch_status == 'half_leave') { 
-                $form_date['attendance_status'] = 'Half Leave'; 
-            }
-
-            $lastid = $obj->insert_record_lastid("attendance_entry", $form_date);
-
-
-
-            $form_data1 = array(
-                "primary_id" => $lastid,
-                "flag" => 'Punch IN and OUT Attendence',
-                "activity_type" => 'Attendence IN/OUT From Leave',
-                "createdby" => $loginid,
-                "pagename" => $pagename,
-                "created_date" => $createdate,
-                "created_time" => date('H:i:s'),
-                "unit_id" => $unitid,
-                'ipaddress' => $ipaddress,
-                "sessionid" => $sessionid
-            );
-            $logactivity = $obj->insert_record("logactivity_master", $form_data1);
-        }
+if (isset($_GET['leave_type'])) {
+    $leave_type = $obj->test_input($_GET['leave_type']); 
+    if ($leave_type != '') {
+        $crit .= " and lpd.leave_type='$leave_type'";
     }
-    echo "success";
-    die;
+} else {
+    $leave_type = "";
+};
+ 
+  
+$approval_type = $_GET['approval_type'] ?? '';
+
+if ($approval_type == 'hod') {
+    $crit .= " AND lpd.is_apr_hod != 0 AND lpd.status = 0";
+}
+
+if ($approval_type == 'hr') {
+    $crit .= " AND lpd.status != 0";
+}
+if ($approval_type == 'emp') {
+    $crit .= " AND od.entry_by ='emp'";
+}
+if ($approval_type == 'e_hr') {
+    $crit .= " AND od.entry_by ='hr'";
 }
 ?>
 
 <!doctype html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
+    data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
 
 <head>
     <meta charset="utf-8" />
@@ -199,14 +73,14 @@ if (isset($_POST['updatess'])) {
     <?php include('inc/css.php') ?>
 </head>
 <style>
-    .table-borderless tr td {
-        border: 0px !important;
-        padding-bottom: 0px;
-    }
+.table-borderless tr td {
+    border: 0px !important;
+    padding-bottom: 0px;
+}
 
-    .detail-row {
-        display: none;
-    }
+.detail-row {
+    display: none;
+}
 </style>
 
 <body>
@@ -221,14 +95,15 @@ if (isset($_POST['updatess'])) {
                 <?php //include('inc/alert.php'); 
                 ?>
                 <div class="row">
-
+                    <?php if (!isset($_GET['submit'])) { ?>
                     <div class="col-lg-12">
                         <div class="card" id="customerList">
                             <div class="card-header border-bottom-dashed">
                                 <div class="row g-4 align-items-center">
                                     <div class="col-sm">
                                         <div>
-                                            <h5 class="card-title mb-0"> <?= $module; ?><a href="leave_apply.php" class="float-end btn btn-primary btn-sm">Add</a></h5>
+                                            <h5 class="card-title mb-0"> <?= $module; ?><a href="leave_apply.php"
+                                                    class="float-end btn btn-primary btn-sm">Add</a></h5>
                                         </div>
                                     </div>
                                 </div>
@@ -239,191 +114,308 @@ if (isset($_POST['updatess'])) {
                                         <div class="col-lg-3">
                                             <label for="">Application From</label>
                                             <div class="d-flex">
-                                                <input type="date" name="od_date_from" id="od_date_from" class="form-control form-control-sm me-2" value="<?= $od_date_from ?>"> <span class="mt-1 fw-bold"> To</span>
-                                                <input type="date" name="od_date_to" id="od_date_to" class="form-control form-control-sm ms-2" value="<?= $od_date_to ?>">
+                                                <input type="date" name="od_date_from" id="od_date_from"
+                                                    class="form-control form-control-sm me-2"
+                                                    value="<?= $od_date_from ?>"> <span class="mt-1 fw-bold"> To</span>
+                                                <input type="date" name="od_date_to" id="od_date_to"
+                                                    class="form-control form-control-sm ms-2"
+                                                    value="<?= $od_date_to ?>">
                                             </div>
                                         </div>
 
                                         <div class="col-lg-3 mb-2">
                                             <label for="status1" class="form-label">Status<span
                                                     class="text-danger fw-bold"> </span></label>
-                                            <select class="form-select form-select-sm chosen-select"
-                                                name="status1" id="status1">
+                                            <select class="form-select form-select-sm chosen-select" name="status1"
+                                                id="status1">
                                                 <option value="">All</option>
                                                 <option value="0">Pending</option>
                                                 <option value="1">Approved</option>
                                                 <option value="2">Reject</option>
                                             </select>
                                             <script>
-                                                document.getElementById('status1').value = '<?= $status1; ?>';
+                                            document.getElementById('status1').value = '<?= $status1; ?>';
+                                            </script>
+                                        </div>
+
+                                        <div class="col-lg-3 mb-2">
+                                            <label for="leave_type" class="form-label">Leave Type<span
+                                                    class="text-danger fw-bold"> </span></label>
+                                            <select class="form-select form-select-sm chosen-select" name="leave_type"
+                                                id="leave_type">
+                                                <option value="">All</option>
+                                                <option value="EL">EARNED LEAVE</option> 
+                                                <option value="EO">EXTRA OFF</option>
+                                                <option value="CO">C-OFF</option>
+                                            </select>
+                                            <script>
+                                            document.getElementById('leave_type').value = '<?= $leave_type; ?>';
+                                            </script>
+                                        </div>
+                                        <div class="col-lg-3 mb-2">
+                                            <label for="leave_type" class="form-label">Show List<span
+                                                    class="text-danger fw-bold"> </span></label>
+                                           <select class="form-select form-select-sm chosen-select" id="approval_type" name="approval_type">
+                                                <option value="">All Records</option>
+                                                <option value="emp">Entry By Employee</option>
+                                                <option value="e_hr">Entry By HR</option> 
+                                                <option value="hod">Show Only HOD Approved And HR Pending Data</option>
+                                                <option value="hr">Show Only HR Approved And Reject Data</option>
+                                            </select>
+                                            <script>
+                                            document.getElementById('leave_type').value = '<?= $leave_type; ?>';
                                             </script>
                                         </div>
                                         <div class="col-lg-3">
                                             <label for="">Employee Name</label>
-                                            <select name="emp_id" id="emp_id" class="form-select form-select-sm chosen-select">
+                                            <select name="emp_id" id="emp_id"
+                                                class="form-select form-select-sm chosen-select">
                                                 <option value="">All</option>
                                                 <?php
-                                                $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
-                                                foreach ($res as $key) { ?>
-                                                    <option value="<?= $key['emp_id']; ?>">
-                                                        <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?> <?= ucfirst($key['last_name'] ?? ''); ?></option>
+                                                    $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
+                                                    foreach ($res as $key) { ?>
+                                                <option value="<?= $key['emp_id']; ?>">
+                                                    <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?>
+                                                    <?= ucfirst($key['last_name'] ?? ''); ?></option>
                                                 <?php } ?>
                                             </select>
                                         </div>
-                                        <div class="col-lg-3">
-                                            <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
-                                            <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('application_date,emp_id,on_duty_type')">
-                                            <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
+                                        <div class="col-lg-3"> 
+                                            <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn"
+                                                value="<?php echo $btn_name ?> "
+                                                onClick="return checkinputmaster('application_date,emp_id,on_duty_type')">
+                                            <a href=" <?php echo $pagename ?>" type="button"
+                                                class="btn btn-sm btn-danger add-btn">Reset</a>
                                         </div>
                                     </div>
                                 </form>
                             </div>
                         </div>
                     </div>
-
+                    <?php } ?>
+                    <?php if (isset($_GET['submit'])) { ?>
                     <div class="col-lg-12">
                         <div class="card" id="customerList">
+                            <div class="card-header border-bottom-dashed">
+                                <div class="row g-4 align-items-center">
+                                    <div class="col-sm">
+                                        <div>
+                                            <h5 class="card-title mb-0"> <?= $module; ?><a href="leave_apply_list.php"
+                                                    class="float-end btn btn-primary btn-sm ms-2">Search Again</a> <a
+                                                    href="leave_apply.php" class="float-end btn btn-primary btn-sm">Add</a>
+                                            </h5>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-lg-12 mb-3">
-                                        <div class="table-responsive">
-                                            <table id="buttons-datatables" class="table table-sm table-bordered">
-                                                <thead>
-                                                    <tr class="table-primary">
-                                                        <th>Sr No.</th>
-                                                        <th>Date</th>
-                                                        <th>Emp Code</th>
-                                                        <th>Emp Name</th>
-                                                        <th>Substitute Employee</th>
-                                                        <th>Leave From </th>
-                                                        <th>Leave To </th>
-                                                        <th>Days</th>
-                                                        <th>Balance Leave</th>
-                                                        <th>Used Leave</th>
-                                                        <th>Approve</th>
-                                                        <th>Reject</th>
-                                                        <th>Pending</th>
-                                                        <th>Doc</th>
-                                                        <th>Print</th>
-                                                        <th>Edit</th>
-                                                        <th>Delete</th>
-                                                        <th>Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <?php
-                                                    $slno = 1;
-                                                    $res = $obj->executequery("SELECT 
-                                                        od.*,
-                                                        em.first_name,
-                                                        sem.first_name as sub_emp_name,
-                                                        em.last_name,
-                                                        em.is_esic,
-                                                        em.emp_code,
-                                                        MIN(lpd.date) as from_date,
-                                                        MAX(lpd.date) as to_date,
+                                        <div class="auto-scroll-wrapper"> 
+                                            <div class="table-responsive">
+                                                <table id="buttons-datatables" class="table table-sm table-bordered">
+                                                    <thead>
+                                                        <tr class="table-primary">
+                                                            <th>Sr No.</th>
+                                                            <th>Date</th>
+                                                            <th>Emp Code</th>
+                                                            <th>Emp Name</th>
+                                                            <th>Department</th>
+                                                            <th>Designation</th>
+                                                            <th>Substitute Employee</th>
+                                                            <th>Leave From </th>
+                                                            <th>Leave To </th>
+                                                            <th>Days</th>
+                                                            <th>Balance Leave</th>
+                                                            <th>Earn Leave</th>
+                                                            <th>Extra Off</th>
+                                                            <th>C-Off</th>
+                                                            <th>Approve</th>
+                                                            <th>Reject</th>
+                                                            <th>Pending</th>
+                                                            <th>Doc</th>
+                                                            <th>Print</th>
+                                                            <th>Edit</th>
+                                                            <th>Delete</th>
+                                                            <th>Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php
+                                                            $slno = 1;
+                                                        $sql="SELECT 
+                                                                od.*,
+                                                                em.first_name,
+                                                                dm.department_name,
+                                                                desi.designation,
+                                                                sem.first_name as sub_emp_name,
+                                                                em.last_name,
+                                                                em.is_esic,
+                                                                em.emp_code,
+                                                                MIN(lpd.date) as from_date,
+                                                                MAX(lpd.date) as to_date,
+                                                                MONTH(od.application_date) as apply_month,
+                                                                YEAR(od.application_date) as apply_year,
+                                                                SUM(
+                                                                CASE 
+                                                                    WHEN lpd.leave_day = 'FD' THEN 1
+                                                                    WHEN lpd.leave_day = 'SL' THEN 1
+                                                                    WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
+                                                                    ELSE 0
+                                                                END
+                                                            ) as total_day,
+                                                            SUM(
+                                                            CASE 
+                                                                WHEN lpd.status = 1 THEN 
+                                                                    CASE 
+                                                                        WHEN lpd.leave_day IN ('FD','SL') THEN 1
+                                                                        WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
+                                                                        ELSE 0
+                                                                    END
+                                                                ELSE 0
+                                                            END
+                                                        ) as approved_days,
+                                                            SUM(
+                                                            CASE 
+                                                                WHEN lpd.status = 2 THEN 
+                                                                    CASE 
+                                                                        WHEN lpd.leave_day IN ('FD','SL') THEN 1
+                                                                        WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
+                                                                        ELSE 0
+                                                                    END
+                                                                ELSE 0
+                                                            END
+                                                        ) as rejected_days,
+
                                                         SUM(
+                                                            CASE 
+                                                                WHEN lpd.status = 0 THEN 
+                                                                    CASE 
+                                                                        WHEN lpd.leave_day IN ('FD','SL') THEN 1
+                                                                        WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
+                                                                        ELSE 0
+                                                                    END
+                                                                ELSE 0
+                                                            END
+                                                        ) as pending_days,
+                                                        SUM(
+                                                            CASE 
+                                                                WHEN lpd.status = 1 THEN
+                                                                    CASE 
+                                                                        WHEN lpd.leave_day IN ('FD','SL') THEN 1
+                                                                        WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
+                                                                        ELSE 0
+                                                                    END
+                                                                ELSE 0
+                                                            END
+                                                        ) as used_leave,
+                                                        SUM(
+                                                            CASE
+                                                                WHEN lpd.leave_type = 'EL' THEN
+                                                                    CASE
+                                                                        WHEN lpd.leave_day IN ('FD','SL') THEN 1
+                                                                        WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
+                                                                        ELSE 0
+                                                                    END
+                                                                ELSE 0
+                                                            END
+                                                        ) AS used_el,
+
+                                                        SUM(
+                                                            CASE
+                                                                WHEN lpd.leave_type = 'EO' THEN
+                                                                    CASE
+                                                                        WHEN lpd.leave_day IN ('FD','SL') THEN 1
+                                                                        WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
+                                                                        ELSE 0
+                                                                    END
+                                                                ELSE 0
+                                                            END
+                                                        ) AS used_eo,
+
+                                                        SUM(
+                                                            CASE
+                                                                WHEN lpd.leave_type = 'CO' THEN
+                                                                    CASE
+                                                                        WHEN lpd.leave_day IN ('FD','SL') THEN 1
+                                                                        WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
+                                                                        ELSE 0
+                                                                    END
+                                                                ELSE 0
+                                                            END
+                                                        ) AS used_co,
+
                                                         CASE 
-                                                            WHEN lpd.leave_day = 'FD' THEN 1
-                                                            WHEN lpd.leave_day = 'SL' THEN 1
-                                                            WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
-                                                            ELSE 0
-                                                        END
-                                                    ) as total_day,
-                                                    SUM(
-                                                    CASE 
-                                                        WHEN lpd.status = 1 THEN 
-                                                            CASE 
-                                                                WHEN lpd.leave_day IN ('FD','SL') THEN 1
-                                                                WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
-                                                                ELSE 0
-                                                            END
-                                                        ELSE 0
-                                                    END
-                                                ) as approved_days,
-                                                    SUM(
-                                                    CASE 
-                                                        WHEN lpd.status = 2 THEN 
-                                                            CASE 
-                                                                WHEN lpd.leave_day IN ('FD','SL') THEN 1
-                                                                WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
-                                                                ELSE 0
-                                                            END
-                                                        ELSE 0
-                                                    END
-                                                ) as rejected_days,
+                                                            WHEN od.entry_by = 'emp' THEN CONCAT(em.first_name,' ',em.last_name)
+                                                            ELSE cu.fullname
+                                                        END AS created_name,
 
-                                                SUM(
-                                                    CASE 
-                                                        WHEN lpd.status = 0 THEN 
-                                                            CASE 
-                                                                WHEN lpd.leave_day IN ('FD','SL') THEN 1
-                                                                WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
-                                                                ELSE 0
-                                                            END
-                                                        ELSE 0
-                                                    END
-                                                ) as pending_days,
-                                                SUM(
-                                                    CASE 
-                                                        WHEN lpd.status = 1 THEN
-                                                            CASE 
-                                                                WHEN lpd.leave_day IN ('FD','SL') THEN 1
-                                                                WHEN lpd.leave_day IN ('FHD','SHD') THEN 0.5
-                                                                ELSE 0
-                                                            END
-                                                        ELSE 0
-                                                    END
-                                                ) as used_leave,
-                                                cu.fullname AS created_name,
-                                                cu.username AS created_username,
-                                                cu.mobile AS created_mobile,
+                                                        CASE 
+                                                            WHEN od.entry_by = 'emp' THEN em.emp_code
+                                                            ELSE cu.username
+                                                        END AS created_username,
 
-                                                uu.fullname AS updated_name,
-                                                uu.username AS updated_username,
-                                                uu.mobile AS updated_mobile
-                                                
-                                                    FROM on_duty_master od
-                                                    LEFT JOIN employee_master em 
-                                                        ON od.emp_id = em.emp_id
-                                                    LEFT JOIN employee_master sem 
-                                                        ON od.substitute_emp_id = sem.emp_id
-                                                    LEFT JOIN leave_apply_detail lpd 
-                                                        ON od.on_duty_id = lpd.on_duty_id 
+                                                        CASE 
+                                                            WHEN od.entry_by = 'emp' THEN em.mobile_no
+                                                            ELSE cu.mobile
+                                                        END AS created_mobile, 
 
-                                                    LEFT JOIN user cu 
-                                                        ON od.createdby = cu.userid
+                                                        uu.fullname AS updated_name,
+                                                        uu.username AS updated_username,
+                                                        uu.mobile AS updated_mobile
+                                                        
+                                                            FROM on_duty_master od
+                                                            LEFT JOIN employee_master em 
+                                                                ON od.emp_id = em.emp_id
+                                                            LEFT JOIN employee_master sem 
+                                                                ON od.substitute_emp_id = sem.emp_id
+                                                            LEFT JOIN leave_apply_detail lpd 
+                                                                ON od.on_duty_id = lpd.on_duty_id  
+                                                            LEFT JOIN department_master dm 
+                                                                ON dm.department_id = em.department_id
+                                                            LEFT JOIN designation_master desi 
+                                                                ON desi.designation_id = em.designation_id 
 
-                                                    LEFT JOIN user uu 
-                                                        ON od.updatedby = uu.userid
+                                                            LEFT JOIN user cu 
+                                                                ON od.createdby = cu.userid
 
-                                                    where od.unit_id='$unitid' and od.type='leave' $crit
+                                                            LEFT JOIN user uu 
+                                                                ON od.updatedby = uu.userid
+
+                                                            where od.unit_id='$unitid' and od.type='leave' $crit
+                                                            
+                                                            GROUP BY od.on_duty_id
+                                                            ORDER BY od.$tblpkey DESC
+                                                        "; 
+    
                                                     
-                                                    GROUP BY od.on_duty_id
-                                                    ORDER BY od.$tblpkey DESC
-                                                ");
-                                                    foreach ($res as $row) {
-                                                        $weekly_leave = $row['weekly_leave'];
-                                                        $earn_leave = $row['earn_leave'];
-                                                        $leave_balance = $weekly_leave + $earn_leave;
-                                                    ?>
-                                                        <tr id="tr_<?= $row["on_duty_id"]; ?>" data-details="
-                                    <div style='background:#dafced; padding:4px;'>
-                                    <?php if (!empty($row['created_name'])): ?>
-                                    Added by (User: <?= $row['created_name'] ?>,
-                                    Username: <?= $row['created_username'] ?>,
-                                    Mobile: <?= $row['created_mobile'] ?>,
-                                     Date: <?= $row['createdate'] ?>,)<br>
-                                    <?php endif; ?>
+                                                        $res = $obj->executequery($sql);
+                                                            foreach ($res as $row) {
+                                                                // $weekly_leave = $row['weekly_leave'];
+                                                                // $earn_leave = $row['earn_leave'];
+                                                                // $leave_balance = $weekly_leave + $earn_leave;
+                                                                $empId = $row['emp_id'];
 
-                                    <?php if (!empty($row['updated_name'])): ?>
-                                    Last Edited by (User: <?= $row['updated_name'] ?>,
-                                    Username: <?= $row['updated_username'] ?>,
-                                    Mobile: <?= $row['updated_mobile'] ?>,
-                                    Date: <?= $row['lastupdated'] ?>) 
-                                    <?php endif; ?>
-                                     </div>
-                                ">
+                                                                $month = (int)$row['apply_month'];
+                                                                $year  = (int)$row['apply_year'];
+                                                            ?>
+                                                        <tr id="tr_<?= $row["on_duty_id"]; ?>" data-details="
+                                            <div style='background:#dafced; padding:4px;'>
+                                            <?php if (!empty($row['created_name'])): ?>
+                                            Added by (User: <?= $row['created_name'] ?>,
+                                            Username: <?= $row['created_username'] ?>,
+                                            Mobile: <?= $row['created_mobile'] ?>,
+                                            Date: <?= $row['createdate'] ?>,)<br>
+                                            <?php endif; ?>
+
+                                            <?php if (!empty($row['updated_name'])): ?>
+                                            Last Edited by (User: <?= $row['updated_name'] ?>,
+                                            Username: <?= $row['updated_username'] ?>,
+                                            Mobile: <?= $row['updated_mobile'] ?>,
+                                            Date: <?= $row['lastupdated'] ?>) 
+                                            <?php endif; ?>
+                                            </div>
+                                        ">
 
                                                             <td class="details-control text-center" style="cursor:pointer;">
                                                                 <?php echo $slno++; ?>
@@ -433,14 +425,30 @@ if (isset($_POST['updatess'])) {
                                                             <td><?= $obj->dateformatindia($row['application_date']) ?></td>
                                                             <td><?= $row['emp_code'] ?></td>
                                                             <td>
-                                                                <b><?= $row['first_name'] . " " . $row['last_name']   ?> </b>
+                                                                <b><?= $row['first_name']?> </b>
+                                                            </td>
+                                                            <td>
+                                                                <b><?= $row['department_name']?> </b>
+                                                            </td>
+                                                            <td>
+                                                                <b><?= $row['designation']?> </b>
                                                             </td>
                                                             <td><?= $row['sub_emp_name'] ?></td>
                                                             <td><?= $obj->dateformatindia($row['from_date']) ?></td>
                                                             <td><?= $obj->dateformatindia($row['to_date']) ?></td>
                                                             <td><?= $row['total_day'] ?></td>
-                                                            <td><?= $leave_balance ?></td>
-                                                            <td><?= $row['used_leave'] ?></td>
+                                                            <td>
+                                                                <a href="javascript:void(0)" onclick="showLeaveBalance(
+                                                                            <?= $row['emp_id'] ?>,
+                                                                            <?= $row['apply_month'] ?>,
+                                                                            <?= $row['apply_year'] ?>
+                                                                    )">
+                                                                    View Balance
+                                                                </a>
+                                                            </td>
+                                                            <td><?= $row['used_el'] ?></td>
+                                                            <td><?= $row['used_eo'] ?></td>
+                                                            <td><?= $row['used_co'] ?></td>
                                                             <td class="cursor-pointer"
                                                                 onclick='openOnDutyModal("approved", <?= json_encode($row) ?>)'>
                                                                 <b><?= $row['approved_days'] ?></b>
@@ -458,44 +466,50 @@ if (isset($_POST['updatess'])) {
 
                                                             <td>
                                                                 <?php if (!empty($row['doc_file'])) { ?>
-                                                                    <a href="<?= $imgpath1 . $row['doc_file'] ?>" target="_blank">
-                                                                        <i class="ri-attachment-2 cursor-pointer"></i>
-                                                                    </a>
+                                                                <a href="<?= $imgpath1 . $row['doc_file'] ?>"
+                                                                    target="_blank">
+                                                                    <i class="ri-attachment-2 cursor-pointer"></i>
+                                                                </a>
                                                                 <?php } else { ?>
-                                                                    <i class="ri-forbid-2-line cursor-pointer text-danger"></i>
+                                                                <i class="ri-forbid-2-line cursor-pointer text-danger"></i>
                                                                 <?php } ?>
                                                             </td>
                                                             <!-- Icons -->
 
                                                             <td>
                                                                 <?php
-                                                                $chkprint = $obj->check_printBtn($pagename, $loginid);
-                                                                if ($chkprint == 1) {  ?>
-                                                                    <a href="leave_application_pdf.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>" class="edit-item-btn" target="_blank">
-                                                                        <i class="ri-printer-line cursor-pointer"></i>
-                                                                    </a>
+                                                                        $chkprint = $obj->check_printBtn($pagename, $loginid);
+                                                                        if ($chkprint == 1) {  ?>
+                                                                <a href="leave_application_pdf.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>"
+                                                                    class="edit-item-btn" target="_blank">
+                                                                    <i class="ri-printer-line cursor-pointer"></i>
+                                                                </a>
                                                                 <?php } ?>
                                                             </td>
                                                             <td>
                                                                 <?php
-                                                                $chkedit = $obj->check_editBtn($pagename, $loginid);
-                                                                if ($chkedit == 1 && $row['pending_days'] > 0) { ?>
-                                                                    <a href="leave_apply.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>" class="edit-item-btn">
-                                                                        <i class="ri-edit-fill cursor-pointer text-success"></i>
-                                                                    </a>
+                                                                        $chkedit = $obj->check_editBtn($pagename, $loginid);
+                                                                        if ($chkedit == 1 && $row['pending_days'] > 0) { ?>
+                                                                <a href="leave_apply.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>"
+                                                                    class="edit-item-btn">
+                                                                    <i class="ri-edit-fill cursor-pointer text-success"></i>
+                                                                </a>
                                                                 <?php } else { ?>
-                                                                    <i class="ri-forbid-2-line cursor-pointer text-danger"></i>
+                                                                <i class="ri-forbid-2-line cursor-pointer text-danger"></i>
                                                                 <?php } ?>
                                                             </td>
                                                             <td>
                                                                 <?php
-                                                                $chkdel = $obj->check_delBtn($pagename, $loginid);
-                                                                if ($chkdel == 1 && $row['pending_days'] > 0) { ?>
-                                                                    <a class="remove-item-btn" type="button" onclick="funDel('<?php echo $row[$tblpkey]; ?>','<?= $row['doc_file'] ?>');">
-                                                                        <i class="ri-delete-bin-fill cursor-pointer text-danger"></i>
-                                                                    </a>
+                                                                
+                                                                        $chkdel = $obj->check_delBtn($pagename, $loginid);
+                                                                        if ($chkdel == 1 && $row['approved_days'] == 0) { ?>
+                                                                <a class="remove-item-btn" type="button"
+                                                                    onclick="funDel('<?php echo $row[$tblpkey]; ?>','<?= $row['doc_file'] ?>');">
+                                                                    <i
+                                                                        class="ri-delete-bin-fill cursor-pointer text-danger"></i>
+                                                                </a>
                                                                 <?php } else { ?>
-                                                                    <i class="ri-forbid-2-line cursor-pointer text-danger"></i>
+                                                                <i class="ri-forbid-2-line cursor-pointer text-danger"></i>
                                                                 <?php } ?>
                                                             </td>
                                                             <td class="cursor-pointer"
@@ -504,18 +518,17 @@ if (isset($_POST['updatess'])) {
                                                             </td>
 
                                                         </tr>
-                                                    <?php } ?>
-                                                </tbody>
-                                            </table>
+                                                        <?php } ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
                                     </div>
-
                                 </div>
                             </div>
-
                         </div>
                     </div>
-
+                    <?php } ?>
                 </div>
                 <!--end col-->
             </div>
@@ -536,34 +549,21 @@ if (isset($_POST['updatess'])) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <!-- Body -->
-
                 <div class="modal-body">
                     <!-- Top Info -->
                     <div class="row mb-3">
-
                         <div class="col-md-6">
                             <table class="table table-borderless table-sm mb-0">
                                 <tr>
                                     <td class="fw-semibold">Application Date</td>
                                     <td id="modalApplicationDate"></td>
-
-
                                 </tr>
                                 <tr>
                                     <td class="fw-semibold">Total Days</td>
                                     <td id="modalTotalDays"></td>
                                 </tr>
-                                <tr>
-                                    <td class="fw-semibold">Opening Leave (As per application date)</td>
-                                    <td id="modalOpeningLeave"></td>
-                                </tr>
-                                  <tr>
-                                    <td class="fw-semibold">Extra Off</td>
-                                    <td id="modalExtraLeave"></td>
-                                </tr>
                             </table>
                         </div>
-
                         <div class="col-md-6">
                             <table class="table table-borderless table-sm mb-0">
                                 <tr>
@@ -578,13 +578,8 @@ if (isset($_POST['updatess'])) {
                                     <td class="fw-semibold">Attachment</td>
                                     <td id="modalAttachment"></td>
                                 </tr>
-                                <tr>
-                                    <td class="fw-semibold">Earning Leave</td>
-                                    <td id="modalEarnLeave"></td>
-                                </tr>
                             </table>
                         </div>
-
                     </div>
 
                     <div id="modalBodyContent">
@@ -596,11 +591,11 @@ if (isset($_POST['updatess'])) {
                     <?php
                     $chkapr = $obj->check_aprBtn($pagename, $loginid);
                     if ($chkapr == 1) {  ?>
-                        <div class="text-center mt-4">
-                            <button id="updateOnDutyBtn" class="btn btn-danger px-4" onclick="updateLeaveStatus();">
-                                Update
-                            </button>
-                        </div>
+                    <div class="text-center mt-4">
+                        <button id="updateOnDutyBtn" class="btn btn-danger px-4" onclick="updateLeaveStatus();">
+                            Update
+                        </button>
+                    </div>
                     <?php } ?>
 
                 </div>
@@ -618,231 +613,342 @@ if (isset($_POST['updatess'])) {
 
 
     <script>
-        $(document).ready(function() {
-            $('#example').DataTable();
-            $(".chosen-select").select2({
-                width: '100%',
-                search_contains: true
-            });
+    $(document).ready(function() {
+        $('#example').DataTable();
+        $(".chosen-select").select2({
+            width: '100%',
+            search_contains: true
         });
+    });
 
-        function openOnDutyModal(type, data) {
-            let imgpath = '<?= $imgpath1 ?>';
-            let appDate = new Date(data.application_date);
+    function openOnDutyModal(type, data) {
+        let imgpath = '<?= $imgpath1 ?>';
+        let appDate = new Date(data.application_date);
 
-            let formattedDate = String(appDate.getDate()).padStart(2, '0') + '-' +
-                    String(appDate.getMonth() + 1).padStart(2, '0') + '-' +
-                    appDate.getFullYear();
+        let formattedDate = String(appDate.getDate()).padStart(2, '0') + '-' +
+            String(appDate.getMonth() + 1).padStart(2, '0') + '-' +
+            appDate.getFullYear();
 
-            $("#modalApplicationDate").text(formattedDate);
-            $("#modalTotalDays").text(data.total_day);
-            $("#modalEmpId").val(data.emp_id);
-            $("#modalOpeningLeave").text(data.opening_leave_balance);
-            $("#modalExtraLeave").text(data.extra_off);
-            $("#modalEarnLeave").text(data.earn_leave);
-           
-            // $("#modalOnDutyType").text(data.on_duty_type.toUpperCase());
-            $("#modalEmpName").text(data.first_name + " " + data.last_name);
-            $("#modalEmpCode").text("(" + data.emp_code + ")");
-            if (data.doc_file && data.doc_file !== '') {
-                $("#modalAttachment").html(
-                    `<a href="${imgpath}${data.doc_file}" target="_blank">
+        $("#modalApplicationDate").text(formattedDate);
+        $("#modalTotalDays").text(data.total_day);
+        $("#modalEmpId").val(data.emp_id);
+        $("#modalOpeningLeave").text(data.opening_leave_balance);
+        $("#modalExtraLeave").text(data.extra_off);
+        $("#modalEarnLeave").text(data.earn_leave);
+
+        // $("#modalOnDutyType").text(data.on_duty_type.toUpperCase());
+        $("#modalEmpName").text(data.first_name + " " + data.last_name);
+        $("#modalEmpCode").text("(" + data.emp_code + ")");
+        if (data.doc_file && data.doc_file !== '') {
+            $("#modalAttachment").html(
+                `<a href="${imgpath}${data.doc_file}" target="_blank">
                 <i class="ri-attachment-2 text-primary fs-5"></i>
             </a>`
-                );
-            } else {
-                $("#modalAttachment").html(
-                    `<i class="ri-forbid-2-line text-danger fs-5"></i>`
-                );
-            }
-
-            $.ajax({
-                url: "get_leave_details.php",
-                type: "POST",
-                data: {
-                    type: type,
-                    on_duty_id: data.on_duty_id
-                },
-                success: function(response) {
-
-                    $("#modalBodyContent").html(response);
-                    $("#staticBackdrop").modal('show');
-
-
-                }
-            });
-
+            );
+        } else {
+            $("#modalAttachment").html(
+                `<i class="ri-forbid-2-line text-danger fs-5"></i>`
+            );
         }
 
-        $(document).on('change', '.approve_chk', function() {
-            let row = $(this).closest('tr');
-            if ($(this).is(':checked')) {
-                row.find('.reject_chk').prop('checked', false);
+        $.ajax({
+            url: "get_leave_details.php",
+            type: "POST",
+            data: {
+                type: type,
+                on_duty_id: data.on_duty_id
+            },
+            success: function(response) {
+
+                $("#modalBodyContent").html(response);
+                $("#staticBackdrop").modal('show');
+
+
             }
         });
 
-        $(document).on('change', '.reject_chk', function() {
-            let row = $(this).closest('tr');
-            if ($(this).is(':checked')) {
-                row.find('.approve_chk').prop('checked', false);
-            }
-        }); // Approve All
-        $(document).on('change', '#appr_check', function() {
+    }
 
-            if ($(this).is(':checked')) {
+    $(document).on('change', '.approve_chk', function() {
+        let row = $(this).closest('tr');
+        if ($(this).is(':checked')) {
+            row.find('.reject_chk').prop('checked', false);
+            row.find('.pending_chk').prop('checked', false);
+        }
+    });
 
-                $('#rej_check').prop('checked', false);
 
-                $('.approve_chk:not(:disabled)').prop('checked', true);
-                $('.reject_chk:not(:disabled)').prop('checked', false);
+    $(document).on('change', '.pending_chk', function() {
+        let row = $(this).closest('tr');
+        if ($(this).is(':checked')) {
+            row.find('.approve_chk').prop('checked', false);
+            row.find('.reject_chk').prop('checked', false);
+        }
+    });
 
+    $(document).on('change', '.reject_chk', function() {
+        let row = $(this).closest('tr');
+        if ($(this).is(':checked')) {
+            row.find('.approve_chk').prop('checked', false);
+            row.find('.pending_chk').prop('checked', false);
+        }
+    });
+    // Approve All
+    $(document).on('change', '#appr_check', function() {
+        if ($(this).is(':checked')) {
+            $('#rej_check').prop('checked', false);
+            $('#pen_check').prop('checked', false);
+
+            $('.approve_chk:not(:disabled)').prop('checked', true);
+            $('.reject_chk:not(:disabled)').prop('checked', false);
+            $('.pending_chk:not(:disabled)').prop('checked', false);
+        } else {
+            $('.approve_chk:not(:disabled)').prop('checked', false);
+        }
+    });
+    // Reject All
+    $(document).on('change', '#rej_check', function() {
+        if ($(this).is(':checked')) {
+
+            $('#appr_check').prop('checked', false);
+            $('#pen_check').prop('checked', false);
+
+            $('.approve_chk').prop('checked', false);
+            $('.pending_chk').prop('checked', false);
+
+            $('.reject_chk:not(:disabled)').prop('checked', true);
+
+        } else {
+            $('.reject_chk:not(:disabled)').prop('checked', false);
+        }
+    });
+    // pending All
+    $(document).on('change', '#pen_check', function() {
+        if ($(this).is(':checked')) {
+            $('#appr_check').prop('checked', false);
+            $('#rej_check').prop('checked', false);
+            // Sabko uncheck karo
+            $('.approve_chk').prop('checked', false);
+            $('.reject_chk').prop('checked', false);
+            // Sirf enabled pending ko check karo
+            $('.pending_chk:not(:disabled)').prop('checked', true);
+        } else {
+            $('.pending_chk:not(:disabled)').prop('checked', false);
+        }
+    });
+
+
+    function updateLeaveStatus() {
+        let btn = $("#updateOnDutyBtn");
+        let updates = [];
+        $('.detail_row').each(function() {
+            let id = $(this).data('id');
+            let od_id = $(this).data('odid');
+            // if ($(this).find('.approve_chk').is(':disabled')) {
+            //     return;
+            // }
+            // let approveChecked = $(this).find('.approve_chk').is(':checked');
+            // let rejectChecked = $(this).find('.reject_chk').is(':checked');
+
+            let approveBox = $(this).find('.approve_chk');
+            let rejectBox = $(this).find('.reject_chk');
+            let pendingBox = $(this).find('.pending_chk');
+
+            let approveChecked = approveBox.is(':checked');
+            let rejectChecked = rejectBox.is(':checked');
+            let pendingChecked = pendingBox.is(':checked');
+
+            //let approveDisabled = approveBox.is(':disabled');
+            // let rejectDisabled = rejectBox.is(':disabled');
+            // let status = 0;
+
+            // if (approveDisabled && rejectDisabled) {
+            //     return;
+            // }
+
+            let status = 0;
+            if (approveChecked) {
+                status = 1;
+            } else if (rejectChecked) {
+                status = 2;
+            } else if (pendingChecked) {
+                status = 0;
             } else {
-
-                $('.approve_chk:not(:disabled)').prop('checked', false);
-
-            }
-
-        });
-        // Reject All
-        $(document).on('change', '#rej_check', function() {
-
-            if ($(this).is(':checked')) {
-
-                $('#appr_check').prop('checked', false);
-
-                $('.reject_chk:not(:disabled)').prop('checked', true);
-                $('.approve_chk:not(:disabled)').prop('checked', false);
-
-            } else {
-
-                $('.reject_chk:not(:disabled)').prop('checked', false);
-
-            }
-
-        });
-
-
-        function updateLeaveStatus() {
-            let btn = $("#updateOnDutyBtn");
-            let updates = [];
-            $('.detail_row').each(function() {
-                let id = $(this).data('id');
-
-                if ($(this).find('.approve_chk').is(':disabled')) {
-                    return;
-                }
-
-                let approveChecked = $(this).find('.approve_chk').is(':checked');
-                let rejectChecked = $(this).find('.reject_chk').is(':checked');
-                let status = 0;
-
-                if (approveChecked) status = 1;
-                else if (rejectChecked) status = 2;
-                else return;
-
-                let remark = $('#modal_appr_remark_' + id).val();
-                let leave_type = $('#modal_leave_type_' + id).val();
-                let leave_day = $('#modal_leave_day_' + id).val();
-
-                let date = $('#modal_date_' + id).val();
-
-                updates.push({
-                    id: id,
-                    status: status,
-                    leave_type: leave_type,
-                    leave_day: leave_day,
-                    date: date,
-                    remark: remark
-                });
-
-            });
-            let emp_id = $("#modalEmpId").val();
-            if (updates.length === 0) {
-                alert("Please select at least one record");
                 return;
             }
-            btn.prop("disabled", true);
-            btn.html('<i class="fa fa-spinner fa-spin"></i> Saving...');
 
-            $.ajax({
-                url: "",
-                type: "POST",
-                data: {
-                    updatess: updates,
-                    emp_id: emp_id
-                },
-                success: function(response) { 
+            let remark = $('#modal_appr_remark_' + id).val();
+            let leave_type = $('#modal_leave_type_' + id).val();
+            let leave_day = $('#modal_leave_day_' + id).val();
+
+            let date = $('#modal_date_' + id).val();
+
+            updates.push({
+                id: id,
+                status: status,
+                leave_type: leave_type,
+                leave_day: leave_day,
+                date: date,
+                remark: remark
+            });
+        });
+        let emp_id = $("#modalEmpId").val();
+        if (updates.length === 0) {
+            alert("Please select at least one record");
+            return;
+        }
+
+        btn.prop("disabled", true);
+        btn.html('<i class="fa fa-spinner fa-spin"></i> Saving...');
+
+        $.ajax({
+            url: "leave_approve.php",
+            type: "POST",
+            data: {
+                updatess: updates,
+                emp_id: emp_id
+            },
+            success: function(response) {
+
+                let res = JSON.parse(response);
+                let message = '';
+                if (res.pendingCount > 0) {
+                    message += res.pendingCount + ' leave(s) moved to pending successfully.<br>';
+                }
+                if (res.approvedCount > 0) {
+                    message += res.approvedCount + ' leave(s) approved successfully.<br>';
+                }
+                if (res.rejectedCount > 0) {
+                    message += res.rejectedCount + ' leave(s) rejected successfully.<br>';
+                }
+                if (res.errors.length > 0) {
+                    message += '<br><b>Skipped Records:</b><br>';
+                    res.errors.forEach(function(item) {
+                        let formattedDate = item.date.split('-').reverse().join('-');
+                        message += formattedDate + ' - ' + item.reason + '<br>';
+                    });
                     Swal.fire({
-                        title: "Success!",
-                        text: "Updated Successfully",
-                        icon: "success",
-                        showConfirmButton: false,
-                        timer: 1500,
-                        timerProgressBar: true
+                        title: "Completed With Warnings",
+                        html: message,
+                        icon: "warning",
+                        width: 700
                     }).then(() => {
                         location.reload();
                     });
-
-                },
-                error: function() {
-                    Swal.fire({
-                        title: "Error!",
-                        text: "Something went wrong",
-                        icon: "error",
-                        confirmButtonColor: "#d33",
-                        confirmButtonText: "OK"
-                    });
-                    btn.prop("disabled", false);
-                    btn.html("Update");
-                }
-            });
-        }
-
-
-
-        function funDel(id, imgname) {
-            $('#deleteRecordModal').modal('show');
-            tblname = 'on_duty_master';
-            tblpkey = 'on_duty_id';
-            pagename = '<?php echo $pagename; ?>';
-            submodule = '<?php echo $submodule; ?>';
-            imgpath = '<?php echo $imgpath1; ?>';
-
-            $('#delete-record').click(function() {
-                $.ajax({
-                    type: 'POST',
-                    url: 'delete_on_duty.php',
-                    data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&pagename=' + pagename + '&imgname=' + imgname + '&imgpath=' + imgpath,
-                    dataType: 'html',
-                    success: function(data) {
-                        $("#tr_" + id).hide();
-                    }
-                });
-                $('#deleteRecordModal').modal('hide');
-            });
-        };
-
-        $(document).ready(function() {
-
-            var table = $('#buttons-datatables').DataTable();
-
-            $('#buttons-datatables tbody').on('click', 'td.details-control', function() {
-
-                var tr = $(this).closest('tr');
-                var row = table.row(tr);
-
-                if (row.child.isShown()) {
-                    row.child.hide();
-                    tr.removeClass('shown');
                 } else {
-                    var details = tr.data('details');
-                    row.child(details).show();
-                    tr.addClass('shown');
+                    Swal.fire({
+                        title: "Success",
+                        html: message,
+                        icon: "success"
+                    }).then(() => {
+                        location.reload();
+                    });
                 }
+                btn.prop("disabled", false);
+                btn.html("Update");
+            },
+            error: function() {
+                Swal.fire({
+                    title: "Error!",
+                    text: "Something went wrong",
+                    icon: "error",
+                    confirmButtonColor: "#d33",
+                    confirmButtonText: "OK"
+                });
+                btn.prop("disabled", false);
+                btn.html("Update");
+            }
+        });
+    }
 
+
+
+    function funDel(id, imgname) {
+        $('#deleteRecordModal').modal('show');
+        tblname = 'on_duty_master';
+        tblpkey = 'on_duty_id';
+        pagename = '<?php echo $pagename; ?>';
+        submodule = '<?php echo $submodule; ?>';
+        imgpath = '<?php echo $imgpath1; ?>';
+
+        $('#delete-record').click(function() {
+            $.ajax({
+                type: 'POST',
+                url: 'delete_on_duty.php',
+                data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&pagename=' +
+                    pagename + '&imgname=' + imgname + '&imgpath=' + imgpath,
+                dataType: 'html',
+                success: function(data) {
+                    $("#tr_" + id).hide();
+                }
             });
+            $('#deleteRecordModal').modal('hide');
+        });
+    };
+
+    $(document).ready(function() {
+
+        var table = $('#buttons-datatables').DataTable();
+
+        $('#buttons-datatables tbody').on('click', 'td.details-control', function() {
+
+            var tr = $(this).closest('tr');
+            var row = table.row(tr);
+
+            if (row.child.isShown()) {
+                row.child.hide();
+                tr.removeClass('shown');
+            } else {
+                var details = tr.data('details');
+                row.child(details).show();
+                tr.addClass('shown');
+            }
 
         });
+
+    });
+
+    function showLeaveBalance(emp_id, month, year) {
+        $.ajax({
+            url: "get_leave_balance.php",
+            type: "POST",
+            data: {
+                emp_id: emp_id,
+                month: month,
+                year: year
+            },
+            beforeSend: function() {
+
+                Swal.fire({
+                    title: 'Loading...',
+                    text: 'Please wait',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+            },
+            success: function(response) {
+
+                Swal.fire({
+                    title: 'Leave Balance',
+                    html: response,
+                    width: 700
+                });
+
+            },
+            error: function() {
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Unable to fetch leave balance'
+                });
+
+            }
+        });
+    }
     </script>
 </body>
 

@@ -193,8 +193,7 @@ if (isset($_GET['month']) && isset($_GET['year'])) {
                                                     <td class="text-center">
                                                         <?php if ($row['is_approved'] == 0) { ?>
                                                             <a href="javascript:void(0)"
-                                                                title="Change Status"
-                                                                onclick="openStatusModal('<?= $row['is_approved']; ?>','<?= $row['exit_id']; ?>','<?= $row['emp_id']; ?>','<?= $row['last_working_date']; ?>')">
+                                                                title="Change Status" >
                                                                 <span class="badge <?= $badgeClass; ?> me-2">
                                                                     <?= $statusText; ?>
                                                                 </span>
@@ -214,7 +213,7 @@ if (isset($_GET['month']) && isset($_GET['year'])) {
                                                     <td>
                                                         <ul class="list-inline hstack gap-2 mb-0">
                                                             <?php if ($row['is_approved'] == 1 && $row['is_rejoined'] == 0) { ?>
-                                                                <span class="badge bg-primary me-2 cursor-pointer" onclick="openRejoinModal('<?php echo $row[$tblpkey]; ?>','<?php echo $row['emp_id']; ?>');">
+                                                                <span class="badge bg-primary me-2 cursor-pointer"  >
                                                                     Rejoin
                                                                 </span>
                                                             <?php } ?>
@@ -238,10 +237,7 @@ if (isset($_GET['month']) && isset($_GET['year'])) {
                                                 </tr>
                                             <?php } ?>
                                         </tbody>
-                                    </table>
-                                    <div class="col-lg-12 mt-4 text-end">
-                                        <input type="submit" name="appr_status" class="btn btn-sm btn-primary add-btn" value="Approve All" onclick="updateStatus();">
-                                    </div>
+                                    </table> 
                                 </div>
                             </div>
 
@@ -254,80 +250,8 @@ if (isset($_GET['month']) && isset($_GET['year'])) {
         </div>
         <!-- container-fluid -->
     </div>
-    <div class="modal fade" id="rejoinModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-
-                <div class="modal-header text-white">
-                    <h5 class="modal-title">Employee Rejoin</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-
-                <div class="modal-body">
-
-                    <input type="hidden" id="rejoin_exit_id">
-                    <input type="hidden" id="rejoin_emp_id">
-
-                    <div class="mb-3">
-                        <label class="form-label">Rejoining Date</label>
-                        <input type="date" class="form-control" id="rejoin_date">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Remark</label>
-                        <textarea class="form-control" id="rejoin_remark" rows="3"></textarea>
-                    </div>
-
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary"
-                        data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary"
-                        onclick="saveRejoin()">Save</button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-    <div class="modal fade mt-4" id="statusModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Change Approval Status</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-
-                <div class="modal-body">
-                    <input type="hidden" id="modal_exit_id">
-                    <input type="hidden" id="modal_emp_id">
-                    <input type="hidden" id="modal_lwd">
-
-                    <div class="mb-3">
-                        <label class="form-label">Status</label>
-                        <select class="form-select" id="modal_status" onchange="toggleReasonField()">
-                            <option value="0">Pending</option>
-                            <option value="1">Approved</option>
-                            <option value="2">Rejected</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Reason / Remarks</label>
-                        <textarea class="form-control" id="modal_reason"
-                            placeholder="Enter reason"></textarea>
-                    </div>
-
-                </div>
-
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-primary" id="confirm_btn" onclick="confirmStatusChange()">Confirm</button>
-                </div>
-
-            </div>
-        </div>
-    </div>
+   
+   
 
     <!-- End Page-content -->
     </div>
@@ -341,240 +265,10 @@ if (isset($_GET['month']) && isset($_GET['year'])) {
                 width: '100%',
                 search_contains: true
             });
-            toggleReasonField();
+         
         });
 
-
-
-        function openStatusModal(status, exit_id, emp_id, lwd) {
-            $('#modal_status').val(status);
-            $('#modal_exit_id').val(exit_id);
-            $('#modal_emp_id').val(emp_id);
-            $('#modal_lwd').val(lwd);
-            $('#modal_reason').val('');
-            $('#statusModal').modal('show');
-        }
-
-        function toggleReasonField() {
-            let status = $('#modal_status').val();
-
-            if (status == '2') {
-                $('#modal_reason').closest('.mb-3').show();
-                $('#modal_reason').prop('required', true);
-            } else {
-                $('#modal_reason').closest('.mb-3').hide();
-                $('#modal_reason').prop('required', false).val('');
-            }
-        }
-
-
-        function funDel(id, emp_id) {
-            $('#deleteRecordModal').modal('show');
-            tblname = '<?php echo $tblname; ?>';
-            tblpkey = '<?php echo $tblpkey; ?>';
-
-            pagename = '<?php echo $pagename; ?>';
-            submodule = '<?php echo $submodule; ?>';
-
-            $('#delete-record').click(function() {
-                $.ajax({
-                    type: 'POST',
-                    url: 'ajax/delete_master_separation.php',
-                    data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&submodule=' + submodule + '&emp_id=' + emp_id + '&pagename=' + pagename,
-                    dataType: 'html',
-                    success: function(data) {
-                        // alert(data);
-                        location = '<?php echo $pagename; ?>';
-                    }
-                });
-                $('#deleteRecordModal').modal('hide');
-            });
-        };
-
-        function numberOnly(evt) {
-            var theEvent = evt || window.event;
-
-            // Handle paste
-            if (theEvent.type === 'paste') {
-                key = event.clipboardData.getData('text/plain');
-            } else {
-                // Handle key press
-                var key = theEvent.keyCode || theEvent.which;
-                key = String.fromCharCode(key);
-            }
-            var regex = /[0-9]|\.|\s/;
-            if (!regex.test(key)) {
-                theEvent.returnValue = false;
-                if (theEvent.preventDefault) theEvent.preventDefault();
-            }
-        }
-
-
-        function confirmStatusChange() {
-            let status = $('#modal_status').val();
-            let reason = $('#modal_reason').val().trim();
-            let modal_exit_id = $('#modal_exit_id').val();
-            let modal_emp_id = $('#modal_emp_id').val();
-            let modal_lwd = $('#modal_lwd').val();
-            let modal_reason = $('#modal_reason').val();
-            if (status == '2' && reason === '') {
-                alert('Reason is required for rejection');
-                return;
-            }
-            $('#confirm_btn').prop('disabled', true).text('Saving...');
-
-            $.ajax({
-                type: "POST",
-                url: "",
-                data: {
-                    ajstatus: status,
-                    exit_idd: modal_exit_id,
-                    emp_id: modal_emp_id,
-                    last_working_date: modal_lwd,
-                    reason: reason
-                },
-                dataType: "json",
-                success: function() {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Status Updated',
-                        text: 'Approval status has been updated successfully.',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
-                },
-                error: function() {
-                    alert('Something went wrong. Please try again.');
-
-                    $('#confirm_btn').prop('disabled', false).text('Confirm');
-                }
-            });
-        }
-
-        $("#checkAll").on("change", function() {
-            $(".appr_single").prop("checked", $(this).prop("checked"));
-        });
-
-        // If any unchecked manually → uncheck header
-        $(document).on("change", ".appr_single", function() {
-            if (!$(this).prop("checked")) {
-                $("#checkAll").prop("checked", false);
-            } else if ($(".appr_single:checked").length === $(".appr_single").length) {
-                $("#checkAll").prop("checked", true);
-            }
-        });
-
-        function updateStatus() {
-
-            let selected = [];
-
-            $('.appr_single:checked').each(function() {
-                selected.push($(this).val());
-            });
-
-            if (selected.length === 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'No Selection',
-                    text: 'Please select at least one record.'
-                });
-                return;
-            }
-
-            Swal.fire({
-                title: 'Approve Selected?',
-                text: "You are about to approve selected resignations.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, Approve'
-            }).then((result) => {
-
-                if (result.isConfirmed) {
-
-                    $.ajax({
-                        type: "POST",
-                        url: "", // same page
-                        data: {
-                            bulk_approve: 1,
-                            ids: selected
-                        },
-                        dataType: "json",
-                        success: function(response) {
-                            console.log(response);
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Approved',
-                                text: 'Selected records approved successfully.',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                location.reload();
-                            });
-
-                        },
-                        error: function(err) {
-                            console.log(err);
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: 'Something went wrong.'
-                            });
-                        }
-                    });
-
-                }
-
-            });
-        }
-
-        function openRejoinModal(exit_id, emp_id) {
-            $('#rejoin_exit_id').val(exit_id);
-            $('#rejoin_emp_id').val(emp_id);
-            $('#rejoin_date').val('<?= date('Y-m-d') ?>');
-            $('#rejoin_remark').val('');
-            $('#rejoinModal').modal('show');
-        }
-
-        function saveRejoin() {
-
-            let exit_id = $('#rejoin_exit_id').val();
-            let rejoin_date = $('#rejoin_date').val();
-            let rejoin_emp_id = $('#rejoin_emp_id').val();
-            let remark = $('#rejoin_remark').val().trim();
-
-            if (rejoin_date === '') {
-                alert('Rejoining date is required');
-                return;
-            }
-
-            $.ajax({
-                type: "POST",
-                url: "",
-                data: {
-                    rejoin_action: 1,
-                    exit_id: exit_id,
-                    rejoin_emp_id: rejoin_emp_id,
-                    rejoin_date: rejoin_date,
-                    remark: remark
-                },
-                dataType: "json",
-                success: function() {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Rejoined Successfully',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
-                },
-                error: function() {
-                    alert('Something went wrong');
-                }
-            });
-        }
+ 
     </script>
 </body>
 
