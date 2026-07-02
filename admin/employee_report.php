@@ -172,7 +172,7 @@ $fieldMap = [
     52 => ['label' => 'Acc Holder Name', 'key' => 'acc_holder_name'],
     53 => ['label' => 'Account No.', 'key' => 'account_no'],
     54 => ['label' => 'IFSC Code', 'key' => 'ifsc_code'],
-    55 => ['label' => 'Is Active', 'key' => 'is_active'],
+    55 => ['label' => 'Is Active', 'key' => 'is_active_emp'],
 ];
 
 $showFields = isset($_GET['show_field']) ? array_map('intval', $_GET['show_field']) : [];
@@ -366,6 +366,7 @@ if (isset($_GET['submit'])) {
                         $sql ="
                         SELECT 
                             em.*,
+                            em.is_active as is_active_emp,
                             dm.department_name,
                             erpt.reporting_manager,
                             bnk.bank_name,
@@ -480,8 +481,8 @@ if (isset($_GET['submit'])) {
                                                                     $value = $row['previous_designation'] ?? '-';
                                                                 } elseif ($key == 'is_pf') {
                                                                     $value = ($row['is_pf'] == '1') ? 'Yes' : 'No';
-                                                                }elseif ($key == 'is_active') {
-                                                                    $value = ($row['is_active'] == '1') ? 'Yes' : 'No';
+                                                                }elseif ($key == 'is_active_emp') {
+                                                                    $value = ($row['is_active_emp'] == '1') ? 'Yes' : 'No';
                                                                 } elseif ($key == 'is_esic') {
                                                                     $value = ($row['is_esic'] == '1') ? 'Yes' : 'No';
                                                                 } elseif ($key == 'allow_weekly_off') {

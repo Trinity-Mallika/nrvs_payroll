@@ -684,7 +684,7 @@ td {
 
                                                 <div class="col-lg-2 ">
                                                     <label for="emp_category" class="form-label">Employee category<span
-                                                            class="text-danger fw-bold">*</span></label>
+                                                            class="text-danger fw-bold"> </span></label>
                                                     <select class="form-select form-select-sm chosen-select"
                                                         name="emp_category" id="emp_category">
                                                         <option value="">Select</option> 
@@ -715,7 +715,7 @@ td {
                                                 </div> 
                                                  <div class="col-md-2">
                                                     <label class="form-label">Blood Group  <span
-                                                            class="text-danger fw-bold"> *</span></label>
+                                                            class="text-danger fw-bold"></span></label>
                                                     <select class="form-select form-select-sm chosen-select"
                                                         name="blood_group" id="blood_group">
                                                         <option value="">Select Blood Group</option>
@@ -912,7 +912,7 @@ td {
 
                                                  <div class="col-md-3">
                                                     <label class="form-label">Marital Status<span
-                                                            class="text-danger fw-bold">*</span></label>
+                                                            class="text-danger fw-bold"></span></label>
                                                     <select class="form-select form-select-sm chosen-select" name="marital_status"
                                                         id="marital_status" onchange="toggleAnniversary()">
                                                         <option value="">Select</option>
@@ -945,7 +945,7 @@ td {
 
                                                 <div class="col-md-6">
                                                     <label class="form-label">Permanent Address<span
-                                                            class="text-danger fw-bold">*</span> </label>
+                                                            class="text-danger fw-bold"> </span> </label>
                                                     <textarea class="form-control form-control-sm" rows="1"
                                                         name="permanent_address"
                                                         id="permanent_address"><?= $permanent_address ?></textarea>
@@ -953,7 +953,7 @@ td {
 
                                                 <div class="col-md-3">
                                                     <label class="form-label">Gender<span
-                                                            class="text-danger fw-bold">*</span> </label>
+                                                            class="text-danger fw-bold"> </span> </label>
                                                     <select class="form-select form-select-sm chosen-select" name="gender"
                                                         id="gender">
                                                         <option value="">Select</option>
@@ -969,7 +969,7 @@ td {
 
                                                 <div class="col-md-3">
                                                     <label class="form-label">Profile Image <span
-                                                            class="text-danger fw-bold">*</span></label>
+                                                            class="text-danger fw-bold"> </span></label>
                                                     <input type="file" class="form-control form-control-sm"
                                                         name="profile_image" id="profile_image" accept="image/*">
                                                     <?php if ($profile_image != "") {
@@ -1005,6 +1005,7 @@ td {
                                                         <thead class="table-light">
                                                             <tr class="table-warning">
                                                                 <th>Bank Name<span class="text-danger">*</span></th>
+                                                                <th>Branch Name<span class="text-danger"></span></th>
                                                                 <th>Account Holder Name<span
                                                                         class="text-danger">*</span></th>
                                                                 <th>Bank Account Number<span
@@ -1025,6 +1026,12 @@ td {
                                                                             <?= $key['bank_name']; ?></option>
                                                                         <?php } ?>
                                                                     </select></td>
+                                                                <td>
+                                                                    <input type="text"
+                                                                        class="form-control form-control-sm"
+                                                                        id="branch_name"
+                                                                        placeholder="Enter Branch Name">
+                                                                </td>
                                                                 <td>
                                                                     <input type="text"
                                                                         class="form-control form-control-sm"
@@ -1074,11 +1081,12 @@ td {
 
                                             <div class="mt-4 text-end">
                                                 <button type="button" class="btn btn-primary btn-next"
-                                                    data-validate="emp_code,biomatric_id,first_name,father_name,department_id,designation_id,date_of_joining,basic_salary,emp_category,dob,blood_group,mobile_no,aadhar_no,shift_id,is_pf,is_esic,allow_weekly_off,is_perform_incen,reporting_manager,marital_status,present_address,permanent_address,gender,profile_image">Next
+                                                    data-validate="emp_code,biomatric_id,first_name,father_name,department_id,designation_id,date_of_joining,basic_salary,dob,mobile_no,aadhar_no,shift_id,is_pf,is_esic,allow_weekly_off,is_perform_incen,reporting_manager,present_address">
+                                                    Next
                                                     →</button>
                                             </div>
                                         </div>
-
+ <!-- data-validate="emp_code,biomatric_id,first_name,father_name,department_id,designation_id,date_of_joining,basic_salary,emp_category,dob,blood_group,mobile_no,aadhar_no,shift_id,is_pf,is_esic,allow_weekly_off,is_perform_incen,reporting_manager,marital_status,present_address,permanent_address,gender,profile_image" -->
                                         <!-- ⭐ STEP 2 : CONTACT DETAILS -->
 
                                        
@@ -1211,7 +1219,7 @@ td {
 
                                                 <div class="col-md-3">
                                                     <label>Job Location<span
-                                                            class="text-danger fw-bold">*</span></label>
+                                                            class="text-danger fw-bold"> </span></label>
                                                     <input type="text" class="form-control form-control-sm"
                                                         name="job_location" id="job_location"
                                                         value="<?= $job_location  ?>" placeholder="Enter Job Location">
@@ -1336,7 +1344,7 @@ td {
                                                 <button type="button" class="btn btn-secondary btn-prev">←
                                                     Previous</button>
                                                 <button type="button" class="btn btn-primary btn-next"
-                                                    data-validate="job_location">Next
+                                                    data-validate="">Next
                                                     →</button>
                                             </div>
                                         </div>
@@ -2493,11 +2501,12 @@ td {
         document.getElementById("language_name").focus();
     }
 
-    function edit_bank(id, bank_name, acc_holder, acc_no, ifsc, status) {
+    function edit_bank(id, bank_name, acc_holder, acc_no, ifsc, status,branch_name) {
         $('#emp_bank_id').val(id);
 
         $('#bank_id').val(bank_name).trigger('change');
         $('#acc_holder_name').val(acc_holder);
+        $('#branch_name').val(branch_name);
         $('#account_no').val(acc_no);
         $('#ifsc_code').val(ifsc);
 
@@ -2511,6 +2520,7 @@ td {
         const bank_id = $('#bank_id').val();
         const emp_bank_id = $('#emp_bank_id').val();
         const acc_holder_name = $('#acc_holder_name').val();
+        const branch_name = $('#branch_name').val();
         const account_no = $('#account_no').val();
         const ifsc_code = $('#ifsc_code').val();
         const bank_active = $('#bank_active').is(':checked') ? 1 : 0;
@@ -2559,6 +2569,7 @@ td {
                 emp_bank_id: emp_bank_id,
                 keyvalue: keyvalue,
                 acc_holder_name: acc_holder_name,
+                branch_name: branch_name,
                 account_no: account_no,
                 ifsc_code: ifsc_code,
                 bank_active: bank_active,
@@ -2578,6 +2589,7 @@ td {
                     }).then(() => {
                         fetch_bank_details();
                         $('#acc_holder_name').val('');
+                        $('#branch_name').val('');
                         $('#account_no').val('');
                         $('#ifsc_code').val('');
                         $('#emp_bank_id').val('0');
@@ -2695,15 +2707,20 @@ td {
                     let parts = res.split('|');
                     let unit_name = parts[1];
                     let mobile_no = parts[2];
+                    let emp_code = parts[3];
+                    let emp_name = parts[4];
 
                     Swal.fire({
                         icon: 'error',
                         title: 'Duplicate Mobile Number',
-                        text: 'This mobile number ' + mobile_no + ' already exists in Unit : ' +
-                            unit_name,
+                        html: `
+                            This Mobile No <b>${mobile_no}</b> belongs to
+                            <b>${emp_name} (${emp_code})</b><br><br>
+                            Existing in Unit: <b>${unit_name}</b>
+                        `,
                         confirmButtonText: 'OK'
                     }).then(() => {
-                        $('#mobile_no').val('').focus();
+                        // $('#mobile_no').val('').focus();
                     });
                 }
             }
@@ -2869,13 +2886,16 @@ td {
         const steps = [{
                 tab: 'EMPLOYEE INFORMATION',
                 fields: ['emp_code', 'biomatric_id', 'first_name', 'father_name', 'department_id', 'designation_id',
-                    'date_of_joining', 'basic_salary','emp_category', 'dob','blood_group', 'mobile_no', 'aadhar_no', 'shift_id', 'is_pf','is_esic', 'allow_weekly_off','is_perform_incen','reporting_manager','marital_status','present_address', 'permanent_address', 'gender','profile_image' 
+                    'date_of_joining', 'basic_salary', 'dob', 'mobile_no', 'aadhar_no', 'shift_id', 'is_pf','is_esic', 'allow_weekly_off','is_perform_incen','reporting_manager','present_address' 
                 ]
             },
-            {
-                tab: 'CONTACT',
-                fields: ['job_location']
-            },
+            // 'emp_code', 'biomatric_id', 'first_name', 'father_name', 'department_id', 'designation_id',
+            // 'date_of_joining', 'basic_salary','emp_category', 'dob','blood_group', 'mobile_no', 'aadhar_no', 'shift_id', 'is_pf','is_esic', 'allow_weekly_off','is_perform_incen','reporting_manager','marital_status','present_address', 'permanent_address', 'gender','profile_image' 
+
+            // {
+            //     tab: 'CONTACT',
+            //     fields: ['job_location']
+            // },
         ];
 
         let emptyField = null;

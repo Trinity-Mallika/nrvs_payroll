@@ -155,8 +155,9 @@ if ($type == 'family') {
 
         <tr>
             <td><?= $bank_name; ?> </td>
+            <td><?= $row['branch_name']; ?> </td>
             <td><?= $row['acc_holder_name']; ?> </td>
-            <td><?= $row['account_no']; ?> </td>
+            <td>AC : <?= $row['account_no']; ?> </td>
             <td><?= $row['ifsc_code']; ?> </td>
 
 
@@ -181,7 +182,8 @@ if ($type == 'family') {
                 '<?= addslashes($row['acc_holder_name']); ?>',
                 '<?= $row['account_no']; ?>',
                 '<?= $row['ifsc_code']; ?>',
-                '<?= $row['is_active']; ?>'
+                '<?= $row['is_active']; ?>',
+                '<?= addslashes($row['branch_name']); ?>'
             )">
                     <i class="ri-edit-line"></i> Edit
                 </button>

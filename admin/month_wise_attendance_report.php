@@ -661,7 +661,6 @@ table tr td.col-fixed:nth-child(3) {
                             $extraUsedRows = $obj->executequery("
                                 SELECT 
                                     emp_id,
-
                                     COALESCE(SUM(
                                         CASE 
                                             WHEN attendance_status='Extra Off' THEN 1
@@ -734,6 +733,8 @@ table tr td.col-fixed:nth-child(3) {
                                 AND l.attendance_date BETWEEN '$fromDate' AND '$toDate'
                                 ORDER BY l.emp_id, l.attendance_stamp
                             ");
+                            $punchMap = [];
+                            $lastOpen = [];
                             foreach ($punchData as $row) {
                                 $emp    = $row['emp_id'];
                                 $date   = $row['attendance_date'];
@@ -965,6 +966,8 @@ table tr td.col-fixed:nth-child(3) {
                                                     $holiday = $holidayData['total']; 
                                                   
                                                     $total_earning_leave =($earningUploadMap[$empId] ?? 0) -($usedEarnMap[$empId] ?? 0); 
+
+                                                    
                                                     $extra_off = [ 
                                                         'balance' =>
                                                             ($extraUploadMap[$empId] ?? 0)
@@ -1011,29 +1014,9 @@ table tr td.col-fixed:nth-child(3) {
                                                    
                                                     $rem_month_leave = $monthly_leave-$used_monthly_leave;
                                                     $pen_coff = $week_leave-$used_weekly;
-                                                    
-                                                    // if ($tpd > $length) {
-                                                    //     $pen_coff = $tpd - $length;
-                                                    // }else{
-                                                    //     $pen_coff=0;
-                                                    // }
-
-                                                    // if ($is_all_leave_add == 1) {
-                                                    //     $tpd += $monthly_leave;
-                                                    // }
-
-                                                    //if ($is_allow_c_off == 1) {
-                                                       // $tpd = min($tpd, $length);
-                                                    //}
-
+                                                      
                                                     $total_tpd += $tpd;
-
-                                                    // $absent = $length - $tpd;
-                                                    // if ($absent < 0) {
-                                                    //     $absent = 0;
-                                                    // }
-
-
+ 
                                                     $totalHoliday += $holiday;
                                                     $totalAbsent += $absent;
                                                     $totalPrevCoff += $prev_coff;
@@ -1153,6 +1136,10 @@ table tr td.col-fixed:nth-child(3) {
                                                                     $txt = 'P';
                                                                     $bg = 'rgb(173,233,179)';
                                                                     break;
+                                                                case 'Absent':
+                                                                    $txt = 'A';
+                                                                    $bg = 'rgb(251,175,175)';
+                                                                    break;
                                                                 case 'Half Day':
                                                                     $txt = 'HD';
                                                                     $bg = 'rgb(255,246,163)';
@@ -1225,7 +1212,7 @@ table tr td.col-fixed:nth-child(3) {
 
                                                         echo "<td style='background:$bg;text-align:center;padding:0' id='cell_{$empId}_{$date}'>
                                                                             <span style='display:block;padding:8px;cursor:pointer'
-                                                                            onclick=\"openPunchModal('$date','$intime','$remark','{$emp['shift_id']}','$shift','$month','$year','$empId','$salaryCount','{$extra_off['balance']}','{$total_earning_leave}','{$prev_coff}','{$date_of_joining}')\">
+                                                                            onclick=\"openPunchModal('$date','$intime','$remark','{$emp['shift_id']}','$shift','$month','$year','$empId','$salaryCount','{$extra_off['balance']}','{$total_earning_leave}','{$prev_coff}','{$date_of_joining}','{$txt}')\">
                                                                             <b>$txt</b>
                                                                             </span>  
                                                                         </td>";
@@ -1444,9 +1431,7 @@ table tr td.col-fixed:nth-child(3) {
                                 <option value="half_c_off">Half C-Off</option>
                                 <option value="eoff" class="extraOffOption2">Extra Off</option>
                                 <option value="half_eoff" class="extraOffOption2">Half Extra Off</option>
-                                <option value="public_holiday">Public Holiday</option>
-                                <!-- <option value="leave" class="leaveOption2">Leave</option>
-                                <option value="half_leave" class="leaveOption2">Half Leave</option> -->
+                                <option value="public_holiday">Public Holiday</option> 
                             </select>
                         </div>
                         <div class="col-lg-12 " id="punchShiftBox">
@@ -1460,6 +1445,7 @@ table tr td.col-fixed:nth-child(3) {
                         </div>
                         <input type="hidden" id="punch_time">
                         <input type="hidden" id="punch_attdate">
+                        <input type="hidden" id="punch_txt">
                         <input type="hidden" id="punch_date_of_joining">
                         <input type="hidden" id="current_month">
                         <input type="hidden" id="current_year">
@@ -1708,10 +1694,10 @@ table tr td.col-fixed:nth-child(3) {
 
 
     function openPunchModal(attdate, time, remark, emp_shift_hrs, empp_shift_id, month, year, emp_id,
-        salary_generate_count, extraOffBalance, total_earning_leave, coff_balance, date_of_joining) {
-
-            console.log("empp_shift_id",empp_shift_id);
+        salary_generate_count, extraOffBalance, total_earning_leave, coff_balance, date_of_joining,txt) {
+ 
         document.getElementById('punch_attdate').value = attdate;
+        document.getElementById('punch_txt').value = txt;
         document.getElementById('punch_date_of_joining').value = date_of_joining;
         document.getElementById('punching_remark').value = remark;
         document.getElementById('current_month').value = month;
@@ -1800,6 +1786,7 @@ table tr td.col-fixed:nth-child(3) {
         var btn = document.getElementById('savebutton');
         var punchtime = document.getElementById('punch_time').value;
         var attdate = document.getElementById('punch_attdate').value;
+        var punch_txt = document.getElementById('punch_txt').value;
         var punch_doj = document.getElementById('punch_date_of_joining').value;
         var punch_remark = document.getElementById('punching_remark').value;
         var punch_status = document.getElementById('punch_status').value;
@@ -1838,7 +1825,7 @@ table tr td.col-fixed:nth-child(3) {
         if (!noShiftRequired.includes(punch_status) && punch_remark == "") {
             alert("Please Enter Remark");
             return false;
-        }
+        } 
 
         // if (punch_shift_id == "") {
         //     alert("Please Select Shift Name");
@@ -1851,7 +1838,7 @@ table tr td.col-fixed:nth-child(3) {
             url: 'ajax_att_save_punch.php',
             data: 'punchtime=' + punchtime + '&emp_id=' + emp_id + '&attdate=' + attdate + '&currentYear=' +
                 currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark +
-                '&punch_status=' + punch_status + '&punch_shift_id=' + punch_shift_id,
+                '&punch_status=' + punch_status + '&punch_shift_id=' + punch_shift_id + '&punch_txt=' + punch_txt,
             dataType: 'html',
             success: function(data) {
                 //alert(data);

@@ -90,8 +90,7 @@ if (isset($_GET['year'])) {
                                 <div class="row g-4 align-items-center">
                                     <div class="col-sm">
                                         <div>
-                                            <h5 class="card-title mb-0"> <?= $module; ?> <a href="loan_advance.php"
-                                                    class="float-end btn btn-sm btn-primary">Add</a></h5>
+                                            <h5 class="card-title mb-0"> <?= $module; ?>  </h5>
                                         </div>
                                     </div>
                                 </div>

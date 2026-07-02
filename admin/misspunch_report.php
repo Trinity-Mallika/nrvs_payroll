@@ -1,5 +1,5 @@
 <?php include("../adminsession.php");
-$title = "Month Wise Attendance Report";
+$title = "Misspunch Report";
 $pagename = "misspunch_report.php";
 $module = "Search Attendance";
 $submodule = "Month Wise Attendance List";

@@ -19,6 +19,15 @@ if ($od_date_from != '' && $od_date_to != '') {
     $crit .= " AND od.application_date <= '$od_date_to'";
 };
 
+if (isset($_GET['application_month'])) {
+    $application_month = $obj->test_input($_GET['application_month']);
+    if ($application_month != '') {
+        $crit .= " and MONTH(od.application_date)='$application_month'";
+    }
+} else {
+    $application_month = date('n');
+};
+
 if (isset($_GET['emp_id'])) {
     $emp_id = $obj->test_input($_GET['emp_id']);
     if ($emp_id != '') {
@@ -111,6 +120,28 @@ if ($approval_type == 'e_hr') {
                             <div class="card-body">
                                 <form method="get">
                                     <div class="row">
+                                         <div class="col-lg-3 mb-3">
+                                            <label for="">Application Month</label>
+                                            <select name="application_month" id="application_month"
+                                                class="form-select form-select-sm chosen-select">
+                                                <option value="">Select Month</option>
+                                                <option value="1">January</option>
+                                                <option value="2">February</option>
+                                                <option value="3">March</option>
+                                                <option value="4">April</option>
+                                                <option value="5">May</option>
+                                                <option value="6">June</option>
+                                                <option value="7">July</option>
+                                                <option value="8">August</option>
+                                                <option value="9">September</option>
+                                                <option value="10">October</option>
+                                                <option value="11">November</option>
+                                                <option value="12">December</option>
+                                            </select>
+                                               <script>
+                                            document.getElementById('application_month').value = '<?= $application_month; ?>';
+                                            </script>
+                                        </div>
                                         <div class="col-lg-3">
                                             <label for="">Application From</label>
                                             <div class="d-flex">
@@ -918,7 +949,6 @@ if ($approval_type == 'e_hr') {
                 year: year
             },
             beforeSend: function() {
-
                 Swal.fire({
                     title: 'Loading...',
                     text: 'Please wait',
@@ -930,7 +960,6 @@ if ($approval_type == 'e_hr') {
 
             },
             success: function(response) {
-
                 Swal.fire({
                     title: 'Leave Balance',
                     html: response,
@@ -939,7 +968,6 @@ if ($approval_type == 'e_hr') {
 
             },
             error: function() {
-
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -949,7 +977,43 @@ if ($approval_type == 'e_hr') {
             }
         });
     }
+
+      $(document).ready(function() {
+
+        $('#application_month').on('change', function() {
+
+            let month = parseInt($(this).val());
+
+            if (!month) return;
+
+            // Current year
+            let year = new Date().getFullYear();
+
+            // First date of month
+            let firstDate = new Date(year, month - 1, 1);
+
+            // Last date of month
+            let lastDate = new Date(year, month, 0);
+
+            // Format YYYY-MM-DD
+            let fromDate =
+                firstDate.getFullYear() + '-' +
+                String(firstDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(firstDate.getDate()).padStart(2, '0');
+
+            let toDate =
+                lastDate.getFullYear() + '-' +
+                String(lastDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(lastDate.getDate()).padStart(2, '0');
+
+            // Set values
+            $('#od_date_from').val(fromDate);
+            $('#od_date_to').val(toDate);
+
+        });
+
+    });
     </script>
 </body>
 
-</html>
+</html> 

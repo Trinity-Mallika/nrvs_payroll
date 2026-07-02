@@ -111,6 +111,8 @@ $today_half_day   = $att['today_half_day'] ?? 0;
 $todayin          = $att['todayin'] ?? 0;
 $today_leave      = $att['today_leave'] ?? 0;
 
+ 
+
 // $today_ab = $obj->getvalfield("attendance_entry", "count(*)", "attendance_status IN ('Absent') and attendance_date='$datecurrent' and sessionid='$header_session_id' AND unit_id='$unitid'");
 
 
@@ -131,12 +133,14 @@ $department = $obj->executequery("SELECT * FROM department_master WHERE unit_id=
 $deptLabels = [];
 $deptData   = [];
 
-foreach ($department as $row) {
+foreach ($department as $row) { 
     $deptLabels[] = $row['department_name'];
-    $salary_count = $obj->getvalfield("salary_structure", "count(*)", "unit_id='$unitid' and month='$currentMonth' and year='$currentYear' and department_id='$row[department_id]' and sessionid='$header_session_id'");
+    $salary_count = $obj->getvalfield("salary_structure", "count(*)", "unit_id='$unitid' and month='$lastMonth' and year='$lastYear' and department_id='$row[department_id]' and sessionid='$header_session_id'");
 
     $deptData[] = (int)$salary_count;
 }
+
+ 
 
 $monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 $salaryTrend = [];
@@ -155,6 +159,9 @@ for ($m = 1; $m <= 12; $m++) {
 $sql = "
     SELECT 
         COALESCE(SUM(total_pay_sal_after_ded), 0) AS last_month_salary,
+        COALESCE(SUM(total_net_salary), 0) AS total_net_salary,
+        COALESCE(SUM(additional_payment), 0) AS additional_payment,
+        COALESCE(SUM(other_deduction), 0) AS other_deduction,
         COALESCE(SUM(pf_emp), 0) AS total_pf,
         COALESCE(SUM(esic_emp), 0) AS total_esic,
         COALESCE(SUM(tds_deduction), 0) AS total_tds,
@@ -169,15 +176,20 @@ $sql = "
       AND sessionid = '$header_session_id'
 ";
 $res = $obj->executequery($sql);
-$sal = $res[0];
+$sal = $res[0]; 
 
-$last_month_salary = $sal['last_month_salary'] ?? 0;
+$total_net_salary  = $sal['total_net_salary'] ?? 0;
+$additional_payment  = $sal['additional_payment'] ?? 0;
+$other_deduction  = $sal['other_deduction'] ?? 0;
 $total_pf          = $sal['total_pf'] ?? 0;
 $total_esic        = $sal['total_esic'] ?? 0;
 $total_tds         = $sal['total_tds'] ?? 0;
 $total_pf_emp      = $sal['total_pf_emp'] ?? 0;
 $total_esic_emp    = $sal['total_esic_emp'] ?? 0;
-
+$total_advance_amt    = $sal['total_advance_amt'] ?? 0;
+$total_loan_amt    = $sal['total_loan_amt'] ?? 0;
+$total_tds    = $sal['total_tds'] ?? 0;
+$last_month_salary = $total_net_salary + $additional_payment -($other_deduction + $total_advance_amt + $total_loan_amt + $total_tds)  ;
 
 $deduction_esic_pf = $total_pf_emp + $total_esic_emp;
 
@@ -500,13 +512,13 @@ $sum = $deduction_summary[0];
                                             <h6 class="mb-1">
                                                 <a href="#"
                                                     class="text-primary  text-decoration-none fw-bold">
-                                                    ₹ <?= number_format($sum['loan_deduction'], 2) ?> Loan
-                                                </a>
+                                                    ₹ <?= number_format($total_loan_amt, 2) ?> Loan
+                                                </a> 
                                             </h6>
                                             <h6 class="mb-1">
                                                 <a href="#"
                                                     class="text-primary text-decoration-none fw-bold">
-                                                    ₹ <?= number_format($sum['advance_deduction'], 2) ?> Advance
+                                                    ₹ <?= number_format($total_advance_amt, 2) ?> Advance
                                                 </a>
                                             </h6>
                                         </div>

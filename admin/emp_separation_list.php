@@ -54,6 +54,11 @@ if (isset($_REQUEST['ajstatus'])) {
     $reason_for_reject = $obj->test_input($_REQUEST['reason'] ?? '');
     $last_working_date = $obj->test_input($_REQUEST['last_working_date']);
 
+    if($status==0 ){
+      $last_working_date= NULL;
+    }
+    
+
     $obj->update_record("employee_exit", array("exit_id" => $exit_idd), array('is_approved' => $status, 'reason_for_reject' => $reason_for_reject, 'approved_date' => $createdate));
     $obj->update_record("employee_master", array("emp_id" => $emp_idd), array('resign_status' => $status, 'last_working_date' => $last_working_date, 'resign_approve_date' => $createdate));
 
@@ -179,6 +184,8 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
             'new_emp_code' => $new_emp_code,
             'biometric_id' => $biometric_id,
             'prev_emp_code' => $show_emp_code,
+            'lastupdated' => $createdate,
+            'updatedby' => $loginid
         ]
     );
     // Update employee_master
@@ -189,7 +196,7 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
             'resign_status' => 0,
             'emp_code' => $new_emp_code,
             'biomatric_id' => $biometric_id,
-            'date_of_joining' => $rejoin_date,
+            'date_of_joining' => $rejoin_date, 
             'last_working_date' => NULL
         ]
     );
@@ -417,16 +424,17 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
                                                         <td><?php echo $row["reason_for_leaving"]; ?></td>
                                                         <td class="text-center">
                                                             <?php $chkapr = $obj->check_aprBtn($pagename, $loginid);
-                                                            if ($chkapr == 1 && $row['is_approved'] == 0) { ?>
+                                                            if ($chkapr == 1) { ?>
                                                                 <a href="javascript:void(0)" title="Change Status"
                                                                     onclick="openStatusModal('<?= $row['is_approved']; ?>','<?= $row['exit_id']; ?>','<?= $row['emp_id']; ?>','<?= $row['last_working_date']; ?>')">
                                                                     <span class="badge <?= $badgeClass; ?> me-2">
                                                                         <?= $statusText; ?>
                                                                     </span>
                                                                 </a>
+                                                                <?php if ($chkapr == 1 && $row['is_approved'] == 0 ) { ?>
                                                                 <input type="checkbox" class="appr_single form-check-input"
                                                                     value="<?= $row['exit_id'] ?>" />
-                                                            <?php } else { ?>
+                                                            <?php } } else { ?>
                                                                 <span class="badge <?= $badgeClass; ?> me-2">
                                                                     <?= $statusText; ?>
                                                                 </span>
@@ -804,37 +812,71 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
                 alert('Reason is required for rejection');
                 return;
             }
-            $('#confirm_btn').prop('disabled', true).text('Saving...');
 
-            $.ajax({
-                type: "POST",
-                url: "",
-                data: {
-                    ajstatus: status,
-                    exit_idd: modal_exit_id,
-                    emp_id: modal_emp_id,
-                    last_working_date: modal_lwd,
-                    reason: reason
-                },
-                dataType: "json",
-                success: function() {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Status Updated',
-                        text: 'Approval status has been updated successfully.',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
+            let title = "";
+            let text = "";
+            let icon = "";
+
+            if (status == "1") {
+                title = "Approve Application?";
+                text = "Are you sure you want to approve this application?";
+                icon = "question";
+            } else if (status == "0") {
+                title = "Mark as Pending?";
+                text = "Are you sure you want to mark this application as Pending?";
+                icon = "warning";
+            } else if (status == "2") {
+                title = "Reject Application?";
+                text = "Are you sure you want to reject this application?";
+                icon = "warning";
+            }
+
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+
+                if (result.isConfirmed) {
+
+                    $('#confirm_btn').prop('disabled', true).text('Saving...');
+
+                    $.ajax({
+                        type: "POST",
+                        url: "",
+                        data: {
+                            ajstatus: status,
+                            exit_idd: modal_exit_id,
+                            emp_id: modal_emp_id,
+                            last_working_date: modal_lwd,
+                            reason: reason
+                        },
+                        dataType: "json",
+                        success: function() {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Status Updated',
+                                text: 'Approval status has been updated successfully.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        },
+                        error: function() {
+                            alert('Something went wrong. Please try again.');
+
+                            $('#confirm_btn').prop('disabled', false).text('Confirm');
+                        }
                     });
-                },
-                error: function() {
-                    alert('Something went wrong. Please try again.');
-
-                    $('#confirm_btn').prop('disabled', false).text('Confirm');
-                }
-            });
-        }
+                }       
+            })
+        } ;
 
         $("#checkAll").on("change", function() {
             $(".appr_single").prop("checked", $(this).prop("checked"));
@@ -937,6 +979,10 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
 
             if (rejoin_date === '') {
                 alert('Rejoining date is required');
+                return;
+            }
+            if (remark == '') {
+                alert('Rejoining Remark is required');
                 return;
             }
 

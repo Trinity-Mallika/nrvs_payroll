@@ -174,7 +174,9 @@ if (isset($_GET['emp_id'])) {
                                                 <th>Year</th>
                                                 <th>Advance Deduction</th>
                                                 <th>Safety Deduction</th>
+                                              
                                                 <th>Other Deduction</th>
+                                                <th>Remark</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
@@ -186,6 +188,7 @@ if (isset($_GET['emp_id'])) {
                                                 $emp_code = $obj->getvalfield("employee_master", "emp_code", "emp_id='$row[emp_id]'");
                                                 $first_name = $obj->getvalfield("employee_master", "first_name", "emp_id='$row[emp_id]'");
                                                 $last_name = $obj->getvalfield("employee_master", "last_name", "emp_id='$row[emp_id]'");
+                                                $salary_count = $obj->getvalfield("salary_structure", "count(*)", "emp_id='$row[emp_id]' and month='$row[month]' and year='$row[year]'");
                                                 $months = [
                                                     1 => 'January',
                                                     2 => 'February',
@@ -211,28 +214,34 @@ if (isset($_GET['emp_id'])) {
 
                                                     <td><?php echo $row["lpg_ded"]; ?></td>
                                                     <td><?php echo $row["shoes_ded"]; ?></td>
+                                                    
                                                     <td><?php echo $row["other"]; ?></td>
+                                                    <td><?php echo $row["remark"]; ?></td>
 
 
                                                     <td>
-                                                        <ul class="list-inline hstack gap-2 mb-0">
-                                                            <?php $chkedit = $obj->check_editBtn($pagename, $loginid);
-                                                            if ($chkedit == 1) {  ?>
-                                                                <li class="list-inline-item " data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Edit">
-                                                                    <a href="deduction_entry.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>" class="edit-item-btn">
-                                                                        <i class="ri-pencil-fill align-bottom text-success"></i>
-                                                                    </a>
-                                                                </li>
-                                                            <?php }
-                                                            $chkdel = $obj->check_delBtn($pagename, $loginid);
-                                                            if ($chkdel == 1) {  ?>
-                                                                <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
-                                                                    <a class="remove-item-btn" type="button" onclick="funDel('<?php echo $row[$tblpkey]; ?>');">
-                                                                        <i class="ri-delete-bin-fill align-bottom text-danger"></i>
-                                                                    </a>
-                                                                </li>
-                                                            <?php } ?>
-                                                        </ul>
+                                                        <?php if ($salary_count == 0) { ?>
+                                                            <ul class="list-inline hstack gap-2 mb-0">
+                                                                <?php $chkedit = $obj->check_editBtn($pagename, $loginid);
+                                                                if ($chkedit == 1) {  ?>
+                                                                    <li class="list-inline-item " data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Edit">
+                                                                        <a href="deduction_entry.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>" class="edit-item-btn">
+                                                                            <i class="ri-pencil-fill align-bottom text-success"></i>
+                                                                        </a>
+                                                                    </li>
+                                                                <?php }
+                                                                $chkdel = $obj->check_delBtn($pagename, $loginid);
+                                                                if ($chkdel == 1) {  ?>
+                                                                    <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
+                                                                        <a class="remove-item-btn" type="button" onclick="funDel('<?php echo $row[$tblpkey]; ?>');">
+                                                                            <i class="ri-delete-bin-fill align-bottom text-danger"></i>
+                                                                        </a>
+                                                                    </li>
+                                                                <?php } ?>
+                                                            </ul>
+                                                        <?php } else { ?>
+    <span class="badge bg-success">Salary Generated</span>
+<?php } ?>
                                                     </td>
                                                 </tr>
                                             <?php } ?>

@@ -20,7 +20,6 @@ class Database
         }
 
         $this->con = mysqli_connect($dbhost, $dbuser, $dbpass, $db);
-
         if (!$this->con) {
             die('Could not connect: ' . mysqli_connect_error());
         }

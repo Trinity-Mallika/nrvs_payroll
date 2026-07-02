@@ -221,8 +221,9 @@ $holiday = $holidayData['total'];
 ");
 
                                         
-
-                                    foreach ($punchData as $row) {
+    $punchMap = [];
+    $lastOpen = [];
+    foreach ($punchData as $row) {
 
     $emp    = $row['emp_id'];
     $date   = $row['attendance_date'];

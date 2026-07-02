@@ -175,6 +175,7 @@ body{
 .value{
     width:60%;
 }
+    
 
 </style>
 </head>
@@ -205,6 +206,7 @@ body{
                     <div class="company">
                         '.$company_name.'
                     </div>
+                      <hr style="color:#ff3c00; background-color:#f22d00; height:1px; border:none; margin:2px 0;">
 
                     <div class="address">
                         '.$company_address.'
@@ -231,6 +233,7 @@ body{
             height:40mm;
             border-collapse:collapse;
             margin-right:-1.5mm;
+            margin-top:-2mm;
              
         ">
             <tr>
@@ -240,7 +243,7 @@ body{
                     text-align:center;
                     vertical-align:middle;
                 ">
-                     '.(!empty($photo) ? '<img src="'.$photo.'" width="40mm" height="38mm">' : '').'
+                     '.(!empty($photo) ? '<img src="'.$photo.'" width="42mm" height="40mm">' : '').'
                 </td>
             </tr>
         </table>
@@ -250,7 +253,7 @@ body{
 
     <!-- NAME STRIP SPACE -->
     <tr>
-        <td colspan="3" height="6"></td>
+        <td colspan="3" height="8"></td>
     </tr>
 
     <!-- NAME -->

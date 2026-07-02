@@ -173,11 +173,11 @@ if (isset($_POST['change_password_ajax'])) {
 
                                                                     <li class="list-inline-item " data-bs-toggle="tooltip"
                                                                         data-bs-trigger="hover" data-bs-placement="top"
-                                                                        title="Print">
-                                                                        <a href="emp_idcard.php?emp_id=<?= $row[$tblpkey]; ?>"
+                                                                        title="ID Card">
+                                                                        <a href="emp_idcard1.php?emp_id=<?= $row[$tblpkey]; ?>"
                                                                             class="edit-item-btn" target="_blank">
 
-                                                                            <i class="ri-file-text-fill text-success" title="Print employee concern"></i>
+                                                                            <i class="ri-file-text-fill text-success" title="Print ID Card"></i>
                                                                         </a>
                                                                     </li>
                                                                 <?php } ?>

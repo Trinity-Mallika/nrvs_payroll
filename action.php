@@ -3158,6 +3158,54 @@ function calculateLeaveUsage($daysInMonth,$presentDays,$weeklyBalance,$monthlyBa
 		");
 	}
 
+	function getEmployeeEarningLeave($emp_id, $month, $year, $sessionid)
+{
+    
+
+    // Used Leave
+    $used = $this->executequery("
+        SELECT
+            SUM(
+                CASE
+                    WHEN attendance_status IN ('Earning Leave','Leave') THEN 1
+                    WHEN attendance_status IN ('Half Earning Leave','Half Leave') THEN 0.5
+                    ELSE 0
+                END
+            ) AS used_leave
+        FROM attendance_entry
+        WHERE emp_id = '$emp_id'
+        AND sessionid = '$sessionid'
+        AND (
+            year < '$year'
+            OR (year = '$year' AND month <= '$month')
+        )
+    ");
+
+    $used_leave = !empty($used[0]['used_leave']) ? $used[0]['used_leave'] : 0;
+
+    // Uploaded Leave
+    $uploaded = $this->executequery("
+        SELECT
+            SUM(total_leave) AS total_leave
+        FROM emp_monthly_leave
+        WHERE emp_id = '$emp_id'
+        AND leave_type = 'earning'
+        AND sessionid = '$sessionid'
+        AND (
+            year < '$year'
+            OR (year = '$year' AND month < '$month')
+        )
+    ");
+
+    $uploaded_leave = !empty($uploaded[0]['total_leave']) ? $uploaded[0]['total_leave'] : 0;
+
+    return [
+        'uploaded_leave' => $uploaded_leave,
+        'used_leave'     => $used_leave,
+        'balance_leave'  => $uploaded_leave - $used_leave
+    ];
+}
+
 
 }
 

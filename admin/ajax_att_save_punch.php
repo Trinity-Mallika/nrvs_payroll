@@ -8,6 +8,7 @@ $currentMonth = $_POST['currentMonth'];
 $punch_remark = $_POST['punch_remark'];
 $punch_status = $_POST['punch_status'];
 $punch_shift_id = $_POST['punch_shift_id'];
+$punch_txt = $_POST['punch_txt']??'';
 $current_time = date("H:i:s");
 
 $prevDate = date('Y-m', strtotime("$currentYear-$currentMonth-01 -1 month"));
@@ -62,6 +63,46 @@ if ($punch_status == 'Absent') {
     );
 
     $obj->delete_record('attendance_entry', $where);
+
+    if($punch_txt=='M'){
+        $form_date_ab = array(
+            'emp_id' => $emp_id,
+            'department_id' => $department_id,
+            'attendance_date' => $attendance_date,
+            'attendance_stamp' => $attendance_date . ' ' . $punchtime,
+            'month' => $currentMonth,
+            'year' => $currentYear,
+            'attendance_status' => 'Absent',
+            'createdate' => date('Y-m-d'),
+            'createtime' => $current_time,
+            'ipaddress' => $ipaddress,
+            'basic_salary' => $emp_salary,  
+            'in_status' => 'IN',
+            'out_status' => 'OUT',
+            'entry_type' => 'manual',
+            'entry_type_out' => 'manual',
+            'unit_id' => $unitid,
+            'updateby' => $loginid,
+            'lastupdated' => date('Y-m-d'),
+            'createdby' => $loginid,
+            'sessionid' => $sessionid
+        );
+
+        $lastid = $obj->insert_record_lastid("attendance_entry", $form_date_ab);
+        $form_data1 = array(
+            "primary_id" => $lastid,
+            "flag" => 'Punch IN Attendence',
+            "activity_type" => 'Attendence IN',
+            "createdby" => $loginid,
+            "pagename" => 'Month_wise_attendence_report.php',
+            "created_date" => $createdate,
+            "created_time" => date('H:i:s'),
+            "unit_id" => $unitid,
+            'ipaddress' => $ipaddress,
+            "sessionid" => $sessionid
+        );
+        $logactivity = $obj->insert_record("logactivity_master", $form_data1);
+    }
 
     //$obj->delete_record('attendance_log', $where);
 

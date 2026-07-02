@@ -117,8 +117,8 @@ $total_tds_amt = 0;
 $total_deduction = 0;
 $total_month_gross = 0;
 
-  $res = $obj->executequery(" SELECT ss.*,um.unit_name,uc.username as created_by_username,uc.usertype as created_by_usertype,uc.fullname as created_by_name,uu.username as update_by_username,uu.usertype as update_by_usertype,uu.fullname as update_by_name, em.first_name,em.department_id, em.emp_code, em.last_name FROM $tblname ss LEFT JOIN employee_master em ON ss.emp_id = em.emp_id LEFT JOIN unit_master um ON ss.unit_id = um.unit_id LEFT JOIN user uc on ss.createdby=uc.userid LEFT JOIN user uu on ss.updatedby=uu.userid WHERE ss.unit_id = '$unitid' AND ss.payment_status IN ('1','2') $crit ORDER BY em.emp_code ASC");
-                                    $total_records = count($res);
+$res = $obj->executequery(" SELECT ss.*,um.unit_name,uc.username as created_by_username,uc.usertype as created_by_usertype,uc.fullname as created_by_name,uu.username as update_by_username,uu.usertype as update_by_usertype,uu.fullname as update_by_name, em.first_name,em.department_id, em.emp_code, em.last_name FROM $tblname ss LEFT JOIN employee_master em ON ss.emp_id = em.emp_id LEFT JOIN unit_master um ON ss.unit_id = um.unit_id LEFT JOIN user uc on ss.createdby=uc.userid LEFT JOIN user uu on ss.updatedby=uu.userid WHERE ss.unit_id = '$unitid' AND ss.payment_status IN ('1','2') $crit ORDER BY em.emp_code ASC");
+$total_records = count($res);
 $show_tds_column = false;
 ?>
 <!doctype html>
@@ -317,7 +317,7 @@ $show_tds_column = false;
                                 </div>
 
                                 <div class="card-body">
-                                    <?php 
+                                    <?php
                                     if ($chkdel == 1) {  ?>
                                         <div class="mb-2 d-flex justify-content-between align-items-center">
                                             <div>
@@ -373,8 +373,8 @@ $show_tds_column = false;
                                                         <th>PF Ded</th>
                                                         <th>ESIC Emp Share</th>
                                                         <th>Sal. Adv</th>
-                                                        <th>Loan </th> 
-                                                        <th>Other Deduction</th> 
+                                                        <th>Loan </th>
+                                                        <th>Other Deduction</th>
                                                         <th>TDS Ded</th>
                                                         <th>Total Deduction</th>
                                                         <th>Net Salary</th>
@@ -386,7 +386,7 @@ $show_tds_column = false;
                                                     <?php
 
                                                     $slno = 1;
-                                                    
+
 
 
                                                     foreach ($res as $row) {
@@ -402,7 +402,7 @@ $show_tds_column = false;
                                                         $total_medical += $row['medical'];
                                                         $total_conveyance += $row['conveyance'];
                                                         $total_special += $row['special_allow'];
-                                                      
+
                                                         $total_pf += $row['pf_emp'];
                                                         $total_esic += $row['esic_emp'];
                                                         $total_pf_share += $row['pf_employer'];
@@ -412,7 +412,7 @@ $show_tds_column = false;
                                                         $total_add_amt += $row['additional_payment'];
                                                         $total_other_amt += $row['other_deduction'];
                                                         $total_tds_amt += $row['tds_deduction'];
-                                                        $total_month_gross+=$month_gross_tot;
+                                                        $total_month_gross += $month_gross_tot;
                                                         if ($row['tds_deduction'] > 0) {
                                                             $show_tds_column = true;
                                                         }
@@ -473,12 +473,23 @@ $show_tds_column = false;
                                                                         <li class="list-inline-item" data-bs-toggle="tooltip"
                                                                             data-bs-trigger="hover" data-bs-placement="top"
                                                                             title="Print Salary Slip">
-                                                                            <a href="salary_slip_pdf.php?salary_struc_id=<?= $row['salary_struc_id'] ?>"
+                                                                            <a href="nrvs_pdf.php?salary_struc_id=<?= $row['salary_struc_id'] ?>"
                                                                                 target="_blank">
                                                                                 <i
                                                                                     class="ri-printer-fill align-bottom text-primary"></i>
                                                                             </a>
                                                                         </li>
+                                                                    <?php }
+                                                                    if ($chkprint == 1) {  ?>
+                                                                        <!-- <li class="list-inline-item" data-bs-toggle="tooltip"
+                                                                            data-bs-trigger="hover" data-bs-placement="top"
+                                                                            title="Print Salary Slip">
+                                                                            <a href="salary_slip_pdf.php?salary_struc_id=< $row['salary_struc_id'] ?>"
+                                                                                target="_blank">
+                                                                                <i
+                                                                                    class="ri-printer-fill align-bottom text-primary"></i>
+                                                                            </a>
+                                                                        </li> -->
                                                                     <?php }
                                                                     if ($chkapr == 1) { ?>
                                                                         <button
@@ -517,10 +528,10 @@ $show_tds_column = false;
                                                             <td style="text-wrap: nowrap;"><?= $row['first_name'] . " " . $row['last_name']; ?></td>
                                                             <td style="text-wrap: nowrap;"><?= $department; ?></td>
 
-                                                       
 
-                                                            <td class="text-end"><?=$obj->formatAmount($row['basic_salary']); ?></td>
-                                                            <td class="text-end"><?=$obj->formatAmount($row['increment']); ?></td>
+
+                                                            <td class="text-end"><?= $obj->formatAmount($row['basic_salary']); ?></td>
+                                                            <td class="text-end"><?= $obj->formatAmount($row['increment']); ?></td>
                                                             <td class="text-end"><?= $obj->formatAmount($row['revised_salary']); ?></td>
                                                             <td class="text-end"><?= $obj->formatAmount($row['total_working_days']); ?></td>
                                                             <td class="text-end"><?= $obj->formatAmount($row['basic_da']); ?></td>
@@ -535,11 +546,11 @@ $show_tds_column = false;
                                                             <td class="text-end"><?= $obj->formatAmount($row['esic_emp']); ?></td>
                                                             <td class="text-end"><?= $obj->formatAmount($row['advance_amt']); ?></td>
                                                             <td class="text-end"><?= $obj->formatAmount($row['loan_amt']); ?></td>
-                                                            
+
                                                             <td class="text-end"><?= $obj->formatAmount($row['other_deduction']); ?></td>
-                                                           
-                                                                <td class="text-end"><?= $obj->formatAmount($row['tds_deduction']); ?></td>
-                                                            
+
+                                                            <td class="text-end"><?= $obj->formatAmount($row['tds_deduction']); ?></td>
+
                                                             <td class="text-end"><?= $obj->formatAmount($deduction); ?></td>
                                                             <td class="text-end"><?= $obj->formatAmount($total_net_salary); ?></td>
 
@@ -557,17 +568,17 @@ $show_tds_column = false;
                                                         <th class="text-end"><?= $total_conveyance ?></th>
                                                         <th class="text-end"><?= $total_special ?></th>
                                                         <th class="text-end"><?= number_format($total_net, 2); ?></th>
-                                                           <th class="text-end"><?= $total_add_amt ?></th>
+                                                        <th class="text-end"><?= $total_add_amt ?></th>
                                                         <th class="text-end"><?= number_format($total_month_gross, 2); ?></th>
                                                         <th class="text-end"><?= $total_pf ?></th>
                                                         <th class="text-end"><?= $total_esic ?></th>
                                                         <th class="text-end"><?= $total_advance_amt ?></th>
                                                         <th class="text-end"><?= $total_loan_amt ?></th>
-                                                      
+
                                                         <th class="text-end"><?= $total_other_amt ?></th>
-                                                        
-                                                            <th class="text-end"><?= $total_tds_amt ?></th>
-                                                        
+
+                                                        <th class="text-end"><?= $total_tds_amt ?></th>
+
                                                         <th class="text-end"><?= $total_deduction ?></th>
                                                         <th colspan="" class="text-end"><?= number_format($total_payable_salary, 2) ?></th>
                                                     </tr>

@@ -146,7 +146,7 @@ $extra_off =
                     <select class="form-select form-select-sm chosen-select" id="modal_leave_type_<?= $row['leave_details_id'] ?>">
                         <option value="EL" <?= ($row['leave_type'] == 'EL') ? 'selected' : '' ?>>EARNED LEAVE</option> 
                         <option value="EO" <?= ($row['leave_type'] == 'EO') ? 'selected' : '' ?>>EXTRA OFF</option>
-                        <option value="EO" <?= ($row['leave_type'] == 'CO') ? 'selected' : '' ?>>C-OFF</option> 
+                        <option value="CO" <?= ($row['leave_type'] == 'CO') ? 'selected' : '' ?>>C-OFF</option> 
                         <!-- <option value="L" < ($row['leave_type'] == 'L') ? 'selected' : '' ?>>OPENING LEAVE</option>
                         <option value="LWP" < ($row['leave_type'] == 'LWP') ? 'selected' : '' ?>>LEAVE WITHOUT PAY</option> -->
                     </select>

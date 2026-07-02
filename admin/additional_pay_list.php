@@ -1,15 +1,15 @@
 <?php include("../adminsession.php");
-$pagename = "additional_pay_master.php";
-$title = "Additional Payment Master";
-$tblname = "salary_structure";
-$tblpkey = "salary_struc_id";
-$module = "Additional Payment Master";
-$submodule = "Additional Payment Master List";
+$pagename = "additional_pay_list.php";
+$title = "Additional Payment List";
+$tblname = "additional_payment";
+$tblpkey = "add_payid";
+$module = "Additional Payment List";
+$submodule = "Additional Payment List List";
 $btn_name = "Save";
 
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
-$crit = ' and 1=1';
+$crit = ' 1=1';
 if (isset($_GET['month'])) {
     $month = $obj->test_input($_GET['month']);
     if ($month != '') {
@@ -171,14 +171,21 @@ if (isset($_GET['emp_id'])) {
                                                 <th>Employee Name</th>
                                                 <th>Month</th>
                                                 <th>Year</th>
-                                                <th>Additional Payable Amount</th>
+                                                <th>Remark</th>
+                                                <th>Arear Amount</th>
+                                                <th>Other Reimbursement Amount</th>
+                                                <th>Increment Arear Amount</th>
+                                                <th>Bonus Amount</th>
+                                                <th>Leave encasement Amount</th>
+                                                <th>Notice period Amount</th>
+                                                <th>Total Additional Payable Amount</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <?php
                                             $slno = 1;
-                                            $res = $obj->executequery("SELECT * FROM $tblname where unit_id='$unitid' and additional_payment>0 $crit ORDER BY $tblpkey desc ");
+                                            $res = $obj->executequery("SELECT * FROM $tblname where $crit ORDER BY $tblpkey desc ");
                                             foreach ($res as $row) {
                                                 $emp_code = $obj->getvalfield("employee_master", "emp_code", "emp_id='$row[emp_id]'");
                                                 $first_name = $obj->getvalfield("employee_master", "first_name", "emp_id='$row[emp_id]'");
@@ -204,25 +211,38 @@ if (isset($_GET['emp_id'])) {
                                                     <td> <?= ucfirst($first_name ?? ''); ?> <?= ucfirst($last_name ?? ''); ?></td>
                                                     <td><?= $months[(int)$row["month"]] ?? '' ?></td>
                                                     <td><?php echo $row["year"]; ?></td>
-                                                    <td><?php echo $row["additional_payment"]; ?></td>
+                                                    <td><?php echo $row["remark"]; ?></td>
+                                                    <td><?php echo $row["basic_arear"]; ?></td>
+                                                    <td><?php echo $row["other_reimbursement"]; ?></td>
+                                                    <td><?php echo $row["increment_arear"]; ?></td>
+                                                    <td><?php echo $row["bonus"]; ?></td>
+                                                    <td><?php echo $row["leave_encasement"]; ?></td>
+                                                    <td><?php echo $row["notice_period"]; ?></td>
+                                                    <td><?php echo $row["total_additional_payment"]; ?></td>
                                                     <td>
                                                         <ul class="list-inline hstack gap-2 mb-0">
-                                                            <?php $chkedit = $obj->check_editBtn($pagename, $loginid);
-                                                            if ($chkedit == 1) {  ?>
+                                                            <?php
+                                                            $chkedit = $obj->check_editBtn($pagename, $loginid);
+                                                            if ($chkedit == 1) {
+                                                            ?>
                                                                 <li class="list-inline-item " data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Edit">
                                                                     <a href="additional_pay_master.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>" class="edit-item-btn">
                                                                         <i class="ri-pencil-fill align-bottom text-success"></i>
                                                                     </a>
                                                                 </li>
-                                                            <?php }
+                                                            <?php
+                                                            }
                                                             $chkdel = $obj->check_delBtn($pagename, $loginid);
-                                                            if ($chkdel == 1) {  ?>
+                                                            if ($chkdel == 1) {
+                                                            ?>
                                                                 <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
                                                                     <a class="remove-item-btn" type="button" onclick="funDel('<?php echo $row[$tblpkey]; ?>');">
                                                                         <i class="ri-delete-bin-fill align-bottom text-danger"></i>
                                                                     </a>
                                                                 </li>
-                                                            <?php } ?>
+                                                            <?php
+                                                            }
+                                                            ?>
                                                         </ul>
                                                     </td>
                                                 </tr>

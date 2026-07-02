@@ -10,8 +10,7 @@ $btn_name = "Save";
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 $crit = ' and 1=1';
-$crit2 = '';
-
+$crit2 = ''; 
 $datecurrent = date('Y-m-d');
 $month = date('n');
 $year = date('Y');

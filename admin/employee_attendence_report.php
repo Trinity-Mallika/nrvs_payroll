@@ -15,8 +15,7 @@ $currentMonth = isset($_GET['month']) ? $_GET['month'] : date('m');
 $currentYear  = isset($_GET['year']) ? $_GET['year'] : date('Y');
 $emp_id       = isset($_GET['emp_id']) ? $_GET['emp_id'] : 0;
 
-$search = isset($_GET['submit']);
-
+$search = isset($_GET['submit']); 
 if ($emp_id > 0) {
     $emp_data = $obj->select_record("employee_master", ['emp_id' => $emp_id]);
 

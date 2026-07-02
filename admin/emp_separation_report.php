@@ -385,9 +385,6 @@ if ($fromdate != '' && $todate != '') {
                 search_contains: true
             });  
         }); 
-
-     
-
         function openRejoinDetailsModal(emp_name, rejoin_type, prev_code, new_code, biometric_id, emp_code, remark) {
             $('#detail_emp_name').text(emp_name);
             if (rejoin_type == 1) {
