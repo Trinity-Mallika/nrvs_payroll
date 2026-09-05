@@ -5,37 +5,38 @@ include("../action.php");
 $sessionid = $obj->getvalfield("m_session", "sessionid", "status=1");
 
 $inputJSON = file_get_contents('php://input');
-// 6728322120001025 out
-// 6728322120001144 in
-$inputJSON = '{"EmployeeID":"2213","SerialNo":"6728322120001144","AttendanceDate":"2026-07-01","PunchTime":"2026-07-01T10:02:01"}';
+// 6755625040000090 out
+// 6728422090000160 in
+//$inputJSON = '{"EmployeeID":"1031","SerialNo":"6755625040000090","AttendanceDate":"2026-04-04","PunchTime":"2026-04-04T23:06:01"}';
 //$inputJSON = '{"EmployeeID":"1031","SerialNo":"6728422090000160","AttendanceDate":"2026-04-01","PunchTime":"2026-04-01T14:35:36"}';
 
-// if ($inputJSON != "") {
+if ($inputJSON != "") {
 
-// 	// Convert JSON to array
-// 	$data = json_decode($inputJSON, true);
+	// Convert JSON to array
+	$data = json_decode($inputJSON, true);
 
-// 	// Pretty JSON format
-// 	$formattedJSON = json_encode($data, JSON_PRETTY_PRINT);
+	// Pretty JSON format
+	$formattedJSON = json_encode($data, JSON_PRETTY_PRINT);
 
-// 	// Get current time with milliseconds
-// 	$microtime = microtime(true);
-// 	$datetime = date('Y-m-d H:i:s.') . sprintf("%03d", ($microtime - floor($microtime)) * 1000);
+	// Get current time with milliseconds
+	$microtime = microtime(true);
+	$datetime = date('Y-m-d H:i:s.') . sprintf("%03d", ($microtime - floor($microtime)) * 1000);
 
-// 	// Open file in append mode
-// 	$myfile = fopen("testfile.txt", "a");
+	// Open file in append mode
+	$myfile = fopen("testfile.txt", "a");
 
-// 	// Write data
-// 	fwrite($myfile, "============================\n");
-// 	fwrite($myfile, "Received At: " . $datetime . "\n");
+	// Write data
+	fwrite($myfile, "============================\n");
+	fwrite($myfile, "Received At: " . $datetime . "\n");
 
-// 	// Optional: PunchTime bhi show karo (important for debugging)
-// 	if (isset($data['PunchTime'])) {
-// 		fwrite($myfile, "PunchTime: " . $data['PunchTime'] . "\n");
-// 	}
-// 	fwrite($myfile, $formattedJSON . "\n\n");
-// 	fclose($myfile);
-// }
+	// Optional: PunchTime bhi show karo (important for debugging)
+	if (isset($data['PunchTime'])) {
+		fwrite($myfile, "PunchTime: " . $data['PunchTime'] . "\n");
+	}
+	fwrite($myfile, $formattedJSON . "\n\n");
+	fclose($myfile);
+}
+
 $arr = json_decode($inputJSON, true);
 
 $device = !empty($arr['SerialNo']) ? $arr['SerialNo'] : $arr['DeviceID'];
@@ -128,6 +129,23 @@ LIMIT 1;";
 
     // $prev_att_id = $obj->getvalfield( "attendance_entry", "attendance_id", "emp_id='$emp_id' AND attendance_date <= '$attendance_date' AND (outtime IS NULL OR outtime = '') ORDER BY attendance_date DESC, attendance_id DESC LIMIT 1" );
 
+  $is_leave = $obj->getvalfield("leave_apply_detail","attendance_id","date='$attendance_date' and status='1' and emp_id='$emp_id'");
+    if($is_leave>0){ 
+        $obj->update_record("leave_apply_detail",["date"=>$attendance_date,"status"=>'1','emp_id'=>$emp_id, 'attendance_id'=> $is_leave],["status"=>0]);
+        $obj->delete_record("attendance_entry",["attendance_id"=>$is_leave, "emp_id"=>$emp_id,"attendance_date"=>$attendance_date]);
+        $form_data1 = array(
+            "primary_id" => $emp_id,
+            "flag" => "Machine Punch After Leave Approval",
+            "activity_type" => 'Updated', 
+            "pagename" => 'get_datak30.php',
+            "created_date" => $createdate,
+            "created_time" =>date("H:i:s"),
+            "unit_id" => $unit_id
+        );
+        $logactivity = $obj->insert_record("logactivity_master", $form_data1);
+    }
+
+
     $prev_att_id = $obj->getvalfield(
         "attendance_entry",
         "attendance_id",
@@ -216,7 +234,7 @@ LIMIT 1;";
 
 
             /* ================= CHECK WITHIN LIMIT ================= */
-            
+
             if ($outDateTime <= $max_out_time) {
 
                 // always keep LAST OUT

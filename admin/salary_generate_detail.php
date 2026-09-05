@@ -10,7 +10,7 @@ $crit = "";
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 $unit_pf_rate = $obj->getvalfield("unit_master", "pf_rate", "unit_id='$unitid'");
-$unit_esic_rate = $obj->getvalfield("unit_master", "esic_rate", "unit_id='$unitid'");
+$unit_esic_rate = $obj->getvalfield("unit_master", "esic_rate", "unit_id='$unitid'"); 
 
 $today = new DateTime();
 if (isset($_GET['month'])) {
@@ -51,19 +51,58 @@ if (isset($_GET['emp_id'])) {
     $emp_data =  $obj->select_record("employee_master", array("emp_id" => $emp_id));
     $last_increment_date = $emp_data['last_increment_date'];
     //$db_basic_salary  = $obj->getvalfield($tblname, "basic_salary", "emp_id='$emp_id' and month='$prev_month' and year='$prev_year'");
-    $loan_data = $obj->select_record("loan_advance_details", ['emp_id' => $emp_id, 'month' => $month, 'year' => $year, 'status' => 1, 'type' => 'Loan']);
-    $advance_data = $obj->select_record("loan_advance_details", ['emp_id' => $emp_id, 'month' => $month, 'year' => $year, 'status' => 1, 'type' => 'Advance']);
-    $emp_deduction = $obj->select_record("emp_deduction", ['emp_id' => $emp_id, 'month' => $month, 'year' => $year]);
 
+    // $loan_data = $obj->select_record("loan_advance_details", ['emp_id' => $emp_id, 'month' => $month, 'year' => $year, 'status' => 1, 'type' => 'Loan']);
+    // $advance_data = $obj->select_record("loan_advance_details", ['emp_id' => $emp_id, 'month' => $month, 'year' => $year, 'status' => 1, 'type' => 'Advance']);
+
+    $emp_deduction = $obj->select_record("emp_deduction", ['emp_id' => $emp_id, 'month' => $month, 'year' => $year]);  
+
+    $loanRecords = $obj->executequery("
+        SELECT *
+        FROM loan_advance_details
+        WHERE emp_id='$emp_id'
+        AND month='$month'
+        AND year='$year'
+        AND type='Loan'
+        AND status=1
+        AND is_paid=0
+    ");
+
+    $totalLoan = 0;
+
+    foreach($loanRecords as $loan){
+        $totalLoan += $loan['amount'];
+    }
+
+    $advanceRecords = $obj->executequery("
+        SELECT *
+        FROM loan_advance_details
+        WHERE emp_id='$emp_id'
+        AND month='$month'
+        AND year='$year'
+        AND type='Advance'
+        AND status=1
+        AND is_paid=0
+    ");
+
+    $totalAdvance = 0;
+
+    foreach($advanceRecords as $advance){
+        $totalAdvance += $advance['amount'];
+    } 
+ 
     $shoes_ded = $emp_deduction['shoes_ded']??0;
     $lpg_ded = $emp_deduction['lpg_ded']??0;
     $other = $emp_deduction['other']??0;
     $other_deduction =  $shoes_ded+ $lpg_ded+ $other ;  
+    $additional_payment = $obj->getvalfield("additional_payment", "total_additional_payment", "emp_id='$emp_id' and month='$month' and year='$year'");
 
-    $loan_amt  =  $loan_data['amount'] ?? 0;
-    $loan_details_id  =  $loan_data['loan_details_id'] ?? 0;
-    $advance_amt  =  $advance_data['amount'] ?? 0;
-    $advance_details_id  =  $advance_data['loan_details_id'] ?? 0;
+   // $loan_amt  =  $loan_data['amount'] ?? 0;
+    $loan_amt = $totalLoan;
+    //$loan_details_id  =  $loan_data['loan_details_id'] ?? 0;
+    //$advance_amt  =  $advance_data['amount'] ?? 0;
+    $advance_amt = $totalAdvance;
+    //$advance_details_id  =  $advance_data['loan_details_id'] ?? 0;
     $basic_salary = $emp_data['basic_salary'];
     $first_name = $emp_data['first_name'];
     $last_name = $emp_data['last_name'];
@@ -120,9 +159,13 @@ if (isset($_GET['emp_id'])) {
             END) AS total_half1,
 
             SUM(CASE 
-                WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Leave','Public Holiday') THEN 1 
+                WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Leave','Public Holiday','National Holiday','Religion Holiday','Seasonal Holiday') THEN 1 
                 ELSE 0 
             END) AS total_present,
+            SUM(CASE 
+                WHEN attendance_status IN ('National Holiday','Religion Holiday','Seasonal Holiday') THEN 1 
+                ELSE 0 
+            END) AS tot_paid_holiday,
 
             SUM(CASE 
                 WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Leave') THEN 1 
@@ -155,6 +198,7 @@ if (isset($_GET['emp_id'])) {
 
     $total_present1 = $row['total_present1'] ?? 0;
     $total_half1    = $row['total_half1'] ?? 0;
+    $tot_paid_holiday    = $row['tot_paid_holiday'] ?? 0;
 
     $total_present  = $row['total_present'] ?? 0;
     $total_half     = $row['total_half'] ?? 0;
@@ -168,11 +212,9 @@ if (isset($_GET['emp_id'])) {
 
     //$overtime_days = $obj->getvalfield("emp_overtime", "no_of_overtime", "emp_id='$emp_id' and month='$month' and year='$year' AND unit_id='$unitid'");
 
-    $total_working_day = $total_present + ($total_half / 2);
+    $total_working_day = $total_present + ($total_half / 2);  
 
-     
-
-    $real_total_working_day = $total_present1 + ($total_half1 / 2);
+    $real_total_working_day = $total_present1 + ($total_half1 / 2)+$holiday+$tot_paid_holiday;
 
     $count = $obj->getvalfield($tblname, "count(*)", "emp_id='$emp_id' and month='$month' and year ='$year'");
     $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_working_day, $emp_id,$month,$year,$keyvalue);
@@ -331,168 +373,237 @@ if (isset($_POST['submit'])) {
         "createdate" => date("Y-m-d H:i:s")
     ];
 
-    if ($keyvalue == 0) {
-        $form_data["createdate"] = $createdate;
-        $obj->update_record("loan_advance_details", ['loan_details_id' => $loan_details_id], ['is_paid' => 1, 'paid_date' => $createdate]);
-        $obj->update_record("loan_advance_details", ['loan_details_id' => $advance_details_id], ['is_paid' => 1, 'paid_date' => $createdate]);
-
-        $lastid = $obj->insert_record_lastid($tblname, $form_data);
-  
-        if ($overtimeDays > 0  && $is_allow_c_off == '1' && $is_perform_incen==0) {
-            $overtime_data['salary_struc_id'] = $lastid;
-            $obj->insert_record('emp_monthly_leave', $overtime_data);
-        }
-
-        if ($remining_earn_leave > 0  && $allow_earn_leave_carry == '1') {
-            $remining_earn_leave_data['salary_struc_id'] = $lastid;
-            $obj->insert_record('emp_monthly_leave', $remining_earn_leave_data);
-        }
- 
-        $action = 1;
-        $process = "insert";
-
-        $form_data1 = array(
-            "primary_id" => $lastid,
-            "flag" => $title,
-            "activity_type" => 'Inserted',
-            "createdby" => $loginid,
-            "pagename" => $pagename,
-            "created_date" => $createdate,
-            "created_time" => date('H:i:s'),
-            "unit_id" => $unitid,
-            'ipaddress' => $ipaddress,
-            "sessionid" => $sessionid
-        );
-        $logactivity = $obj->insert_record("logactivity_master", $form_data1);
-
-         if($increment > 0){
-
-           $tot_sal = $increment + $basic_salary;
-            $obj->update_record(
-                "employee_master",
-                ['emp_id' => $emp_id],
-                ['basic_salary' => $tot_sal, 'last_increment_date' => $createdate, 'prev_salary' => $basic_salary]
-            );
-
-            $form_increment = array(
-            'emp_id' => $emp_id,
-            'unit_id' => $unitid,
-            'department_id' => $department_id,
-            'salary_struc_id' => $lastid,
-            'designation_id' => $designation_id,
-            'basic_salary' => $tot_sal, 
-            'promote_amt' => $increment,
-            'promotion_date' => $createdate,
-            'type' => 'increment',
-            'status' => '1',
-            "createdate" => $createdate,
-            "createdby" => $loginid,
-            "ipaddress" => $ipaddress,
-            "sessionid" => $sessionid
-        );
-        $lastid_inc =  $obj->insert_record_lastid("emp_promotion", $form_increment);
-        $form_data1 = array(
-            "primary_id" => $lastid_inc,
-            "flag" => "Employee Increment",
-            "activity_type" => 'Inserted',
-            "createdby" => $loginid,
-            "ipaddress" => $ipaddress,
-            "unit_id" => $unitid,
-            "created_date" => $createdate,
-            "created_time" => date("H:i:s"),
-            "sessionid" => $sessionid
-        );
-        $logactivity = $obj->insert_record("logactivity_master", $form_data1);
-    }
-    } else {
-        $form_data["lastupdated"] = $createdate;
-        $form_data["updatedby"] = $loginid;
-        $where = array($tblpkey => $keyvalue);
-        $obj->update_record($tblname, $where, $form_data);
-        if ($overtimeDays > 0 && $is_allow_c_off == '1' && $is_perform_incen==0) {
-            $where = array(
-                'emp_id' => $emp_id,
-                'salary_struc_id' => $keyvalue,
-                'month'  => $month,
-                'year'   => $year,
-                'is_opb'   => 0,
-                'leave_type'   => 'weekly',
-                'unit_id'   => $unitid
-            );
-            $obj->delete_record('emp_monthly_leave', $where);
-            $obj->insert_record('emp_monthly_leave', $overtime_data);
-        }
-
-        if ($remining_earn_leave > 0  && $allow_earn_leave_carry == '1') {
-            $obj->insert_record('emp_monthly_leave', $remining_earn_leave_data);
-        }
-        if($increment > 0){
-            $tot_sal = $increment + $basic_salary;
-            $obj->update_record(
-                "employee_master",
-                ['emp_id' => $emp_id],
-                ['basic_salary' => $tot_sal, 'last_increment_date' => $createdate, 'prev_salary' => $basic_salary]
-            );
-
-            $where2 = array(
-                $tblpkey => $keyvalue,
-                "emp_id" => $emp_id,
-                "unit_id" => $unitid,
-                "type" => 'increment'
-            );
-
-            $form_increment = array(
-            'emp_id' => $emp_id,
-            'unit_id' => $unitid,
-            'department_id' => $department_id,
-            'salary_struc_id' => $keyvalue,
-            'designation_id' => $designation_id,
-            'basic_salary' => $tot_sal,
-            'promotion_date' => $createdate,
-            'promote_amt' => $increment,
-            'type' => 'increment',
-            'status' => '1',
-            "lastupdated" => $createdate,
-            "updatedby" => $loginid,
-            "ipaddress" => $ipaddress,
-            "sessionid" => $sessionid
-            );
-
-            // CHECK RECORD EXISTS
-            $checkIncrement = $obj->select_record("emp_promotion", $where2);
-            if (!empty($checkIncrement)) {
+    $exists = $obj->getvalfield(
+    "salary_structure",
+    "COUNT(*)",
+    "emp_id='$emp_id' AND month='$month' AND year='$year' and $tblpkey!='$keyvalue'"
+);
+    if ($exists > 0 ) {
+        $action = 4;
+        $process = "duplicate";
+         
+    }else{
+        if ($keyvalue == 0) {
+            $form_data["createdate"] = $createdate; 
+            foreach($loanRecords as $loan){
                 $obj->update_record(
-                    "emp_promotion",
-                    $where2,
-                    $form_increment
-                );
-            } else {
-                // INSERT
-                $lastid_inc = $obj->insert_record_lastid(
-                    "emp_promotion",
-                    $form_increment
+                    "loan_advance_details",
+                    ['loan_details_id'=>$loan['loan_details_id'],'type'=>'Loan'],
+                    [
+                        'is_paid'=>1,
+                        'paid_date'=>$createdate
+                    ]
                 );
             }
-            
+            foreach($advanceRecords as $advance){
+                $obj->update_record(
+                    "loan_advance_details",
+                    ['loan_details_id'=>$advance['loan_details_id'] , 'type'=>'Advance'],
+                    [
+                        'is_paid'=>1,
+                        'paid_date'=>$createdate
+                    ]
+                );
+            }
+           // $obj->update_record("loan_advance_details", ['loan_details_id' => $loan_details_id , 'type'=>'Loan'], ['is_paid' => 1, 'paid_date' => $createdate]);
+            //$obj->update_record("loan_advance_details", ['loan_details_id' => $advance_details_id , 'type'=>'Advance'], ['is_paid' => 1, 'paid_date' => $createdate]);
+
+            $lastid = $obj->insert_record_lastid($tblname, $form_data);
+    
+            if ($overtimeDays > 0  && $is_allow_c_off == '1' && $is_perform_incen==0) {
+                $overtime_data['salary_struc_id'] = $lastid;
+                $obj->insert_record('emp_monthly_leave', $overtime_data);
+            }
+
+            if ($remining_earn_leave > 0  && $allow_earn_leave_carry == '1') {
+                $remining_earn_leave_data['salary_struc_id'] = $lastid;
+                $obj->insert_record('emp_monthly_leave', $remining_earn_leave_data);
+            }
+    
+            $action = 1;
+            $process = "insert";
+
+            $form_data1 = array(
+                "primary_id" => $lastid,
+                "flag" => $title,
+                "activity_type" => 'Inserted',
+                "createdby" => $loginid,
+                "pagename" => $pagename,
+                "created_date" => $createdate,
+                "created_time" => date('H:i:s'),
+                "unit_id" => $unitid,
+                'ipaddress' => $ipaddress,
+                "sessionid" => $sessionid
+            );
+            $logactivity = $obj->insert_record("logactivity_master", $form_data1);
+
+            if($increment > 0){
+
+            $tot_sal = $increment + $basic_salary;
+                $obj->update_record(
+                    "employee_master",
+                    ['emp_id' => $emp_id],
+                    ['basic_salary' => $tot_sal, 'last_increment_date' => $createdate, 'prev_salary' => $basic_salary]
+                );
+
+                $form_increment = array(
+                'emp_id' => $emp_id,
+                'unit_id' => $unitid,
+                'department_id' => $department_id,
+                'salary_struc_id' => $lastid,
+                'designation_id' => $designation_id,
+                'basic_salary' => $tot_sal, 
+                'promote_amt' => $increment,
+                'promotion_date' => $createdate,
+                'type' => 'increment',
+                'status' => '1',
+                "createdate" => $createdate,
+                "createdby" => $loginid,
+                "ipaddress" => $ipaddress,
+                "sessionid" => $sessionid
+            );
+            $lastid_inc =  $obj->insert_record_lastid("emp_promotion", $form_increment);
+            $form_data1 = array(
+                "primary_id" => $lastid_inc,
+                "flag" => "Employee Increment",
+                "activity_type" => 'Inserted',
+                "createdby" => $loginid,
+                "ipaddress" => $ipaddress,
+                "unit_id" => $unitid,
+                "created_date" => $createdate,
+                "created_time" => date("H:i:s"),
+                "sessionid" => $sessionid
+            );
+            $logactivity = $obj->insert_record("logactivity_master", $form_data1);
         }
-        $action = 2;
-        $process = "updated";
+        } else {
 
-        $form_data1 = array(
-            "primary_id" => $keyvalue,
-            "flag" => $title,
-            "activity_type" => 'Updated',
-            "createdby" => $loginid,
-            "pagename" => $pagename,
-            "created_date" => $createdate,
-            "created_time" => date('H:i:s'),
-            "unit_id" => $unitid,
-            'ipaddress' => $ipaddress,
-            "sessionid" => $sessionid
-        );
-        $logactivity = $obj->insert_record("logactivity_master", $form_data1);
+            foreach($loanRecords as $loan){
+                $obj->update_record(
+                    "loan_advance_details",
+                    ['loan_details_id'=>$loan['loan_details_id'],'type'=>'Loan'],
+                    [
+                        'is_paid'=>1,
+                        'paid_date'=>$createdate
+                    ]
+                );
+            }
+            foreach($advanceRecords as $advance){
+                $obj->update_record(
+                    "loan_advance_details",
+                    ['loan_details_id'=>$advance['loan_details_id'] , 'type'=>'Advance'],
+                    [
+                        'is_paid'=>1,
+                        'paid_date'=>$createdate
+                    ]
+                );
+            }
+
+
+            // $obj->update_record("loan_advance_details", ['loan_details_id' => $loan_details_id , 'type'=>'Loan'], ['is_paid' => 1, 'paid_date' => $createdate]);
+            // $obj->update_record("loan_advance_details", ['loan_details_id' => $advance_details_id , 'type'=>'Advance'], ['is_paid' => 1, 'paid_date' => $createdate]);
+            $form_data["lastupdated"] = $createdate;
+            $form_data["updatedby"] = $loginid;
+            $where = array($tblpkey => $keyvalue);
+            $obj->update_record($tblname, $where, $form_data);
+            if ($overtimeDays > 0 && $is_allow_c_off == '1' && $is_perform_incen==0) {
+                $where = array(
+                    'emp_id' => $emp_id,
+                    'salary_struc_id' => $keyvalue,
+                    'month'  => $month,
+                    'year'   => $year,
+                    'is_opb'   => 0,
+                    'leave_type'   => 'weekly',
+                    'unit_id'   => $unitid
+                );
+                $obj->delete_record('emp_monthly_leave', $where);
+                $overtime_data['salary_struc_id'] = $keyvalue;
+    
+                $obj->insert_record('emp_monthly_leave', $overtime_data);
+            }
+
+            if ($remining_earn_leave > 0  && $allow_earn_leave_carry == '1') {
+                $where = array(
+                    'emp_id' => $emp_id,
+                    'salary_struc_id' => $keyvalue,
+                    'month'  => $month,
+                    'year'   => $year,
+                    'is_opb'   => 0,
+                    'leave_type'   => 'earning',
+                    'unit_id'   => $unitid
+                );
+                $obj->delete_record('emp_monthly_leave', $where);
+                $remining_earn_leave_data['salary_struc_id'] = $keyvalue;
+                $obj->insert_record('emp_monthly_leave', $remining_earn_leave_data);
+            }
+            if($increment > 0){
+                $tot_sal = $increment + $basic_salary;
+                $obj->update_record(
+                    "employee_master",
+                    ['emp_id' => $emp_id],
+                    ['basic_salary' => $tot_sal, 'last_increment_date' => $createdate, 'prev_salary' => $basic_salary]
+                );
+
+                $where2 = array(
+                    $tblpkey => $keyvalue,
+                    "emp_id" => $emp_id,
+                    "unit_id" => $unitid,
+                    "type" => 'increment'
+                );
+
+                $form_increment = array(
+                'emp_id' => $emp_id,
+                'unit_id' => $unitid,
+                'department_id' => $department_id,
+                'salary_struc_id' => $keyvalue,
+                'designation_id' => $designation_id,
+                'basic_salary' => $tot_sal,
+                'promotion_date' => $createdate,
+                'promote_amt' => $increment,
+                'type' => 'increment',
+                'status' => '1',
+                "lastupdated" => $createdate,
+                "updatedby" => $loginid,
+                "ipaddress" => $ipaddress,
+                "sessionid" => $sessionid
+                );
+
+                // CHECK RECORD EXISTS
+                $checkIncrement = $obj->select_record("emp_promotion", $where2);
+                if (!empty($checkIncrement)) {
+                    $obj->update_record(
+                        "emp_promotion",
+                        $where2,
+                        $form_increment
+                    );
+                } else {
+                    // INSERT
+                    $lastid_inc = $obj->insert_record_lastid(
+                        "emp_promotion",
+                        $form_increment
+                    );
+                }
+                
+            }
+            $action = 2;
+            $process = "updated";
+
+            $form_data1 = array(
+                "primary_id" => $keyvalue,
+                "flag" => $title,
+                "activity_type" => 'Updated',
+                "createdby" => $loginid,
+                "pagename" => $pagename,
+                "created_date" => $createdate,
+                "created_time" => date('H:i:s'),
+                "unit_id" => $unitid,
+                'ipaddress' => $ipaddress,
+                "sessionid" => $sessionid
+            );
+            $logactivity = $obj->insert_record("logactivity_master", $form_data1);
+        }
     }
-
+ 
     $query = $_GET;
     unset($query['action']);
     $query['action'] = $action;
@@ -511,6 +622,7 @@ if ($keyvalue != 0) {
     $month = $edit_data['month'];
     $year = $edit_data['year'];
     $revised_salary = $edit_data['revised_salary'];
+    $apr_from_mgm = $edit_data['apr_from_mgm'];
     //$basic_pf_rate = $edit_data['basic_pf_rate'];
     // $pf_esic_basic = $edit_data['pf_esic_basic'];
     $total_working_days = $edit_data['total_working_days'];
@@ -532,6 +644,7 @@ if ($keyvalue != 0) {
     $paid_holiday = $edit_data['paid_holiday'];
     $weekly_off = $edit_data['weekly_off'];
     $leave_days = $edit_data['leave_days'];
+    $payment_status = $edit_data['payment_status'];
    // $c_off_leave = $edit_data['c_off_leave'];
     $total_c_off = $edit_data['total_c_off'];
     $used_overtime_days = $edit_data['overtime_days'];
@@ -552,8 +665,26 @@ if ($keyvalue != 0) {
     $increment =  $basic_pf_rate =  $revised_salary =  $pf_esic_basic =  $basic_da = $hra = $medical =  $conveyance =   $special_allow =   $total_salary = $pf_emp = $esic_emp =  $pf_employer =  $esic_employer = $pf_rate = $esic_rate = $basic_pf_rate = $pf_paid_basic = $esic_paid_basic =   $pf_rate =   $esic_rate = $pf_paid_basic =  $esic_paid_basic = "";
     $present_days = $paid_holiday =  $c_off_leave = $total_c_off = $total_payable_salary = "";
     $total_week_leave =  $total_earn_leave = $weekly_off = $leave_days = $pre_earn_leave = $used_overtime_days = '0';
-    $total_pay_sal_after_ded = $additional_payment =  $tds_deduction= $extra_off_balance = $leave_balance = '0';
+    $total_pay_sal_after_ded =   $tds_deduction= $extra_off_balance = $leave_balance = $apr_from_mgm= $payment_status= '0';
      
+}
+
+if ($keyvalue > 0 && $apr_from_mgm == 1) {  
+    $msgtype = "<span class='text-danger fw-bold'>
+                    Salary has been approved by management and cannot be edited !!
+                </span>";
+    $actType = 1;
+
+} elseif ($keyvalue > 0 && $payment_status == 2) {  
+    $msgtype = "<span class='text-danger fw-bold'>
+                    Salary has been Locked by HR and cannot be edited !!
+                </span>";
+    $actType = 1;
+
+}else {
+
+    $msgtype = '';
+    $actType = 2;
 }
  
 
@@ -804,8 +935,8 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">Revised Gross Salary</label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $revised_salary ?>" name="revised_salary"
-                                                id="revised_salary" readonly>
+                                                value="<?= $revised_salary ?>" name="revised_salary" id="revised_salary"
+                                                readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="pf_rate">Basic PF Rate</label>
@@ -828,7 +959,8 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="pf_paid_basic">PF Paid Basic</label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $pf_paid_basic ?>" name="pf_paid_basic" id="pf_paid_basic" readonly>
+                                                value="<?= $pf_paid_basic ?>" name="pf_paid_basic" id="pf_paid_basic"
+                                                readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="esic_paid_basic"> ESIC Paid Basic</label>
@@ -863,7 +995,7 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                                 value="<?= $leave_days ?>" name="leave_days" id="leave_days" readonly>
                                         </div>
 
-                                        <div class="col-lg-2 col-12 mb-3"><?= $used_extra_off ?? 0 ?>
+                                        <div class="col-lg-2 col-12 mb-3">
                                             <label for="overtime_days">Used Extra Off</label>
                                             <input type="text" class="form-control form-control-sm"
                                                 value="<?= $used_extra_off ?? 0 ?>" name="overtime_days"
@@ -899,13 +1031,15 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">Special Allowance</label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $special_allow ?>" name="special_allow" id="special_allow" readonly>
+                                                value="<?= $special_allow ?>" name="special_allow" id="special_allow"
+                                                readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <!-- <label for="">Total Salary </label> -->
                                             <label for="">Gross Salary </label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $total_salary ?>" name="total_salary" id="total_salary" readonly>
+                                                value="<?= $total_salary ?>" name="total_salary" id="total_salary"
+                                                readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for=""> PF Emp Share </label>
@@ -920,12 +1054,14 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">PF Employer Share</label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $pf_employer ?>" name="pf_employer" id="pf_employer" readonly>
+                                                value="<?= $pf_employer ?>" name="pf_employer" id="pf_employer"
+                                                readonly>
                                         </div>
                                         <div class="col-lg-2 col-12 mb-3">
                                             <label for="">ESIC Employer Share</label>
                                             <input type="text" class="form-control form-control-sm"
-                                                value="<?= $esic_employer ?>" name="esic_employer" id="esic_employer" readonly>
+                                                value="<?= $esic_employer ?>" name="esic_employer" id="esic_employer"
+                                                readonly>
                                         </div>
 
 
@@ -950,7 +1086,7 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
                                             <label for="additional_payment">Additional</label>
                                             <input type="text" class="form-control form-control-sm"
                                                 value="<?= $additional_payment ?>" name="additional_payment"
-                                                id="additional_payment" onkeyup="calculateForm()">
+                                                id="additional_payment" onkeyup="calculateForm()" readonly>
                                         </div>
 
                                         <div class="col-lg-2 col-12 mb-3">
@@ -977,7 +1113,7 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
 
                                         <div class="col-lg-12  text-center mt-4">
                                             <input type="submit" name="submit" class="btn btn-primary add-btn"
-                                                value="<?= $btn_name ?>"
+                                                value="<?= $btn_name ?>" id="saveBtn"
                                                 <?= $total_working_days > 0 ? '' : 'disabled' ?>>
                                         </div>
                                     </div>
@@ -1071,6 +1207,7 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
         let additional_payment = parseFloat(document.getElementById('additional_payment').value) || 0;
         let other_deduction = parseFloat(document.getElementById('other_deduction').value) || 0;
         let tds_deduction = parseFloat(document.getElementById('tds_deduction').value) || 0;
+
 
         let totalRevisedSalary = presentSalary + incrementSalary;
         //let totalRevisedSalary = presentSalary;
@@ -1200,30 +1337,31 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
     }
     </script>
     <script>
-    function totalWorking() { 
+    function totalWorking() {
         const daysInMonth = parseFloat('<?= isset($eligibleDays) ? $eligibleDays : 0 ?>') || 0;
         const weeklyBalance = parseFloat('<?= isset($week_leave) ? $week_leave : 0 ?>') || 0;
         const monthlyBalance = parseFloat('<?= isset($monthly_leave) ? $monthly_leave : 0 ?>') || 0;
         const is_allow_c_off = parseInt('<?= isset($is_allow_c_off) ? $is_allow_c_off : 0 ?>') || 0;
-        const allow_earn_leave_carry = parseInt('<?= isset($allow_earn_leave_carry) ? $allow_earn_leave_carry : 0 ?>') || 0;
+        const allow_earn_leave_carry = parseInt(
+            '<?= isset($allow_earn_leave_carry) ? $allow_earn_leave_carry : 0 ?>') || 0;
         const is_all_leave_add = parseInt('<?= isset($is_all_leave_add) ? $is_all_leave_add : 0 ?>') || 0;
         const overtimeDays = parseFloat('<?= isset($used_extra_off) ? $used_extra_off : 0 ?>') || 0;
         const empBasicSalary = parseFloat('<?= isset($basic_salary) ? $basic_salary : 0 ?>') || 0;
-       // const weeklyBalance = parseFloat('< $week_leave ?>') || 0;
+        // const weeklyBalance = parseFloat('< $week_leave ?>') || 0;
         //const monthlyBalance = parseFloat('<$monthly_leave ?>') || 0;
         // const is_allow_c_off = parseInt('<$is_allow_c_off ?>') || 0;
         // const allow_earn_leave_carry = parseInt('<$allow_earn_leave_carry ?>') || 0;
         // const is_all_leave_add = parseFloat('<$is_all_leave_add ?>') || 0;
-      
+
         // const empBasicSalary = parseFloat('<$basic_salary ?>') || 0;
 
         let presentDays = parseFloat($('#present_days').val()) || 0;
-        let holidays = parseFloat($('#paid_holiday').val()) || 0; 
-        
+        let holidays = parseFloat($('#paid_holiday').val()) || 0;
+
         //let baseTotal = presentDays + holidays;
-        let baseTotal = presentDays + overtimeDays;
-       // console.log('baseTotal',overtimeDays);
-         
+        let baseTotal = presentDays + overtimeDays + holidays;
+        // console.log('baseTotal',overtimeDays);
+
         let usedWeeklyLeave = 0;
         let usedMonthlyLeave = 0;
         let totalWorkingDays = 0;
@@ -1269,14 +1407,14 @@ $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.b
             //used_overtime +
             usedMonthlyLeave;
 
-        totalWorkingDays = Math.min(totalWorkingDays, daysInMonth); 
+        totalWorkingDays = Math.min(totalWorkingDays, daysInMonth);
         //  SET UI VALUES
         $('#weekly_off').val(usedWeeklyLeave);
         $('#leave_days').val(usedMonthlyLeave);
-       // $('#overtime_days').val(used_overtime);
+        // $('#overtime_days').val(used_overtime);
         $('#total_working_days').val(totalWorkingDays);
     }
- 
+
     function update_pf_esic_check(el) {
         let emp_id = el.dataset.empid;
         let type = el.dataset.type;

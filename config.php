@@ -1,10 +1,8 @@
 <?php
-date_default_timezone_set('Asia/Kolkata');
-
+date_default_timezone_set('Asia/Kolkata'); 
 class Database
 {
-    public $con;
-
+    public $con; 
     public function __construct()
     {
         if ($_SERVER["SERVER_NAME"] == "localhost" || $_SERVER["SERVER_NAME"] == "trinity" || $_SERVER["SERVER_NAME"] == "192.168.1.8") {
@@ -15,7 +13,7 @@ class Database
         } else {
             $dbhost = "p:127.0.0.1"; // persistent connection
             $dbuser = "u612877078_nrvs";
-            $dbpass = "4h!Ybg00";
+            $dbpass = "4h!Ybg00";   
             $db = "u612877078_nrvs";
         }
 

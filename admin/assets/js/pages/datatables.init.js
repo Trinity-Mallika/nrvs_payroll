@@ -32,7 +32,6 @@ function initializeTables() {
 
       // ✅ Buttons ON, Global search OFF
       dom: "Blrtip",
-
       buttons: ["copy", "csv", "excel", "print", "pdf"],
 
       initComplete: function () {

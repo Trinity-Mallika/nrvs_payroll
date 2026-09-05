@@ -48,13 +48,13 @@ if (isset($_POST['save_all_leave'])) {
     $sessionid = $obj->test_input($_POST['sessionid']);
     $allRows = json_decode($_POST['allRows'], true);
 
-    if (!empty($allRows)) { 
-        $insertRows = []; 
+    if (!empty($allRows)) {
+        $insertRows = [];
         $processedEmpIds = [];
         foreach ($allRows as $row) {
             $emp_id = $row['emp_id'];
             $department_id = $row['department_id'];
-            $total_leave = $row['total_leave'];  
+            $total_leave = $row['total_leave'];
             $processedEmpIds[$emp_id] = true;
 
             $insertRows[] = [
@@ -71,7 +71,7 @@ if (isset($_POST['save_all_leave'])) {
                 "ipaddress" => $ipaddress,
                 "createdate" => $createdate
             ];
-        }  
+        }
         if (!empty($processedEmpIds)) {
             $empIdStr = implode(',', array_keys($processedEmpIds));
             $obj->bulk_delete($tblname, [
@@ -79,10 +79,9 @@ if (isset($_POST['save_all_leave'])) {
                 'month'   => $month,
                 'year'    => $year,
                 'unit_id' => $unitid,
-                'leave_type' =>'eoff',  
+                'leave_type' => 'eoff',
             ]);
-            
-        }  
+        }
         if (!empty($insertRows)) {
             foreach (array_chunk($insertRows, 500) as $chunk) {
                 $obj->bulk_insert($tblname, $chunk);
@@ -117,7 +116,7 @@ if (isset($_POST['save_all_leave'])) {
 }
 </style>
 
-<body>
+<body> 
     <?php include('inc/header.php') ?>
     <?php include('inc/sidebar.php') ?>
     <!-- end auth-page-wrapper -->
@@ -136,7 +135,14 @@ if (isset($_POST['save_all_leave'])) {
                                 <div class="row g-4 align-items-center">
                                     <div class="col-sm">
                                         <div>
-                                            <h5 class="card-title mb-0"><?= $module ?></h5>
+                                            <h5 class="card-title mb-0"><?= $module ?>
+                                                <a href="emp_leave_deduction.php"
+                                                    class="float-end btn btn-primary btn-sm ms-2">Leave Deduction
+                                                    Entry</a>
+                                                <a href="emp_coff_deduction.php"
+                                                    class="float-end btn btn-primary btn-sm ms-2">C-off Deduction</a>
+
+                                            </h5>
                                         </div>
 
                                     </div>
@@ -150,9 +156,8 @@ if (isset($_POST['save_all_leave'])) {
                                                     class="text-danger fw-bold"> </span></label>
                                             <select class="form-select form-select-sm chosen-select" name="emp_id"
                                                 id="emp_id" onchange="get_department(this.value)">
-                                                <option value="">Select Employee</option>
+                                                <option value="">All</option>
                                                 <?php
-
                                                     $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
                                                     foreach ($res as $key) { ?>
                                                 <option value="<?= $key['emp_id']; ?>">
@@ -160,7 +165,6 @@ if (isset($_POST['save_all_leave'])) {
                                                     <?= ucfirst($key['last_name'] ?? ''); ?></option>
                                                 <?php } ?>
                                             </select>
-
                                         </div>
 
                                         <div class="mb-3 col-12 col-lg-3">
@@ -168,7 +172,7 @@ if (isset($_POST['save_all_leave'])) {
                                                     class="text-danger fw-bold"> </span></label>
                                             <select class="form-select form-select-sm chosen-select"
                                                 name="department_id" id="department_id">
-                                                <option value="">Select</option>
+                                                <option value="">All</option>
                                                 <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_id asc");
                                                     foreach ($res as $key) { ?>
                                                 <option value="<?= $key['department_id']; ?>">
@@ -309,6 +313,18 @@ if (isset($_POST['save_all_leave'])) {
                                         <table id="buttons-datatables" class="display table table-sm table-bordered"
                                             style="width:100%">
                                             <thead>
+
+                                                <tr class="table-primary">
+                                                    <th>Sr. No.</th>
+                                                    <th>Code</th>
+                                                    <th>Employee Name</th>
+                                                    <th>Department</th>
+                                                    <th>Earn Leave Balance</th>
+                                                    <th>C OFF Balance</th>
+                                                    <th>Extra Off</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
                                                 <tr class="table-primary">
                                                     <th></th>
                                                     <th></th>
@@ -322,19 +338,7 @@ if (isset($_POST['save_all_leave'])) {
                                                             data-target="eoff_input" placeholder="0"
                                                             onkeypress="numberOnly(event);">
                                                     </th>
-
                                                 </tr>
-                                                <tr class="table-primary">
-                                                    <th>Sr. No.</th>
-                                                    <th>Code</th>
-                                                    <th>Employee Name</th>
-                                                    <th>Department</th>
-                                                    <th>Earn Leave Balance</th>
-                                                    <th>C OFF Balance</th>
-                                                    <th>Extra Off</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
                                                 <?php
                                                     $current_month = (int)date("m");
                                                     $current_year  = (int)date("Y");
@@ -379,18 +383,18 @@ if (isset($_POST['save_all_leave'])) {
                                                     )
 
                                                     ORDER BY em.emp_code ASC
-                                                    "; 
- $res = $obj->executequery($sql);
-                                                     if (empty($sql)) {
-                                    $sql = [];
-                                }
-                              $empIds = array_column($res, 'emp_id');
+                                                    ";
+                                                    $res = $obj->executequery($sql);
+                                                    if (empty($sql)) {
+                                                        $sql = [];
+                                                    }
+                                                    $empIds = array_column($res, 'emp_id');
 
-if (empty($empIds)) {
-    $empIdsStr = '0';
-} else {
-    $empIdsStr = implode(',', $empIds);
-}            
+                                                    if (empty($empIds)) {
+                                                        $empIdsStr = '0';
+                                                    } else {
+                                                        $empIdsStr = implode(',', $empIds);
+                                                    }
 
 
                                                     $coffUploadRows = $obj->getEmpUploadedCoff(
@@ -414,37 +418,36 @@ if (empty($empIds)) {
                                                         $usedCoffMap[$r['emp_id']] = $r['used_coff'];
                                                     }
 
- 
+
                                                     $coffUploadMap = [];
                                                     foreach ($coffUploadRows as $r) {
                                                         $coffUploadMap[$r['emp_id']] = $r['total_leave'];
                                                     }
 
+                                                    $earningLeaveRows = $obj->earningLeaveRows($sessionid, $month, $year);
+                                                    // $earningLeaveRows = $obj->executequery("
+                                                    //     SELECT 
+                                                    //         emp_id,
+                                                    //         SUM(
+                                                    //             CASE
+                                                    //                 WHEN attendance_status IN ('Earning Leave', 'Leave') THEN 1
+                                                    //                 WHEN attendance_status IN ('Half Earning Leave', 'Half Leave') THEN 0.5
+                                                    //                 ELSE 0
+                                                    //             END
+                                                    //         ) used_leave
 
-                                                    $earningLeaveRows = $obj->executequery("
-                                                        SELECT 
-                                                            emp_id,
+                                                    //     FROM attendance_entry
 
-                                                            SUM(
-                                                                CASE
-                                                                    WHEN attendance_status IN ('Earning Leave', 'Leave') THEN 1
-                                                                    WHEN attendance_status IN ('Half Earning Leave', 'Half Leave') THEN 0.5
-                                                                    ELSE 0
-                                                                END
-                                                            ) used_leave
+                                                    //     WHERE sessionid='$sessionid'
 
-                                                        FROM attendance_entry
+                                                    //     AND (
+                                                    //         year < '$year'
+                                                    //         OR (year='$year' AND month <= '$month')
+                                                    //     )
 
-                                                        WHERE sessionid='$sessionid'
+                                                    //     GROUP BY emp_id
 
-                                                        AND (
-                                                            year < '$year'
-                                                            OR (year='$year' AND month <= '$month')
-                                                        )
-
-                                                        GROUP BY emp_id
-
-                                                    ");
+                                                    // ");
 
                                                     $usedEarnMap = [];
 
@@ -452,64 +455,62 @@ if (empty($empIds)) {
 
                                                         $usedEarnMap[$r['emp_id']] = $r['used_leave'];
                                                     }
+                                                    $earningUploadRows = $obj->earningUploadRows($sessionid, $month, $year);
+                                                    //     $earningUploadRows = $obj->executequery("
+                                                    //     SELECT 
+                                                    //         emp_id,
 
-                                                    $earningUploadRows = $obj->executequery("
-                                                    SELECT 
-                                                        emp_id,
+                                                    //         SUM(total_leave) total_leave
 
-                                                        SUM(total_leave) total_leave
+                                                    //     FROM emp_monthly_leave
 
-                                                    FROM emp_monthly_leave
+                                                    //     WHERE leave_type='earning'
+                                                    //     AND sessionid='$sessionid'
 
-                                                    WHERE leave_type='earning'
-                                                    AND sessionid='$sessionid'
-
-                                                    AND (
-                                                        year < '$year'
-                                                        OR (year='$year' AND month < '$month')
-                                                    )
-                                                    GROUP BY emp_id
-                                                ");
+                                                    //     AND (
+                                                    //         year < '$year'
+                                                    //         OR (year='$year' AND month < '$month')
+                                                    //     )
+                                                    //     GROUP BY emp_id
+                                                    // ");
                                                     $earningUploadMap = [];
                                                     foreach ($earningUploadRows as $r) {
 
                                                         $earningUploadMap[$r['emp_id']] = $r['total_leave'];
                                                     }
-  
+
                                                     foreach ($res as $row) {
                                                         $total_leave = $row['total_leave'];
                                                         $prev_coff =  ($coffUploadMap[$row['emp_id']] ?? 0) -  ($usedCoffMap[$row['emp_id']] ?? 0);
                                                         $total_earning_leave = ($earningUploadMap[$row['emp_id']] ?? 0) - ($usedEarnMap[$row['emp_id']] ?? 0);
 
-                                                       
+
                                                     ?>
                                                 <tr>
                                                     <td><?= $slno++ ?></td>
-                                                    <td><?= $row['emp_code'] ?>
-                                                        <button type="button" class="btn btn-info btn-sm ms-1"
-                                                            onclick="viewLeaveDetails('<?= $row['emp_id'] ?>','<?= $month ?>','<?= $year ?>')">
-                                                            <i class="ri-eye-line"></i>
-                                                        </button>
-                                                    </td>
+                                                    <td><?= $row['emp_code'] ?> </td>
                                                     <td><?php
                                                                 echo $row['first_name'];
                                                                 $join_date = new DateTime($row['date_of_joining']);
                                                                 $today = new DateTime();
                                                                 $diff = $join_date->diff($today);
-                                                                echo "<br>";
+                                                                echo "<br> &nbsp; (";
                                                                 echo $diff->y . " years, " .
                                                                     $diff->m . " months, " .
-                                                                    $diff->d . " days";
+                                                                    $diff->d . " days )";
                                                                 ?>
                                                     </td>
                                                     <td><?= $row['department_name'] ?></td>
                                                     <td>
                                                         <input type="text" class="form-control form-control-sm  w-50"
                                                             value="<?= $total_earning_leave ?>" readonly>
+                                                        <span
+                                                            class="d-none export-value"><?= $total_earning_leave ?></span>
                                                     </td>
                                                     <td>
                                                         <input type="text" class="form-control form-control-sm  w-50"
                                                             value="<?= $prev_coff ?>">
+                                                        <span class="d-none export-value"><?= $prev_coff ?></span>
                                                     </td>
                                                     <td>
                                                         <input type="hidden" id="month_leave_id"
@@ -521,6 +522,7 @@ if (empty($empIds)) {
                                                             data-depart="<?= $row['department_id'] ?>"
                                                             value="<?= $total_leave ?>" onkeypress="numberOnly(event);"
                                                             <?= !$isCurrentMonthYear ? '' : '' ?>>
+                                                        <span class="d-none export-value"><?= $total_leave ?></span>
                                                     </td>
 
                                                 </tr>
@@ -579,6 +581,11 @@ if (empty($empIds)) {
     <?php include('inc/js.php') ?>
     <?php include('inc/footer.php') ?>
     <script>
+    $('.leave-input').on('keyup change', function() {
+        var value = $(this).val();
+        $(this).closest('td').find('.export-value').text(value);
+    });
+
     $(document).ready(function() {
         $('#example').DataTable();
         $(".chosen-select").select2({

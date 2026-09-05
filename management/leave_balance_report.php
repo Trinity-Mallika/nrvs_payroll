@@ -10,6 +10,7 @@ $tblpkey = "emp_id";
 
 $crit2 = " ";
 $month=(int)date('n');
+ 
 $year=(int)date('Y');
 
 if (isset($_GET['department_id'])) {
@@ -270,32 +271,8 @@ if (isset($_POST['department_idd'])) {
                                 } else {
                                     $empIdsStr = implode(',', $empIds);
                                 }
-
-                                $earningLeaveRows = $obj->executequery("
-                                SELECT 
-                                    emp_id,
-
-                                    SUM(
-                                        CASE
-                                            WHEN attendance_status IN ('Earning Leave', 'Leave') THEN 1
-                                            WHEN attendance_status IN ('Half Earning Leave', 'Half Leave') THEN 0.5
-                                            ELSE 0
-                                        END
-                                    ) used_leave
-
-                                FROM attendance_entry
-
-                                WHERE sessionid='$sessionid'
-
-                                AND (
-                                    year < '$year'
-                                    OR (year='$year' AND month <= '$month')
-                                )
-
-                                GROUP BY emp_id
-
-                            ");
-
+                            $earningLeaveRows = $obj->earningLeaveRows($sessionid,$month,$year);
+                            $earningUploadRows=$obj->earningUploadRows($sessionid,$month,$year);
                             $usedEarnMap = [];
 
                             foreach($earningLeaveRows as $r){
@@ -303,106 +280,23 @@ if (isset($_POST['department_idd'])) {
                                 $usedEarnMap[$r['emp_id']] = $r['used_leave'];
                             }
 
-                            $earningUploadRows = $obj->executequery("
-                            SELECT 
-                                emp_id,
+                            $earningUploadMap = [];
 
-                                SUM(total_leave) total_leave
+                            foreach($earningUploadRows as $r){
 
-                            FROM emp_monthly_leave
-
-                            WHERE leave_type='earning'
-                            AND sessionid='$sessionid'
-
-                            AND (
-                                year < '$year'
-                                OR (year='$year' AND month < '$month')
-                            )
-
-                            GROUP BY emp_id
-
-                        ");
-
-                        $earningUploadMap = [];
-
-                        foreach($earningUploadRows as $r){
-
-                            $earningUploadMap[$r['emp_id']] = $r['total_leave'];
-                        }
-
-                         $current_date  = date("Y-m-d", strtotime("$year-$month-01"));
-
-                        $current_month = (int)date("m", strtotime($current_date));
-                        $current_year  = (int)date("Y", strtotime($current_date));
-
-                        $prev_month    = (int)date("m", strtotime("$current_date -1 month"));
-                        $prev_year     = (int)date("Y", strtotime("$current_date -1 month"));
-
-                        $extraUploadRows = $obj->executequery("
-                                SELECT 
-                                    emp_id,
-                                    COALESCE(SUM(total_leave),0) total_extra_off
-
-                                FROM emp_monthly_leave
-
-                                WHERE leave_type='eoff'
-
-                                AND (
-                                    (month='$current_month' AND year='$current_year')
-                                    OR
-                                    (month='$prev_month' AND year='$prev_year')
-                                )
-
-                                GROUP BY emp_id
-                            ");
-
-                            $extraUploadMap = [];
-
-                            foreach($extraUploadRows as $r){
-
-                                $extraUploadMap[$r['emp_id']] = $r['total_extra_off'];
-                            }
-                            /* ================= USED EXTRA OFF ================= */
-
-                            $extraUsedRows = $obj->executequery("
-                                SELECT 
-                                    emp_id,
-
-                                    COALESCE(SUM(
-                                        CASE 
-                                            WHEN attendance_status='Extra Off' THEN 1
-                                            WHEN attendance_status='Half Extra Off' THEN 0.5
-                                            ELSE 0
-                                        END
-                                    ),0) used_extra
-
-                                FROM attendance_entry
-
-                                WHERE (
-                                    (
-                                        MONTH(attendance_date) = '$current_month'
-                                        AND YEAR(attendance_date) = '$current_year'
-                                    )
-                                    OR
-                                    (
-                                        MONTH(attendance_date) = '$prev_month'
-                                        AND YEAR(attendance_date) = '$prev_year'
-                                    )
-                                )
-
-                                AND attendance_status IN ('Extra Off','Half Extra Off')
-
-                                GROUP BY emp_id
-                            ");
-
-                            $extraUsedMap = [];
-
-                            foreach($extraUsedRows as $r){
-
-                                $extraUsedMap[$r['emp_id']] = $r['used_extra'];
+                                $earningUploadMap[$r['emp_id']] = $r['total_leave'];
                             }
 
-                            /* ================= USED C-OFF ================= */
+                            $extraOffUpload = $obj->extraOffUpload($sessionid,$year);
+                            $extraOffUsed=$obj->extraOffUsed($sessionid,$year);
+                            $uploadArr = [];
+                            foreach($extraOffUpload as $row){
+                                $uploadArr[$row['emp_id']][(int)$row['month']] = (float)$row['total_leave'];
+                            }
+                            $usedArr = []; 
+                            foreach($extraOffUsed as $row){
+                                $usedArr[$row['emp_id']][(int)$row['month']] = (float)$row['total_used'];
+                            }
 
                             $coffUploadRows = $obj->getEmpUploadedCoff(
                                 $empIdsStr,
@@ -476,12 +370,22 @@ if (isset($_POST['department_idd'])) {
                                                     foreach ($employees as $row) {
                                                         $empId = $row['emp_id'];
                                                         $total_earning_leave =($earningUploadMap[$empId] ?? 0) -($usedEarnMap[$empId] ?? 0); 
-                                                        $extra_off = [ 
-                                                            'balance' =>
-                                                                ($extraUploadMap[$empId] ?? 0)
-                                                                -
-                                                                ($extraUsedMap[$empId] ?? 0)
-                                                        ];
+
+                                                        $extraOff = $obj->getExtraOffBalance2(
+                                                            $empId,
+                                                            $month,
+                                                            $uploadArr,
+                                                            $usedArr
+                                                        );
+                                                        $extraBalance = $extraOff['balance'];
+
+                                                          
+                                                        // $extra_off = [ 
+                                                        //     'balance' =>
+                                                        //         ($extraUploadMap[$empId] ?? 0)
+                                                        //         -
+                                                        //         ($extraUsedMap[$empId] ?? 0)
+                                                        // ];
 
                                                         $prev_coff =  ($coffUploadMap[$empId] ?? 0)-($usedCoffMap[$empId] ?? 0);
 
@@ -493,9 +397,10 @@ if (isset($_POST['department_idd'])) {
                                                         $total_coff_used   += ($usedCoffMap[$empId] ?? 0);
                                                         $total_coff_bal    += $prev_coff;
 
-                                                        $total_extra_upload += ($extraUploadMap[$empId] ?? 0);
-                                                        $total_extra_used   += ($extraUsedMap[$empId] ?? 0);
-                                                        $total_extra_bal    += $extra_off['balance'];
+                                                        // $total_extra_upload += ($extraUploadMap[$empId] ?? 0);
+                                                        $total_extra_upload += $totalExtraUpload;
+                                                        $total_extra_used += $totalExtraUsed;
+                                                        $total_extra_bal += $extraBalance;
                                                       
                                                         echo "<tr>";
                                                         echo "<td>" . $slno++ . "</td>";
@@ -523,9 +428,9 @@ if (isset($_POST['department_idd'])) {
                                                         echo "<td class='text-danger fw-bold'>" . ($usedCoffMap[$empId] ?? 0) . "</td>";
                                                         echo "<td class='text-success fw-bold'>" . $prev_coff . "</td>";
 
-                                                        echo "<td class='fw-bold'>" . ($extraUploadMap[$empId] ?? 0) . "</td>";
-                                                        echo "<td class='text-danger fw-bold'>" . ($extraUsedMap[$empId] ?? 0) . "</td>";
-                                                        echo "<td class='text-success fw-bold' >" . $extra_off['balance'] . "</td>";
+                                                        echo "<td class='fw-bold'>" . $totalExtraUpload . "</td>";
+                                                        echo "<td class='text-danger fw-bold'>" . $totalExtraUsed . "</td>";
+                                                        echo "<td class='text-success fw-bold' >" . $extraBalance . "</td>";
                                                       
                                                         echo "</tr>";
                                                     }

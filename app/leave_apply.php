@@ -3,7 +3,7 @@ include("appsession.php");
 // print_r($_SESSION);
 // die;
 $pagename = 'leave_apply.php';
-$title = 'Leave Application';
+$title = 'Earn Leave Application';
 $tblname = "on_duty_master";
 $tblpkey = "on_duty_id";
 
@@ -47,7 +47,7 @@ SELECT
     ),0) AS availed_leave
 FROM leave_apply_detail
 WHERE emp_id='$emp_id'
-AND status!='1'
+AND status='0'
 AND unit_id='$unitid'
 GROUP BY leave_type
 ";
@@ -72,13 +72,13 @@ foreach($res as $row){
         $availed_CO = $row['availed_leave'];
     }
 } 
+
 $remaining_EL = $total_earning_leave - $availed_EL;
 $remaining_EO = $extra_off['balance'] - $availed_EO;
 $remaining_CO = $c_off_balance - $availed_CO;
 //$opening_leave_balance = $obj->get_opening_leave_balance($emp_id, $sessionid);
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-
+if ($_SERVER['REQUEST_METHOD'] == 'POST') { 
     $detailCount = $obj->getvalfield(
         "leave_apply_detail",
         "SUM(
@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             ELSE 0
             END
         )",
-        "on_duty_id='$keyvalue' and unit_id='$unitid' and emp_id='$emp_id'"
+        "on_duty_id='$keyvalue' and unit_id='$unitid' and emp_id='$emp_id' and leave_type='EL'"
     );
 
     if ($detailCount <= 0) {
@@ -149,7 +149,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $obj->update_record("leave_apply_detail", array(
             "on_duty_id" => 0,
             'unit_id' => $unitid,
-            'createdby' => $emp_id
+            'emp_id' => $emp_id,
+            'leave_type' => 'EL'
         ), array("on_duty_id" => $lastid));
 
         $form_data1 = array(
@@ -246,7 +247,7 @@ $total_day  = $obj->getvalfield(
             ELSE 0
         END
     )",
-    "on_duty_id='$keyvalue' and unit_id='$unitid' and emp_id='$emp_id'"
+    "on_duty_id='$keyvalue' and unit_id='$unitid' and emp_id='$emp_id' and leave_type='EL'"
 );
 
 
@@ -418,75 +419,11 @@ $report_man_code = $report_emp_data['emp_code'] ?? "";
                                         <b class="text-success" id="remaining_EL">
                                             <?= $remaining_EL ?>
                                         </b>
-                                    </div>
-
+                                    </div> 
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Extra Off -->
-                        <div class="col-md-4 mb-3">
-                            <div class="card shadow border-0">
-                                <div class="card-body">
-
-                                    <h6 class="text-primary">Extra Off</h6>
-
-                                    <div>
-                                        Total :
-                                        <b id="total_EO"><?= $extra_off['balance'] ?></b>
-                                    </div>
-
-                                    <div>
-                                        Availed :
-                                        <b class="text-danger" id="availed_EO">
-                                            <?= $availed_EO ?>
-                                        </b>
-                                    </div>
-
-                                    <div>
-                                        Remaining :
-                                        <b class="text-success" id="remaining_EO">
-                                            <?= $remaining_EO ?>
-                                        </b>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- C Off -->
-                        <div class="col-md-4 mb-3">
-                            <div class="card shadow border-0">
-                                <div class="card-body">
-
-                                    <h6 class="text-primary">C Off</h6>
-
-                                    <div>
-                                        Total :
-                                        <b id="total_CO"><?= $c_off_balance ?></b>
-                                    </div>
-
-                                    <div>
-                                        Availed :
-                                        <b class="text-danger" id="availed_CO">
-                                            <?= $availed_CO ?>
-                                        </b>
-                                    </div>
-
-                                    <div>
-                                        Remaining :
-                                        <b class="text-success" id="remaining_CO">
-                                            <?= $remaining_CO ?>
-                                        </b>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-
+                        </div> 
+                    </div> 
                 </div>
                 <div class="card border-0 shadow-lg mb-3">
                     <div class="row">
@@ -497,8 +434,8 @@ $report_man_code = $report_emp_data['emp_code'] ?? "";
                         </div>
                         <div class="mb-3 col-6">
                             <label for="" class="form-label">No. Of Days</label>
-                            <input type="text" class="form-control shadow-sm" id="no_of_days" name="no_of_days"
-                                value="1" onkeypress="numberOnly(event);">
+                            <input type="number" class="form-control shadow-sm" id="no_of_days" name="no_of_days"
+                                value="1">
                         </div>
                         <div class="mb-3 col-6">
                             <label for="" class="form-label">Day</label>
@@ -515,10 +452,10 @@ $report_man_code = $report_emp_data['emp_code'] ?? "";
                             <select class="form-control" id="leave_type" onchange="checkLeaveBalance()">
                                 <option value="EL">EARNED LEAVE</option>
                                 <!-- <option value="WL">WEEKLY LEAVE</option> -->
-                                <option value="EO">EXTRA OFF</option>
-                                <option value="CO">C Off</option>
+                                <!-- <option value="EO">EXTRA OFF</option>
+                                <option value="CO">C Off</option> -->
                                 <!-- <option value="L">OPENING LEAVE</option>-->
-                                <option value="LWP">LEAVE WITHOUT PAY</option>
+                                <!-- <option value="LWP">LEAVE WITHOUT PAY</option> -->
                             </select>
                         </div>
 
@@ -590,6 +527,7 @@ function saveForm() {
     let reason = $("#reason").val();
     let total_day = $("#total_day").val();
     let substitute_emp_id = $("#substitute_emp_id").val();
+    let type = 'EL'; 
     const reporting_manager = $('#reporting_manager').val();
 
     if (reporting_manager == "" || reporting_manager == 0) {
@@ -608,8 +546,7 @@ function saveForm() {
             text: 'Please select application date'
         });
         return false;
-    }
-
+    } 
 
     // if (total_day == '') {
     //     Swal.fire({
@@ -619,6 +556,7 @@ function saveForm() {
     //     });
     //     return false;
     // }
+
     let file = $("#doc_file")[0].files[0];
     if (file) {
         let allowed = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'xlsx'];
@@ -659,7 +597,7 @@ function saveForm() {
                     text: 'Record Saved Successfully!',
                     timer: 2000
                 }).then(() => {
-                    window.location.href = 'leave_apply_list.php';
+                    window.location.href = 'leave_apply_list.php?type=EL';
                 });
             } else if (res.status == 'updated') {
                 Swal.fire({
@@ -668,7 +606,7 @@ function saveForm() {
                     text: 'Leave Updated Successfully!',
                     timer: 2000
                 }).then(() => {
-                    window.location.href = 'leave_apply_list.php';
+                    window.location.href = 'leave_apply_list.php?type=EL';
                 });
             } else {
                 alert(res.message || "Something went wrong");
@@ -690,7 +628,7 @@ function saveForm() {
 }
 
 function save_leave_details() {
-    const date = $('#date').val();
+    const date = $('#date').val(); 
     const leave_day = $('#leave_day').val();
     const leave_type = $('#leave_type').val();
     const remark = $('#remark').val();
@@ -751,7 +689,8 @@ function save_leave_details() {
             leave_type: leave_type,
             no_of_days: no_of_days,
             remark: remark,
-            leave_details_id: leave_details_id
+            leave_details_id: leave_details_id,
+            type: 'EL'
         },
         beforeSend: function() {
             $('#btnTextDetails').prop("disabled", true).text("Saving...");
@@ -786,6 +725,15 @@ function save_leave_details() {
                 });
 
                 return;
+            } else if (res.status === "error") {
+
+                Swal.fire({
+                    icon: "warning",
+                    title: "Cannot Apply Leave",
+                    text: res.message
+                });
+
+                return;
             }
             fetch_leave_details();
             fetchLeaveBalance();
@@ -813,9 +761,14 @@ function save_leave_details() {
 
 function editLeave(leave_details_id, date, leave_day, leave_type, remark) {
     $('#leave_details_id').val(leave_details_id);
-   
     let parts = date.split('-');
-    $('#date').text(parts[2] + '-' + parts[1] + '-' + parts[0]);
+    if (parts.length === 3) {
+        let formattedDate = parts[2] + '-' + parts[1] + '-' + parts[0]; 
+     
+        $('#date').val(formattedDate); 
+        // Datepicker ko bhi update karo
+        $('#date').datepicker('update', formattedDate);
+    }
     $('#leave_day').val(leave_day);
     $('#leave_type').val(leave_type);
     $('#remark').val(remark).focus();
@@ -831,7 +784,7 @@ function fetch_leave_details() {
     jQuery.ajax({
         type: 'POST',
         url: 'ajax_leave_fetch.php',
-        data: 'keyvalue=' + keyvalue,
+        data: 'keyvalue=' + keyvalue + '&type=EL',
         dataType: 'html',
         success: function(data) {
             document.getElementById('fetch_leave_details').innerHTML = data;

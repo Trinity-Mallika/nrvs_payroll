@@ -239,8 +239,7 @@ $title = "PF ESIC FORMAT " . $monthName . ' - ' . $year;
                                 <div class="auto-scroll-wrapper">
                                     <div class="table-responsive">
                                         <h5 class="text-primary">Total Employee : <?= $emp_count ?></h5>
-
-                                        <?php if($format_type==0){?>
+                                        <?php if($format_type==0){ ?>
                                         <table id="buttons-datatables" class="display table table-sm table-bordered"
                                             style="width:100%">
                                             <thead>
@@ -260,23 +259,23 @@ $title = "PF ESIC FORMAT " . $monthName . ' - ' . $year;
                                                     <th>REFUND OF ADVANCES</th>
                                                     <th>TOTAL DAYS IN MONTH</th>
                                                     <th>WORKING DAYS</th>  
+                                                    <th>ABSENT</th>  
                                                     <th>EPS + EPF EPS REMITTED</th> 
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php  
-                                                
+                                                <?php   
                                                 foreach ($res as $row) {
                                                     $eps_contri   = round(($row['pf_paid_basic'] * 8.33) / 100);
                                                     $epf_eps_diff = round(($row['pf_paid_basic'] * 3.67) / 100);
-                                                    $ncp_days = $totalDaysInMonth - $row['total_working_days'];
-                                                    $ncp_days = $totalDaysInMonth - $row['total_working_days'];
+                                                    $ncp_days = $totalDaysInMonth - $row['total_working_days']; 
                                                     $eps_epf_diff = $row['pf_emp']-($eps_contri+ $epf_eps_diff);
+                                                    
                                                 ?>
                                                 <tr id="tr_<?= $row["emp_id"]; ?>">
                                                     <td><?php echo $slno++; ?></td>
                                                     <td><?= $row["emp_code"]; ?></td>
-                                                    <td><?php echo $row['pf_uan']; ?></td>
+                                                    <td><?php echo $row['uan_no']; ?></td>
                                                     <td> <?= ucfirst($row['first_name'] ?? ''); ?> </td>
                                                     <td><?php echo $row['revised_salary']; ?></td>
                                                     <td><?= $row['pf_paid_basic']?></td>
@@ -289,6 +288,7 @@ $title = "PF ESIC FORMAT " . $monthName . ' - ' . $year;
                                                     <td>0</td>
                                                     <td><?=$totalDaysInMonth?></td>
                                                     <td><?= $row['total_working_days']?></td>
+                                                    <td><?= $ncp_days?></td>
                                                     <td><?= $eps_epf_diff?></td>
                                                 </tr>
                                                 <?php } ?>
@@ -321,10 +321,9 @@ $title = "PF ESIC FORMAT " . $monthName . ' - ' . $year;
                                                 ?>
                                                 <tr id="tr_<?= $row["emp_id"]; ?>">
                                                     <td><?php echo $slno++; ?></td>
-
                                                     <td><?= $row["emp_code"]; ?></td>
-                                                    <td><?php echo $row['pf_uan']; ?></td>
-                                                    <td> <?= ucfirst($row['first_name'] ?? ''); ?> </td>
+                                                    <td><?php echo $row['esic_no']; ?></td>
+                                                    <td> <?= ucfirst($row['first_name'] ?? ''); ?></td>
                                                     <td></td>
                                                     <td></td>
                                                     <td></td>

@@ -370,7 +370,8 @@ if (isset($_POST['submit'])) {
                             $form_data_emp_promotion = array(
                                 'emp_id' => $existing_emp_id,
                                 'promotion_date' => $date_of_joining,
-                                'unit_id' => $unitid,                 
+                                'unit_id' => $unitid,      
+                                'is_initial' => '1',               
                                 'type' => 'promotion',                 
                                 'department_id' => $department_id,
                                 'designation_id' => $designation_id,
@@ -419,6 +420,7 @@ if (isset($_POST['submit'])) {
                                 'promotion_date' => $date_of_joining,
                                 'unit_id' => $unitid,                 
                                 'type' => 'promotion',                 
+                                'is_initial' => '1',    
                                 'department_id' => $department_id,
                                 'designation_id' => $designation_id,
                                 'basic_salary' => $basic_salary,

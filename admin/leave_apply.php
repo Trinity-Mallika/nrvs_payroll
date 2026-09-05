@@ -202,7 +202,8 @@ if (isset($_POST['leave_apply_id'])) {
 ?>
 
 <!doctype html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
+    data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
 
 <head>
     <meta charset="utf-8" />
@@ -210,10 +211,10 @@ if (isset($_POST['leave_apply_id'])) {
     <?php include('inc/css.php') ?>
 </head>
 <style>
-    .table-borderless tr td {
-        border: 0px !important;
-        padding-bottom: 0px;
-    }
+.table-borderless tr td {
+    border: 0px !important;
+    padding-bottom: 0px;
+}
 </style>
 
 <body>
@@ -234,7 +235,9 @@ if (isset($_POST['leave_apply_id'])) {
                                     <div class="row g-4 align-items-center">
                                         <div class="col-sm">
                                             <div>
-                                                <h5 class="card-title mb-0"> <?= $module; ?> <a href="leave_apply_list.php" class="float-end btn btn-primary btn-sm">List</a></h5>
+                                                <h5 class="card-title mb-0"> <?= $module; ?> <a
+                                                        href="leave_apply_list.php"
+                                                        class="float-end btn btn-primary btn-sm">List</a></h5>
                                             </div>
                                         </div>
                                     </div>
@@ -242,58 +245,80 @@ if (isset($_POST['leave_apply_id'])) {
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-lg-4 mb-2">
-                                            <label for="application_date" class="form-label">Application Date<span class="text-danger fw-bold">*</span></label>
-                                            <input type="date" id="application_date" name="application_date" class="form-control form-control-sm" value="<?= $application_date ?>" autocomplete="off" readonly />
+                                            <label for="application_date" class="form-label">Application Date<span
+                                                    class="text-danger fw-bold">*</span></label>
+                                            <input type="date" id="application_date" name="application_date"
+                                                class="form-control form-control-sm" value="<?= $application_date ?>"
+                                                autocomplete="off" />
                                         </div>
                                         <div class="col-lg-4 mb-2">
-                                            <label for="emp_id" class="form-label">Employee Name<span class="text-danger fw-bold">*</span></label>
-                                            <select class="form-select form-select-sm chosen-select" name="emp_id" id="emp_id" onchange="get_url(this.value)">
+                                            <label for="emp_id" class="form-label">Employee Name<span
+                                                    class="text-danger fw-bold">*</span></label>
+                                            <select class="form-select form-select-sm chosen-select" name="emp_id"
+                                                id="emp_id" onchange="get_url(this.value)">
                                                 <option value="">Select Employee</option>
                                                 <?php
                                                 //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
                                                 $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
                                                 foreach ($res as $key) { ?>
-                                                    <option value="<?= $key['emp_id']; ?>" data-mobile="<?= $key['mobile_no']; ?>">
-                                                        <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?> <?= ucfirst($key['last_name'] ?? ''); ?></option>
+                                                <option value="<?= $key['emp_id']; ?>"
+                                                    data-mobile="<?= $key['mobile_no']; ?>">
+                                                    <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?>
+                                                    <?= ucfirst($key['last_name'] ?? ''); ?></option>
                                                 <?php } ?>
                                             </select>
                                             <script>
-                                                document.getElementById('emp_id').value = '<?= $emp_id; ?>';
+                                            document.getElementById('emp_id').value = '<?= $emp_id; ?>';
                                             </script>
                                         </div>
                                         <div class="col-lg-4 mb-2">
-                                            <label for="contact_no" class="form-label">Contact No<span class="text-danger fw-bold"> </span></label>
-                                            <input type="text" id="contact_no" name="contact_no" class="form-control form-control-sm" placeholder="Enter Contact No" value="<?= $contact_no ?>" autocomplete="off" onkeypress="numberOnly(event)" />
+                                            <label for="contact_no" class="form-label">Contact No<span
+                                                    class="text-danger fw-bold"> </span></label>
+                                            <input type="text" id="contact_no" name="contact_no"
+                                                class="form-control form-control-sm" placeholder="Enter Contact No"
+                                                value="<?= $contact_no ?>" autocomplete="off"
+                                                onkeypress="numberOnly(event)" />
                                         </div>
                                         <div class="col-lg-4 mb-2">
-                                            <label for="leave_address" class="form-label">Leave Address<span class="text-danger fw-bold"> </span></label>
-                                            <input type="text" id="leave_address" name="leave_address" class="form-control form-control-sm" placeholder="Enter Leave Address" value="<?= $leave_address ?>" autocomplete="off" />
+                                            <label for="leave_address" class="form-label">Leave Address<span
+                                                    class="text-danger fw-bold"> </span></label>
+                                            <input type="text" id="leave_address" name="leave_address"
+                                                class="form-control form-control-sm" placeholder="Enter Leave Address"
+                                                value="<?= $leave_address ?>" autocomplete="off" />
                                         </div>
                                         <div class="col-lg-4 mb-2">
-                                            <label for="reason" class="form-label">Reason<span class="text-danger fw-bold"> </span></label>
-                                            <input type="text" id="reason" name="reason" class="form-control form-control-sm" placeholder="Enter Reason" value="<?= $reason ?>" autocomplete="off" />
+                                            <label for="reason" class="form-label">Reason<span
+                                                    class="text-danger fw-bold"> </span></label>
+                                            <input type="text" id="reason" name="reason"
+                                                class="form-control form-control-sm" placeholder="Enter Reason"
+                                                value="<?= $reason ?>" autocomplete="off" />
                                         </div>
 
                                         <div class="col-lg-4 mb-2">
-                                            <label for="substitute_emp_id" class="form-label">Substitute Employee Name<span class="text-danger fw-bold"></span></label>
-                                            <select class="form-select form-select-sm chosen-select" name="substitute_emp_id" id="substitute_emp_id">
+                                            <label for="substitute_emp_id" class="form-label">Substitute Employee
+                                                Name<span class="text-danger fw-bold"></span></label>
+                                            <select class="form-select form-select-sm chosen-select"
+                                                name="substitute_emp_id" id="substitute_emp_id">
                                                 <option value="">Select Substitute Employee</option>
                                                 <?php
                                                 //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
                                                 $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
                                                 foreach ($res as $key) { ?>
-                                                    <option value="<?= $key['emp_id']; ?>">
-                                                        <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?> <?= ucfirst($key['last_name'] ?? ''); ?></option>
+                                                <option value="<?= $key['emp_id']; ?>">
+                                                    <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?>
+                                                    <?= ucfirst($key['last_name'] ?? ''); ?></option>
                                                 <?php } ?>
                                             </select>
                                             <script>
-                                                document.getElementById('substitute_emp_id').value = '<?= $substitute_emp_id; ?>';
+                                            document.getElementById('substitute_emp_id').value =
+                                                '<?= $substitute_emp_id; ?>';
                                             </script>
                                         </div>
                                         <div class="col-lg-2 mb-2">
                                             <div class="p-2 border rounded bg-light text-center">
                                                 <small class="text-muted">Earning Leave</small><br>
-                                                <input type="text" name="earn_leave" id="earning_leave" value="<?=$earn_leave?>"
+                                                <input type="text" name="earn_leave" id="earning_leave"
+                                                    value="<?=$earn_leave?>"
                                                     class="form-control form-control-sm text-center fw-bold border-0 bg-light"
                                                     readonly>
                                             </div>
@@ -301,7 +326,8 @@ if (isset($_POST['leave_apply_id'])) {
                                         <div class="col-lg-2 mb-2">
                                             <div class="p-2 border rounded bg-light text-center">
                                                 <small class="text-muted">Extra Off</small><br>
-                                                <input type="text" name="extra_off" id="extra_off"   value="<?=$extra_off?>"
+                                                <input type="text" name="extra_off" id="extra_off"
+                                                    value="<?=$extra_off?>"
                                                     class="form-control form-control-sm text-center fw-bold border-0 bg-light"
                                                     readonly>
                                             </div>
@@ -314,7 +340,7 @@ if (isset($_POST['leave_apply_id'])) {
                                                     readonly>
                                             </div>
                                         </div>
-                                        
+
                                     </div>
                                 </div>
                             </div>
@@ -344,23 +370,29 @@ if (isset($_POST['leave_apply_id'])) {
                                                     <tbody>
                                                         <td>#.</td>
                                                         <td>
-                                                            <input type="date" id="multi_date" class="form-control form-control-sm" value="<?= date("Y-m-d") ?>">
+                                                            <input type="date" id="multi_date"
+                                                                class="form-control form-control-sm"
+                                                                value="<?= date("Y-m-d") ?>">
                                                         </td>
                                                         <td>
-                                                            <input type="number" id="no_of_days" class="form-control form-control-sm" style="width:70px;" value="1">
+                                                            <input type="number" id="no_of_days"
+                                                                class="form-control form-control-sm" style="width:70px;"
+                                                                value="1">
                                                         </td>
                                                         <td>
-                                                            <select class="form-select form-select-sm chosen-select"            id="multi_leave_day">
+                                                            <select class="form-select form-select-sm chosen-select"
+                                                                id="multi_leave_day">
                                                                 <option value="FD">Full Day</option>
                                                                 <option value="FHD">First Half Day</option>
-                                                                <option value="SHD">Second Half Day</option>  
+                                                                <option value="SHD">Second Half Day</option>
                                                                 <!-- <option value="SL">Sick Leave</option> -->
                                                             </select>
                                                         </td>
                                                         <td>
-                                                            <select class="form-select form-select-sm chosen-select" id="multi_leave_type">
+                                                            <select class="form-select form-select-sm chosen-select"
+                                                                id="multi_leave_type">
                                                                 <option value="EL">EARNED LEAVE</option>
-                                                                 <!-- <option value="WL">WEEKLY LEAVE</option>   -->
+                                                                <!-- <option value="WL">WEEKLY LEAVE</option>   -->
                                                                 <option value="EO">EXTRA OFF</option>
                                                                 <option value="CO">C-OFF</option>
                                                                 <!-- <option value="L">OPENING LEAVE</option> -->
@@ -368,10 +400,13 @@ if (isset($_POST['leave_apply_id'])) {
                                                             </select>
                                                         </td>
                                                         <td>
-                                                            <input type="text" id="multi_remark" class="form-control form-control-sm">
+                                                            <input type="text" id="multi_remark"
+                                                                class="form-control form-control-sm">
                                                         </td>
                                                         <td>
-                                                            <button type="button" class="btn btn-sm btn-success" onclick="save_multi_leave_details();" id="ajax_multi_btn">Add</button>
+                                                            <button type="button" class="btn btn-sm btn-success"
+                                                                onclick="save_multi_leave_details();"
+                                                                id="ajax_multi_btn">Add</button>
                                                         </td>
                                                     </tbody>
                                                 </table>
@@ -386,7 +421,7 @@ if (isset($_POST['leave_apply_id'])) {
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-lg-12 mb-3">
-                                            <!-- TOP BAR --> 
+                                            <!-- TOP BAR -->
                                             <div class="table-responsive">
                                                 <table class="display table table-sm table-bordered" style="width:100%">
                                                     <thead>
@@ -402,31 +437,39 @@ if (isset($_POST['leave_apply_id'])) {
                                                     <tbody>
                                                         <td>#.</td>
                                                         <td>
-                                                            <input type="date" id="date" class="form-control form-control-sm" value="<?= date("Y-m-d") ?>">
+                                                            <input type="date" id="date"
+                                                                class="form-control form-control-sm"
+                                                                value="<?= date("Y-m-d") ?>">
                                                         </td>
                                                         <td>
-                                                            <select class="form-select form-select-sm chosen-select" id="leave_day">
+                                                            <select class="form-select form-select-sm chosen-select"
+                                                                id="leave_day">
                                                                 <option value="FD">Full Day</option>
                                                                 <option value="FHD">First Half Day</option>
-                                                                <option value="SHD">Second Half Day</option>  
+                                                                <option value="SHD">Second Half Day</option>
                                                                 <!-- <option value="SL">Sick Leave</option> -->
                                                             </select>
                                                         </td>
                                                         <td>
-                                                            <select class="form-select form-select-sm chosen-select" id="leave_type">
+                                                            <select class="form-select form-select-sm chosen-select"
+                                                                id="leave_type">
                                                                 <option value="EL">EARNED LEAVE</option>
                                                                 <option value="EO">EXTRA OFF</option>
                                                                 <option value="CO">C-OFF</option>
-                                                                <!-- <option value="L">OPENING LEAVE</option>
-                                                                <option value="LWP">LEAVE WITHOUT PAY</option> -->
+                                                                <!-- <option value="L">OPENING LEAVE</option>-->
+                                                                <!-- <option value="LWP">LEAVE WITHOUT PAY</option>   -->
                                                             </select>
                                                         </td>
                                                         <td>
-                                                            <input type="text" id="remark" class="form-control form-control-sm">
-                                                            <input type="hidden" id="leave_details_id" class="form-control form-control-sm" value="0">
+                                                            <input type="text" id="remark"
+                                                                class="form-control form-control-sm">
+                                                            <input type="hidden" id="leave_details_id"
+                                                                class="form-control form-control-sm" value="0">
                                                         </td>
                                                         <td>
-                                                            <button type="button" class="btn btn-sm btn-success" onclick="save_leave_details();" id="ajax_btn">Add</button>
+                                                            <button type="button" class="btn btn-sm btn-success"
+                                                                onclick="save_leave_details();"
+                                                                id="ajax_btn">Add</button>
                                                         </td>
                                                     </tbody>
                                                     <tbody id="fetch_leave_details">
@@ -435,8 +478,12 @@ if (isset($_POST['leave_apply_id'])) {
                                             </div>
 
                                             <div class="col-lg-4 mb-2">
-                                                <label for="total_day" class="form-label"> Total Days<span class="text-danger fw-bold"> </span></label>
-                                                <input type="text" id="total_day" name="total_day" class="form-control form-control-sm" placeholder="Enter Total Days" value="<?= $total_day ?>" autocomplete="off" onkeypress="numberOnly(event)" readonly />
+                                                <label for="total_day" class="form-label"> Total Days<span
+                                                        class="text-danger fw-bold"> </span></label>
+                                                <input type="text" id="total_day" name="total_day"
+                                                    class="form-control form-control-sm" placeholder="Enter Total Days"
+                                                    value="<?= $total_day ?>" autocomplete="off"
+                                                    onkeypress="numberOnly(event)" readonly />
                                             </div>
 
 
@@ -445,36 +492,39 @@ if (isset($_POST['leave_apply_id'])) {
                                                     Attached File <span class="text-danger fw-bold"> </span>
                                                 </label>
 
-                                                <input type="file" class="form-control form-control-sm"
-                                                    name="doc_file" id="doc_file" value="<?= $doc_file ?>">
+                                                <input type="file" class="form-control form-control-sm" name="doc_file"
+                                                    id="doc_file" value="<?= $doc_file ?>">
 
                                                 <?php if (!empty($doc_file)) {
                                                     $ext = strtolower(pathinfo($doc_file, PATHINFO_EXTENSION));
                                                 ?>
-                                                    <div class="mt-2">
-                                                        <?php if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) { ?>
-                                                            <img src="<?= $imgpath1 . $doc_file ?>"
-                                                                style="height:50px;border:1px solid #ccc;">
-                                                        <?php } else { ?>
-                                                            <a href="<?= $imgpath1 . $doc_file ?>"
-                                                                target="_blank" class="btn btn-sm btn-secondary">
-                                                                View Uploaded <?= strtoupper($ext) ?>
-                                                            </a>
-                                                        <?php } ?>
-                                                    </div>
+                                                <div class="mt-2">
+                                                    <?php if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) { ?>
+                                                    <img src="<?= $imgpath1 . $doc_file ?>"
+                                                        style="height:50px;border:1px solid #ccc;">
+                                                    <?php } else { ?>
+                                                    <a href="<?= $imgpath1 . $doc_file ?>" target="_blank"
+                                                        class="btn btn-sm btn-secondary">
+                                                        View Uploaded <?= strtoupper($ext) ?>
+                                                    </a>
+                                                    <?php } ?>
+                                                </div>
 
-                                                    <input type="hidden" name="old_attachment"
-                                                        value="<?= $doc_file ?>">
+                                                <input type="hidden" name="old_attachment" value="<?= $doc_file ?>">
                                                 <?php } ?>
                                             </div>
                                             <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
                                             if ($chkadd == 1) {  ?>
-                                                <div class="col-lg-12 text-center">
-                                                    <br>
-                                                    <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
-                                                    <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return validateForm()">
-                                                    <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
-                                                </div>
+                                            <div class="col-lg-12 text-center">
+                                                <br>
+                                                <input type="hidden" name="<?php echo $tblpkey ?>"
+                                                    value="<?php echo $keyvalue ?>">
+                                                <input type="submit" name="submit"
+                                                    class="btn btn-sm btn-primary add-btn"
+                                                    value="<?php echo $btn_name ?> " onClick="return validateForm()">
+                                                <a href=" <?php echo $pagename ?>" type="button"
+                                                    class="btn btn-sm btn-danger add-btn">Reset</a>
+                                            </div>
                                             <?php } ?>
                                         </div>
                                     </div>
@@ -497,349 +547,551 @@ if (isset($_POST['leave_apply_id'])) {
     <?php include('inc/footer.php') ?>
 
     <script>
-        $(document).ready(function() {
-            $('#example').DataTable();
-            $(".chosen-select").select2({
-                width: '100%',
-                search_contains: true
-            });
-            fetch_leave_details()
-            handleEmployeeChange()
+    $(document).ready(function() {
+        $('#example').DataTable();
+        $(".chosen-select").select2({
+            width: '100%',
+            search_contains: true
         });
+        fetch_leave_details()
+        handleEmployeeChange()
+    });
 
-        function get_url(emp_id) {
-            window.location.href = "leave_apply.php?emp_id=" + emp_id;
+    function get_url(emp_id) {
+        window.location.href = "leave_apply.php?emp_id=" + emp_id;
 
+    }
+
+    function toggleMultiDay() {
+        let section = document.getElementById("multiDaySection");
+
+        if (section.style.display === "none") {
+            section.style.display = "block";
+        } else {
+            section.style.display = "none";
         }
+    }
 
-        function toggleMultiDay() {
-            let section = document.getElementById("multiDaySection");
-
-            if (section.style.display === "none") {
-                section.style.display = "block";
-            } else {
-                section.style.display = "none";
-            }
-        }
-
-        function funDel(id) {
-            $('#deleteRecordModal').modal('show');
-            tblname = 'leave_apply_detail';
-            tblpkey = 'leave_details_id';
-            pagename = '<?php echo $pagename; ?>';
-            submodule = '<?php echo $submodule; ?>';
-            let keyvalue = '<?= $keyvalue ?>';
-            $('#delete-record').click(function() {
-                $.ajax({
-                    type: 'POST',
-                    url: 'ajax/delete_master.php',
-                    data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&submodule=' + submodule + '&pagename=' + pagename,
-                    dataType: 'html',
-                    success: function(data) {
-                        $.ajax({
-                            type: 'POST',
-                            url: '', // same page
-                            data: {
-                                leave_apply_id: keyvalue
-                            },
-                            success: function(res) {
-                                let data = JSON.parse(res);
-                                $('#total_day').val(data.total_days);
-                            }
-                        });
-                        fetch_leave_details();
-                    }
-                });
-                $('#deleteRecordModal').modal('hide');
-            });
-        };
-
-        function validateForm() {
-            // 🔹 Step 1: basic required field validation
-            if (!checkinputmaster('application_date,emp_id')) {
-                return false;
-            }
-
-            // 🔹 Step 2: total_day validation
-            let totalDay = document.getElementById("total_day").value;
-
-            if (totalDay === '') {
-                alert("Total Day must be greater than 0");
-                document.getElementById("total_day").focus();
-                return false;
-            }
-
-            return true;
-        }
-
-        function numberOnly(evt) {
-            var theEvent = evt || window.event;
-            // Handle paste
-            if (theEvent.type === 'paste') {
-                key = event.clipboardData.getData('text/plain');
-            } else {
-                // Handle key press
-                var key = theEvent.keyCode || theEvent.which;
-                key = String.fromCharCode(key);
-            }
-            var regex = /[0-9]|\.|\s/;
-            if (!regex.test(key)) {
-                theEvent.returnValue = false;
-                if (theEvent.preventDefault) theEvent.preventDefault();
-            }
-        }
-
-        function save_leave_details() {
-            const date = $('#date').val();
-            const leave_day = $('#leave_day').val();
-            const no_of_days = 1;
-            const leave_type = $('#leave_type').val();
-            const remark = $('#remark').val();
-            const emp_id = $('#emp_id').val();
-            const leave_details_id = $('#leave_details_id').val();
-            const keyvalue = '<?= $keyvalue; ?>';
-            if (emp_id == "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required',
-                    text: 'Please enter Employee First'
-                });
-                return;
-            }
-
-            if (date === "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required',
-                    text: 'Please enter Date'
-                });
-                return;
-            }
-
-            if (leave_day == "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required',
-                    text: 'Please enter Leave Day'
-                });
-                return;
-            }
-            if (leave_type == "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required',
-                    text: 'Please enter Leave Type'
-                });
-                return;
-            }
-
+    function funDel(id) {
+        $('#deleteRecordModal').modal('show');
+        tblname = 'leave_apply_detail';
+        tblpkey = 'leave_details_id';
+        pagename = '<?php echo $pagename; ?>';
+        submodule = '<?php echo $submodule; ?>';
+        let keyvalue = '<?= $keyvalue ?>';
+        $('#delete-record').click(function() {
             $.ajax({
-                url: 'ajax_leave_save.php',
                 type: 'POST',
-                data: {
-                    date: date,
-                    keyvalue: keyvalue,
-                    no_of_days: no_of_days,
-                    leave_day: leave_day,
-                    leave_type: leave_type,
-                    remark: remark,
-                    leave_details_id: leave_details_id,
-                    emp_id: emp_id
-                },
-                beforeSend: function() {
-                    $('#ajax_btn').prop("disabled", true).text("Saving...");
-                },
-                success: function(response) {
-                    let res = JSON.parse(response);
-                   
-                    if (res.status === "success") {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Details added successfully',
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            fetch_leave_details();
-                            $('#total_day').val(res.total_days);
-                            $('#date,#remark').val('');
-                            $('#leave_details_id').val('0');
-                        })
-                    } else if (res.status === "duplicate") {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Duplicate Entry',
-                            text: res.message
-                        });
-                        return;
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: response
-                        });
-                    }
-                },
-                error: function() {
-                    Swal.fire("Error", "Error while uploading. Try again.");
-                },
-                complete: function() {
-                    $('#ajax_btn').prop("disabled", false).text("Add");
-                }
-            });
-        }
-
-
-        function save_multi_leave_details() {
-            const date = $('#multi_date').val();
-            const leave_day = $('#multi_leave_day').val();
-            const no_of_days = $('#no_of_days').val();
-            const leave_type = $('#multi_leave_type').val();
-            const remark = $('#multi_remark').val();
-            const emp_id = $('#emp_id').val();
-            const leave_details_id = $('#leave_details_id').val();
-            const keyvalue = '<?= $keyvalue; ?>';
-            if (emp_id == "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required',
-                    text: 'Please enter Employee First'
-                });
-                return;
-            }
-
-            if (date === "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required',
-                    text: 'Please enter Date'
-                });
-                return;
-            }
-
-            if (leave_day == "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required',
-                    text: 'Please enter Leave Day'
-                });
-                return;
-            }
-            if (leave_type == "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required',
-                    text: 'Please enter Leave Type'
-                });
-                return;
-            }
-
-            $.ajax({
-                url: 'ajax_leave_save.php',
-                type: 'POST',
-                data: {
-                    date: date,
-                    keyvalue: keyvalue,
-                    no_of_days: no_of_days,
-                    leave_day: leave_day,
-                    leave_type: leave_type,
-                    remark: remark,
-                    leave_details_id: leave_details_id,
-                    emp_id: emp_id
-                },
-                beforeSend: function() {
-                    $('#ajax_multi_btn').prop("disabled", true).text("Saving...");
-                },
-                success: function(response) {
-                    let res = JSON.parse(response); 
-                    if (res.status === "success") {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Details added successfully',
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            fetch_leave_details();
-                            $('#total_day').val(res.total_days);
-                            $('#date,#remark').val('');
-                            $('#leave_details_id').val('0');
-                        })
-                    } else if (res.status === "duplicate") {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Duplicate Entry',
-                            text: res.message
-                        });
-                        return;
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: response
-                        });
-                    }
-                },
-                error: function() {
-                    Swal.fire("Error", "Error while uploading. Try again.");
-                },
-                complete: function() {
-                    $('#ajax_multi_btn').prop("disabled", false).text("Add");
-                }
-            });
-        }
-
-
-        function fetch_leave_details() {
-            let keyvalue = '<?= $keyvalue; ?>';
-            let emp_id = '<?= $emp_id; ?>';
-
-            jQuery.ajax({
-                type: 'POST',
-                url: 'ajax_leave_fetch.php',
-                data: 'keyvalue=' + keyvalue + '&emp_id=' + emp_id,
+                url: 'ajax/delete_master.php',
+                data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&submodule=' +
+                    submodule + '&pagename=' + pagename,
                 dataType: 'html',
                 success: function(data) {
-                    document.getElementById('fetch_leave_details').innerHTML = data;
-                }
-            }); //ajax close
-        }
-
-        function editLeave(leave_details_id, date, leave_day, leave_type, remark) {
-            $('#leave_details_id').val(leave_details_id);
-            $('#date').val(date);
-            $('#leave_day').val(leave_day).trigger('change');
-            $('#leave_type').val(leave_type).trigger('change');
-            $('#remark').val(remark).focus();
-            $('#ajax_btn')
-                .prop("disabled", false)
-                .text("Update") // <-- change here
-                .removeClass('btn-success')
-                .addClass('btn-primary');
-        }
-
-
-        function handleEmployeeChange() {
-            let emp_id = '<?= $emp_id ?>';
-            $.ajax({
-                url: "get_employee_leave_details.php",
-                type: "POST",
-                data: {
-                    emp_id: emp_id,
-                },
-                success: function(res) {
-                    let data = JSON.parse(res);
-
-                    if (data.status === "success") {
-                        $("#extra_off").val(data.extra_off);
-                        $("#earning_leave").val(data.earning_leave);
-                        $("#opening_leave_balance").val(data.opening_leave_balance);
-
-
-                    }
+                    $.ajax({
+                        type: 'POST',
+                        url: '', // same page
+                        data: {
+                            leave_apply_id: keyvalue
+                        },
+                        success: function(res) {
+                            let data = JSON.parse(res);
+                            $('#total_day').val(data.total_days);
+                        }
+                    });
+                    fetch_leave_details();
                 }
             });
+            $('#deleteRecordModal').modal('hide');
+        });
+    };
+
+    function validateForm() {
+        // 🔹 Step 1: basic required field validation
+        if (!checkinputmaster('application_date,emp_id')) {
+            return false;
         }
+
+        // 🔹 Step 2: total_day validation
+        let totalDay = document.getElementById("total_day").value;
+
+        if (totalDay === '') {
+            alert("Total Day must be greater than 0");
+            document.getElementById("total_day").focus();
+            return false;
+        }
+
+        return true;
+    }
+
+    function numberOnly(evt) {
+        var theEvent = evt || window.event;
+        // Handle paste
+        if (theEvent.type === 'paste') {
+            key = event.clipboardData.getData('text/plain');
+        } else {
+            // Handle key press
+            var key = theEvent.keyCode || theEvent.which;
+            key = String.fromCharCode(key);
+        }
+        var regex = /[0-9]|\.|\s/;
+        if (!regex.test(key)) {
+            theEvent.returnValue = false;
+            if (theEvent.preventDefault) theEvent.preventDefault();
+        }
+    }
+
+    function save_leave_details() {
+        const date = $('#date').val();
+        const leave_day = $('#leave_day').val();
+        const no_of_days = 1;
+        const leave_type = $('#leave_type').val();
+        const remark = $('#remark').val();
+        const emp_id = $('#emp_id').val();
+        const leave_details_id = $('#leave_details_id').val();
+        const keyvalue = '<?= $keyvalue; ?>';
+        if (emp_id == "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter Employee First'
+            });
+            return;
+        }
+
+        if (date === "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter Date'
+            });
+            return;
+        }
+
+        if (leave_day == "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter Leave Day'
+            });
+            return;
+        }
+        if (leave_type == "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter Leave Type'
+            });
+            return;
+        }
+
+        $.ajax({
+            url: 'ajax_leave_save.php',
+            type: 'POST',
+            data: {
+                date: date,
+                keyvalue: keyvalue,
+                no_of_days: no_of_days,
+                leave_day: leave_day,
+                leave_type: leave_type,
+                remark: remark,
+                leave_details_id: leave_details_id,
+                emp_id: emp_id
+            },
+            beforeSend: function() {
+                $('#ajax_btn').prop("disabled", true).text("Saving...");
+            },
+            success: function(response) {
+                let res = JSON.parse(response);
+                if (res.status === "success") {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: 'Details added successfully',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        fetch_leave_details();
+                        $('#total_day').val(res.total_days);
+                        $('#date,#remark').val('');
+                        $('#leave_details_id').val('0');
+                    })
+                } else if (res.status === "duplicate") {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Duplicate Entry',
+                        text: res.message
+                    });
+                    return;
+                } else if (res.status === "error") {
+
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Cannot Apply Leave",
+                        text: res.message
+                    });
+                    return;
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: "Cannot Apply Leave",
+                        text: res
+                    });
+                }
+            },
+            error: function() {
+                Swal.fire("Error", "Error while uploading. Try again.");
+            },
+            complete: function() {
+                $('#ajax_btn').prop("disabled", false).text("Add");
+            }
+        });
+    }
+
+
+    function save_multi_leave_details() {
+        const date = $('#multi_date').val();
+        const leave_day = $('#multi_leave_day').val();
+        const no_of_days = $('#no_of_days').val();
+        const leave_type = $('#multi_leave_type').val();
+        const remark = $('#multi_remark').val();
+        const emp_id = $('#emp_id').val();
+        const leave_details_id = $('#leave_details_id').val();
+        const keyvalue = '<?= $keyvalue; ?>';
+        if (emp_id == "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter Employee First'
+            });
+            return;
+        }
+
+        if (date === "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter Date'
+            });
+            return;
+        }
+
+        if (leave_day == "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter Leave Day'
+            });
+            return;
+        }
+        if (leave_type == "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter Leave Type'
+            });
+            return;
+        }
+
+        $.ajax({
+            url: 'ajax_leave_save.php',
+            type: 'POST',
+            data: {
+                date: date,
+                keyvalue: keyvalue,
+                no_of_days: no_of_days,
+                leave_day: leave_day,
+                leave_type: leave_type,
+                remark: remark,
+                leave_details_id: leave_details_id,
+                emp_id: emp_id
+            },
+            beforeSend: function() {
+                $('#ajax_multi_btn').prop("disabled", true).text("Saving...");
+            },
+            success: function(response) {
+                let res = JSON.parse(response);
+                if (res.status === "success") {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: 'Details added successfully',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        fetch_leave_details();
+                        $('#total_day').val(res.total_days);
+                        $('#date,#remark').val('');
+                        $('#leave_details_id').val('0');
+                    })
+                } else if (res.status === "duplicate") {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Duplicate Entry',
+                        text: res.message
+                    });
+                    return;
+                } else if (res.status === "error") {
+
+                    Swal.fire({
+                        icon: "warning",
+                        title: "Cannot Apply Leave",
+                        text: res.message
+                    });
+
+                    return;
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: response
+                    });
+                }
+            },
+            error: function() {
+                Swal.fire("Error", "Error while uploading. Try again.");
+            },
+            complete: function() {
+                $('#ajax_multi_btn').prop("disabled", false).text("Add");
+            }
+        });
+    }
+
+
+    function fetch_leave_details() {
+        let keyvalue = '<?= $keyvalue; ?>';
+        let emp_id = '<?= $emp_id; ?>';
+
+        jQuery.ajax({
+            type: 'POST',
+            url: 'ajax_leave_fetch.php',
+            data: 'keyvalue=' + keyvalue + '&emp_id=' + emp_id,
+            dataType: 'html',
+            success: function(data) {
+                document.getElementById('fetch_leave_details').innerHTML = data;
+            }
+        }); //ajax close
+    }
+
+    function editLeave(leave_details_id, date, leave_day, leave_type, remark) {
+        $('#leave_details_id').val(leave_details_id);
+        $('#date').val(date);
+        $('#leave_day').val(leave_day).trigger('change');
+        $('#leave_type').val(leave_type).trigger('change');
+        $('#remark').val(remark).focus();
+        $('#ajax_btn')
+            .prop("disabled", false)
+            .text("Update") // <-- change here
+            .removeClass('btn-success')
+            .addClass('btn-primary');
+    }
+
+
+    function handleEmployeeChange() {
+        let emp_id = '<?= $emp_id ?>';
+        $.ajax({
+            url: "get_employee_leave_details.php",
+            type: "POST",
+            data: {
+                emp_id: emp_id,
+            },
+            success: function(res) {
+                let data = JSON.parse(res);
+
+                if (data.status === "success") {
+                    $("#extra_off").val(data.extra_off);
+                    $("#earning_leave").val(data.earning_leave);
+                    $("#opening_leave_balance").val(data.opening_leave_balance);
+
+
+                }
+            }
+        });
+    }
+
+
+    function saveLeaveRow(element) { 
+        // jis row mein change hua hai
+        let row = $(element).closest('tr'); 
+        // row ke andar se values uthao
+        let leave_details_id = row.find('.leave_details_id').val();
+        let date = row.find('.leave_date').val();
+        let leave_day = row.find('.leave_day').val();
+        let leave_type = row.find('.leave_type').val();
+        let remark = row.find('.leave_remark').val();
+
+        let emp_id = '<?= $emp_id; ?>';
+        let keyvalue = '<?= $keyvalue; ?>';
+
+        // =========================
+        // VALIDATION
+        // =========================
+
+        if (!leave_details_id || leave_details_id == '0') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Leave ID is missing.'
+            });
+            return;
+        }
+
+        if (!date) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please select Date.'
+            });
+            return;
+        }
+
+        if (!leave_day) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please select Leave Day.'
+            });
+            return;
+        }
+
+        if (!leave_type) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please select Leave Type.'
+            });
+            return;
+        }
+
+        // =========================
+        // SAVE BUTTON
+        // =========================
+
+        let saveBtn = row.find('.save-leave-btn');
+
+        saveBtn.prop('disabled', true);
+
+        $.ajax({
+            url: 'ajax_leave_save.php',
+            type: 'POST',
+
+            data: {
+                date: date,
+                no_of_days: 1,
+                leave_day: leave_day,
+                leave_type: leave_type,
+                remark: remark,
+                leave_details_id: leave_details_id,
+                emp_id: emp_id,
+                keyvalue: keyvalue
+            },
+
+            success: function(response) {
+
+                let res;
+
+                try {
+                    res = JSON.parse(response);
+                } catch (e) {
+
+                    console.log(response);
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Server Error',
+                        text: 'Invalid server response.'
+                    });
+
+                    return;
+                }
+
+                // =========================
+                // SUCCESS
+                // =========================
+
+                if (res.status === 'success') {
+
+                    // Swal.fire({
+                    //     icon: 'success',
+                    //     title: 'Updated',
+                    //     text: 'Leave updated successfully.',
+                    //     timer: 1000,
+                    //     showConfirmButton: false
+                    // });
+
+                    // total days update
+                    $('#total_day').val(res.total_days);
+
+                    // refresh table
+                    fetch_leave_details();
+
+                    return;
+                }
+
+                // =========================
+                // DUPLICATE
+                // =========================
+
+                if (res.status === 'duplicate') {
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Duplicate Entry',
+                        text: res.message
+                    });
+
+                    return;
+                }
+
+                // =========================
+                // WARNING
+                // =========================
+
+                if (res.status === 'warning') {
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Warning',
+                        text: res.message
+                    });
+
+                    return;
+                }
+
+                // =========================
+                // ERROR
+                // =========================
+
+                if (res.status === 'error') {
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Cannot Update Leave',
+                        text: res.message
+                    });
+
+                    return;
+                }
+
+            },
+
+            error: function(xhr) {
+
+                console.log(xhr.responseText);
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Something went wrong while saving.'
+                });
+            },
+
+            complete: function() {
+
+                saveBtn.prop('disabled', false);
+            }
+        });
+    }
+      
     </script>
 </body>
 

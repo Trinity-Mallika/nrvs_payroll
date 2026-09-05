@@ -1,6 +1,7 @@
 <?php include("appsession.php");
 
-$date = $obj->test_input($_REQUEST['date']);
+$date = $obj->dateformatusa($_REQUEST['date']);
+$type = $obj->test_input($_REQUEST['type']??'');
 $leave_day = $obj->test_input($_REQUEST['leave_day']);
 $leave_type = $obj->test_input($_REQUEST['leave_type']);
 $remark = $obj->test_input($_REQUEST['remark']);
@@ -35,7 +36,7 @@ if ($leave_details_id != 0) {
                 ELSE 0
             END
         )",
-        "on_duty_id='$keyvalue' and unit_id='$unitid' and emp_id='$emp_id'"
+        "on_duty_id='$keyvalue' and unit_id='$unitid' and emp_id='$emp_id' and leave_type='$type'"
     );
 
     echo json_encode([
@@ -43,6 +44,42 @@ if ($leave_details_id != 0) {
         "total_days" => $count
     ]);
     exit;
+}
+
+/* ================= MONTH VALIDATION ================= */
+
+// Check if selected range crosses month
+$startMonth = date('Y-m', strtotime($date));
+$lastDate = date('Y-m-d', strtotime($date . " +" . ($no_of_days - 1) . " days"));
+$endMonth = date('Y-m', strtotime($lastDate));
+
+if ($startMonth != $endMonth) {
+    echo json_encode([
+        "status" => "error",
+        "message" => "Leave cannot be applied for multiple months in a single application. Please apply separately."
+    ]);
+    exit;
+}
+
+// If application already has leave dates, ensure new dates are in same month
+$existingDate = $obj->getvalfield(
+    "leave_apply_detail",
+    "MIN(date)",
+    "on_duty_id='$keyvalue' AND emp_id='$emp_id' AND unit_id='$unitid' AND leave_type='$type'"
+);
+
+if (!empty($existingDate)) {
+
+    $existingMonth = date('Y-m', strtotime($existingDate));
+    $selectedMonth = date('Y-m', strtotime($date));
+
+    if ($existingMonth != $selectedMonth) {
+        echo json_encode([
+            "status" => "error",
+            "message" => "You cannot add leave dates from another month in the same application. Please create a new leave application."
+        ]);
+        exit;
+    }
 }
 /* ================= INSERT ================= */
 for ($i = 0; $i < $no_of_days; $i++) {
@@ -53,7 +90,7 @@ for ($i = 0; $i < $no_of_days; $i++) {
         "leave_apply_detail",
         "count(*)",
         "date='$current_date' AND emp_id='$emp_id' AND unit_id='$unitid' AND status!=2"
-    );
+    ); 
 
     if ($check > 0) {
     $duplicate_dates[] = [
@@ -66,9 +103,7 @@ for ($i = 0; $i < $no_of_days; $i++) {
     if ($leave_type == 'EL') {
     $leave_balance = $obj->getEarningLeave($emp_id,$sessionid,$month,$year );
     $approved_leave = $obj->getvalfield(
-
         "leave_apply_detail",
-
         "SUM(
             CASE
                 WHEN leave_day IN ('FD','SL') THEN 1
@@ -79,7 +114,7 @@ for ($i = 0; $i < $no_of_days; $i++) {
 
         "emp_id='$emp_id'
         AND leave_type='$leave_type'
-        AND status!='1'
+        AND status='0'
         AND unit_id='$unitid'
         AND sessionid='$sessionid'"
     );
@@ -89,7 +124,7 @@ for ($i = 0; $i < $no_of_days; $i++) {
         // $leave_balance = $extra_off['balance'] ?? 0;
         $leave_balance = 999;
     } elseif ($leave_type == 'CO') {
-        $leave_balance = $obj->getEmpCoffLeave($emp_id,$sessionid,$month,$year );
+        $leave_balance = $obj->getEmpCoffLeave($emp_id,$sessionid,$month,$year ); 
          $approved_leave = $obj->getvalfield(
         "leave_apply_detail",
         "SUM(
@@ -101,7 +136,7 @@ for ($i = 0; $i < $no_of_days; $i++) {
         )",
         "emp_id='$emp_id'
         AND leave_type='$leave_type'
-        AND status!='1' 
+        AND status='0' 
         AND sessionid='$sessionid'
         AND unit_id='$unitid'"
     );

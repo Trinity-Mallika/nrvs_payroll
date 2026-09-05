@@ -89,6 +89,7 @@ if (isset($_POST['change_password_ajax'])) {
                                                     <th>Passward</th>
                                                     <th>Department</th>
                                                     <th>Designation</th>
+                                                    <th>Baisc Salary</th>
                                                     <th>Date of Joining</th>
                                                     <th>Date of Birth</th>
                                                     <th>Is Active</th>
@@ -208,6 +209,7 @@ if (isset($_POST['change_password_ajax'])) {
                                                         </td>
                                                         <td><?php echo $row['department_name']; ?></td>
                                                         <td><?php echo $row['designation']; ?></td>
+                                                        <td><?php echo $row['basic_salary']; ?></td>
                                                         <td><?php echo $obj->dateformatindia($row["date_of_joining"]); ?>
                                                         </td>
                                                         <td><?php echo $obj->dateformatindia($row["dob"]); ?></td>

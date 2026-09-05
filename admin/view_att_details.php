@@ -35,9 +35,27 @@ $res = $obj->executequery("
         END) AS total_half1,
 
         SUM(CASE 
-            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave') THEN 1 
+            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave','Public Holiday','National Holiday','Religion Holiday','Seasonal Holiday') THEN 1 
             ELSE 0 
         END) AS total_present,
+
+        SUM(CASE 
+            WHEN attendance_status IN ('National Holiday','Religion Holiday','Seasonal Holiday') THEN 1 
+            ELSE 0 
+        END) AS tot_paid_holiday,
+
+        SUM(CASE 
+            WHEN attendance_status IN ('National Holiday') THEN 1 
+            ELSE 0 
+        END) AS national_holiday,
+        SUM(CASE 
+            WHEN attendance_status IN ('Religion Holiday') THEN 1 
+            ELSE 0 
+        END) AS religion_holiday,
+        SUM(CASE 
+            WHEN attendance_status IN ('Seasonal Holiday') THEN 1 
+            ELSE 0 
+        END) AS seasonal_holiday,
 
         SUM(CASE 
             WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave') THEN 1 
@@ -57,16 +75,33 @@ $total_half1    = $row['total_half1'] ?? 0;
 
 $total_present  = $row['total_present'] ?? 0;
 $total_half     = $row['total_half'] ?? 0;
+$tot_paid_holiday     = $row['tot_paid_holiday'] ?? 0;
+$national_att_holiday     = $row['national_holiday'] ?? 0;
+$religion_att_holiday     = $row['religion_holiday'] ?? 0;
+$seasonal_att_holiday     = $row['seasonal_holiday'] ?? 0;
 
-$real_total_attandence = $total_present1 + ($total_half1 / 2);
+$holidayData = $obj->getHolidayCountWithSandwichRule(
+    $emp_id,
+    $unitid,
+    $currentMonth,
+    $currentYear
+);
+
+$holiday_total     = $holidayData['total'] +$tot_paid_holiday ?? 0;
+$holiday_national  = $holidayData['national'] +$national_att_holiday?? 0;
+$holiday_religious = $holidayData['religious'] +$religion_att_holiday ?? 0;
+$holiday_seasonal  = $holidayData['seasonal'] +$seasonal_att_holiday ?? 0;
+
+$real_total_attandence1 = $total_present1 + ($total_half1 / 2);
+$real_total_attandence = $total_present1 + ($total_half1 / 2)+$holiday_total+$tot_paid_holiday;
 $total_attandence      = $total_present + ($total_half / 2);
  
 
 $emp_shift_ids = $obj->getvalfield("attendance_entry", "shift_id", "emp_id='$emp_id' and month='$currentMonth' and year='$currentYear' AND unit_id='$unitid' order by attendance_id desc limit 1") ?? '';
  
 $extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear);
- 
 $pending_coff =$obj->getEmpCoffLeave($emp_id, $sessionid, $currentMonth, $currentYear);
+
  
 $chkedit = $obj->check_editBtn($pagename, $loginid);
 $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $emp_id, $currentMonth, $currentYear);
@@ -76,18 +111,8 @@ $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_pre
 $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid , $currentMonth, $currentYear);
 $total_curr_week_leave = $obj->getCurrentWeekLeave($emp_id, $currentMonth, $currentYear);
 
-$holidayData = $obj->getHolidayCountWithSandwichRule(
-    $emp_id,
-    $unitid,
-    $currentMonth,
-    $currentYear
-);
-
-$holiday_total     = $holidayData['total'] ?? 0;
-$holiday_national  = $holidayData['national'] ?? 0;
-$holiday_religious = $holidayData['religious'] ?? 0;
-$holiday_seasonal  = $holidayData['seasonal'] ?? 0;
-
+ 
+ 
 $total_payable_days = $total_attandence;
 $total_payable_days += $week_leave;
 if ($is_all_leave_add == 1) {
@@ -102,109 +127,302 @@ if ($is_all_leave_add == 1) {
 <div class="row mt-4">
     <div class="col-lg-8 offset-lg-2">
         <div class=" card-body border-0 shadow-sm d-flex justify-content-between rounded-5 bg-white p-2">
-            <a href="?prev&currentYear=<?php echo $currentYear ?>&currentMonth=<?php echo $currentMonth; ?>&emp_id=<?php echo $emp_id ?>"> <?php if ($doj <= $dateforas) { ?><i class="ri ri-arrow-left-s-fill fs-3"></i> <?php } ?></a>
+            <a
+                href="?prev&currentYear=<?php echo $currentYear ?>&currentMonth=<?php echo $currentMonth; ?>&emp_id=<?php echo $emp_id ?>">
+                <?php if ($doj <= $dateforas) { ?><i class="ri ri-arrow-left-s-fill fs-3"></i> <?php } ?></a>
             <span class="mt-2">
                 <h6 class="mb-0">
                     <?php echo date('M', strtotime("$currentYear-$currentMonth")); ?>
                     <?php echo date('Y', strtotime("$currentYear-$currentMonth")); ?>
                 </h6>
             </span>
-            <a href="?next&currentYear=<?php echo $currentYear ?>&currentMonth=<?php echo $currentMonth; ?>&emp_id=<?php echo $emp_id ?>"><i class="ri ri-arrow-right-s-fill fs-3"></i></a>
+            <a
+                href="?next&currentYear=<?php echo $currentYear ?>&currentMonth=<?php echo $currentMonth; ?>&emp_id=<?php echo $emp_id ?>"><i
+                    class="ri ri-arrow-right-s-fill fs-3"></i></a>
         </div>
     </div>
 </div>
 <?php if ($salary_generate_count > 0) { ?>
-    <div class="row mt-4">
-        <div class="col-lg-12">
-            <div class="alert alert-success text-center rounded-4 shadow-sm">
-                <i class="ri ri-checkbox-circle-fill fs-4 me-2"></i>
-                <strong>
-                    Salary has already been generated for this month.
-                    Please delete the generated salary first, then edit the attendance.
-                </strong>
+<div class="row mt-4">
+    <div class="col-lg-12">
+        <div class="alert alert-success text-center rounded-4 shadow-sm">
+            <i class="ri ri-checkbox-circle-fill fs-4 me-2"></i>
+            <strong>
+                Salary has already been generated for this month.
+                Please delete the generated salary first, then edit the attendance.
+            </strong>
 
-                <div class="mt-3">
-                    <a href="salary_generate_report.php?emp_id=<?= $emp_id ?>&month=<?= $currentMonth ?>&year=<?= $currentYear ?>&submit=Search" class="btn btn-primary btn-sm">
-                        <i class="ri-money-rupee-circle-line me-1"></i>
-                        Redirect to Salary Report
-                    </a>
-                </div>
+            <div class="mt-3">
+                <a href="salary_generate_report.php?emp_id=<?= $emp_id ?>&month=<?= $currentMonth ?>&year=<?= $currentYear ?>&submit=Search"
+                    class="btn btn-primary btn-sm">
+                    <i class="ri-money-rupee-circle-line me-1"></i>
+                    Redirect to Salary Report
+                </a>
             </div>
         </div>
     </div>
+</div>
 <?php } else { ?>
 
-    <div class="row mt-4">
+<div class="row mt-4">
 
 
-        <div class="row mt-4 align-items-center">
-            <h5>Employee Wise Attendance List </h5>
-            <div class="col-md-2 text-primary">
-                Total Present: <b><?= $real_total_attandence; ?></b>
-            </div>
-            <div class="col-md-2 text-primary">
-                Total Attendance With Leave: <b><?= $total_attandence; ?></b>
-            </div>
-
-            <div class="col-md-2 text-primary">
-                Weekly Off : <b><?= $week_leave; ?></b>
-            </div>
-
-            <div class="col-md-2 text-primary">
-                Earn Leave : <b><?= $monthly_leave; ?></b>
-            </div>
-
-            <div class="col-md-2 text-primary">
-                Total Payable Days : <b><?= $total_payable_days ?></b>
-            </div>
-
-            <div class="col-md-2 text-primary">
-                Holiday : <b><?= $holiday_total; ?></b>
-                <div style="font-size:12px" class="text-muted">
-                    NH : <?= $holiday_national; ?> |
-                    RH : <?= $holiday_religious; ?> |
-                    SH : <?= $holiday_seasonal; ?>
-                </div>
-            </div>
-            <?php if ($chkedit == 1) { ?>
-                <div class="col-md-4 text-end">
-                    <a class="float-end btn btn-primary btn-sm mx-2" onclick="add_all_att('<?= $emp_shift_hrs; ?>','<?= $emp_shift_ids; ?>','<?= $extra_off['balance']; ?>','<?= $total_earning_leave ?>','<?= $pending_coff ?>');">Add All Attendence</a>
-
-                     <button type="button"
-            class="btn btn-success btn-sm mx-1"
-            onclick="checkAllAttendance()">
-            Check All
-        </button>
-
-        <button type="button"
-            class="btn btn-warning btn-sm mx-1"
-            onclick="uncheckAllAttendance()">
-            Uncheck All
-        </button>
-                </div>
-            <?php } ?>
+    <div class="row mt-4 align-items-center">
+        <h5>Employee Wise Attendance List </h5>
+        <div class="col-md-2 text-primary">
+            Total Present: <b><?= $real_total_attandence1; ?></b>
+        </div>
+        <div class="col-md-2 text-primary">
+            Total Attendance With Leave: <b><?= $total_attandence; ?></b>
         </div>
 
-        <h6 class="bg-body-secondary border-bottom-outset fs-15 mt-3 p-3 rounded-2 shadow-lg d-flex justify-content-between align-items-center"
-            style="background: linear-gradient(90deg, #edf2b7, #ffffff); border-color:#7696ff;">
+        <div class="col-md-2 text-primary">
+            Weekly Off : <b><?= $week_leave; ?></b>
+        </div>
 
-            <span>Extra Off : <?= $extra_off['balance'] ?></span>
+        <div class="col-md-2 text-primary">
+            Earn Leave : <b><?= $monthly_leave; ?></b>
+        </div>
 
-            <span>C-Off : <?= $pending_coff ?></span>
-             <!-- <span>Opening Leave Balance : <$opening_leave_balance ?></span> -->
+        <div class="col-md-2 text-primary">
+            Total Payable Days : <b><?= $total_payable_days ?></b>
+        </div>
 
-            <span>Pending Earn leave : <?= $total_earning_leave ?></span>
+        <div class="col-md-2 text-primary">
+            Holiday : <b><?= $holiday_total; ?></b>
+            <div style="font-size:12px" class="text-muted">
+                NH : <?= $holiday_national; ?> |
+                RH : <?= $holiday_religious; ?> |
+                SH : <?= $holiday_seasonal; ?>
+            </div>
+        </div>
+        <?php if ($chkedit == 1) { ?>
+        <div class="col-md-4 text-end">
+            <a class="float-end btn btn-primary btn-sm mx-2"
+                onclick="add_all_att('<?= $emp_shift_hrs; ?>','<?= $emp_shift_ids; ?>','<?= $extra_off['balance']; ?>','<?= $total_earning_leave ?>','<?= $pending_coff ?>');">Add
+                All Attendence</a>
 
-        </h6>
+            <button type="button" class="btn btn-success btn-sm mx-1" onclick="checkAllAttendance()">
+                Check All
+            </button>
 
-        <?php
+            <button type="button" class="btn btn-warning btn-sm mx-1" onclick="uncheckAllAttendance()">
+                Uncheck All
+            </button>
+        </div>
+        <?php } ?>
+    </div>
+
+    <h6 class="bg-body-secondary border-bottom-outset fs-15 mt-3 p-3 rounded-2 shadow-lg d-flex justify-content-between align-items-center"
+        style="background: linear-gradient(90deg, #edf2b7, #ffffff); border-color:#7696ff;">
+
+        <span>Extra Off : <?= $extra_off['balance'] ?></span>
+
+        <span>C-Off : <?= $pending_coff ?></span>
+        <!-- <span>Opening Leave Balance : <$opening_leave_balance ?></span> -->
+
+        <span>Pending Earn leave : <?= $total_earning_leave ?></span>
+
+    </h6>
+
+    <?php
         $has_valid_day = false;
+
+        $reportFromDate = "$currentYear-$currentMonth-01";          // report start
+$fromDate_att = date('Y-m-d', strtotime("$reportFromDate -1 day")); // fetch start
+$toDate_att  = date("Y-m-t", strtotime($reportFromDate));  
+
+$punchData = $obj->executequery("
+    SELECT 
+        l.emp_id,
+        em.shift_id,
+        l.attendance_date,
+        l.attendance_stamp,
+        l.in_status
+    FROM attendance_log l left join employee_master em on em.emp_id=l.emp_id
+    WHERE l.emp_id='$emp_id'
+    AND l.attendance_date BETWEEN '$fromDate_att' AND '$toDate_att'
+    ORDER BY l.emp_id, l.attendance_stamp
+");
+$punchMap = [];
+    $lastOpen = [];
+    foreach ($punchData as $row) {
+
+    $emp    = $row['emp_id'];
+    $date   = $row['attendance_date'];
+    $status = $row['in_status'];
+    $time   = date("H:i", strtotime($row['attendance_stamp']));
+    $stamp  = strtotime($row['attendance_stamp']);
+
+    if (!isset($punchMap[$emp])) {
+        $punchMap[$emp] = [];
+    }
+
+    /* ================= GET SHIFT WINDOW ================= */
+
+    $working_hrs = $row['shift_id'] ?? '08:00:00';
+ 
+    $shift_row = $obj->executequery("
+        SELECT in_time 
+        FROM shift_master 
+        WHERE working_hour='$working_hrs' 
+        ORDER BY in_time ASC 
+        LIMIT 1
+    ");
+
+    $morning_in = $shift_row[0]['in_time'] ?? '06:00:00';
+
+    /* ================= IN LOGIC ================= */
+    if ($status == 'IN') {
+
+        if (!isset($punchMap[$emp][$date])) {
+            $punchMap[$emp][$date] = [];
+        }
+
+        $punchMap[$emp][$date][] = [
+            'in'  => $time,
+            'in_stamp' => $stamp,
+            'out' => '',
+         
+        ];
+
+        $lastOpen[$emp] = [
+            'date'  => $date,
+            'index' => count($punchMap[$emp][$date]) - 1,
+            'stamp' => $stamp
+        ];
+    }
+
+    /* ================= OUT LOGIC ================= */
+   if ($status == 'OUT') {
+
+    $matched = false;
+
+    foreach (array_reverse($punchMap[$emp], true) as $pDate => $entries) {
+
+        foreach (array_reverse($entries, true) as $idx => $entry) {
+
+            if (!empty($entry['in'])) {
+
+                $inStamp = $entry['in_stamp'];
+
+                $base_date = date('Y-m-d', strtotime($pDate . ' +1 day'));
+                $max_out = strtotime($base_date . ' ' . $morning_in) + (4 * 3600);
+// echo "<pre>";
+// echo "IN Date: " . $pDate . "\n";
+// echo "IN Time: " . date('Y-m-d H:i:s', $inStamp) . "\n";
+// echo "OUT Time: " . date('Y-m-d H:i:s', $stamp) . "\n";
+// echo "Max Out Time: " . date('Y-m-d H:i:s', $max_out) . "\n";
+// echo "</pre>";
+
+                if (
+                    (
+                        $stamp > $inStamp ||
+                        date('Y-m-d', $stamp) > date('Y-m-d', $inStamp)
+                    )
+                    && $stamp <= $max_out
+                ) {
+
+                    // 🔥 ALWAYS overwrite
+                // agar already OUT hai → naya pair banao
+if (!empty($punchMap[$emp][$pDate][$idx]['out'])) {
+
+    $punchMap[$emp][$pDate][] = [
+        'in' => '',
+        'out' => $time
+    ];
+
+} else {
+
+    $punchMap[$emp][$pDate][$idx]['out'] = $time;
+}
+
+                    $matched = true;
+                    break 2;
+                }
+            }
+        }
+    }
+
+  if (!$matched) {
+
+    // ✅ SAME DATE me hi show hoga
+    if (!isset($punchMap[$emp][$date])) {
+        $punchMap[$emp][$date] = [];
+    }
+
+    $punchMap[$emp][$date][] = [
+        'in'  => '',
+        'out' => $time
+    ];
+}
+}
+}
+                                    
+
+
+$missPunchMap = [];
+
+foreach ($punchMap as $empId => $dates) {
+
+    foreach ($dates as $pDate => $entries) {
+
+        $missTimes = [];
+
+        foreach ($entries as $entry) {
+
+            // IN present but OUT missing
+            if (!empty($entry['in']) && empty($entry['out'])) {
+                $missTimes[] = date('h:i A', strtotime($entry['in']));
+            }
+
+            // OUT present but IN missing
+            if (empty($entry['in']) && !empty($entry['out'])) {
+                $missTimes[] = date('h:i A', strtotime($entry['out']));
+            }
+        }
+
+        if (!empty($missTimes)) {
+            $missPunchMap[$empId][$pDate] = implode(', ', $missTimes);
+        }
+    }
+}
+
+$attendanceRows = $obj->executequery("
+SELECT *
+FROM attendance_entry
+WHERE emp_id='$emp_id'
+AND month='$currentMonth'
+AND year='$currentYear'
+AND unit_id='$unitid'
+");
+
+$attendanceMap = [];
+
+foreach($attendanceRows as $row){
+    $attendanceMap[$row['attendance_date']] = $row;
+}
+
+$holidayRows = $obj->executequery("
+SELECT date,holiday_tittle
+FROM holiday_entry
+WHERE FIND_IN_SET('$unitid',unit_id)
+AND MONTH(date)='$currentMonth'
+AND YEAR(date)='$currentYear'
+");
+
+$holidayMap=[];
+
+foreach($holidayRows as $row){
+    $holidayMap[$row['date']]=$row['holiday_tittle'];
+}
+
         foreach ($days_array as $key) {
             $current_date = date('Y-m-d');
             $attendance_id = $obj->getvalfield("attendance_entry", "attendance_id", "emp_id='$emp_id' and attendance_date='$key[fulldate]' AND unit_id='$unitid'");
 
             $is_holiday = false;
-            $holiday_title  = $obj->getvalfield("holiday_entry", "holiday_tittle", "FIND_IN_SET('$unitid', unit_id) and date='{$key['fulldate']}'");
+           $holiday_title=$holidayMap[$key['fulldate']]??'';
 
             if (!empty($holiday_title)) {
                 $is_holiday = true;
@@ -220,20 +438,24 @@ if ($is_all_leave_add == 1) {
                 continue;
             }
 
-            $attendance_data = $obj->select_record('attendance_entry', ['emp_id' => $emp_id, 'attendance_date' => $key['fulldate'], 'month' => $currentMonth, 'year' => $currentYear, 'unit_id' => $unitid]);
-            $intime = $attendance_data['intime'] ?? '';
-            $emp_shift_id = $attendance_data['shift_id'] ?? $emp_shift_ids;
-            $att_in_remark = $attendance_data['in_remark'] ?? '';
-            $att_out_remark = $attendance_data['out_remark'] ?? '';
-            $outtime = $attendance_data['outtime'] ?? '';
-            $attheadid = $attendance_data['attheadid'] ?? '';
-            $working_hours = $attendance_data['working_hours'] ?? '';
-            $entry_type = $attendance_data['entry_type'] ?? '';
+            $attendance_data = $attendanceMap[$key['fulldate']] ?? [];
 
-            $attendance_date = $obj->getvalfield("attendance_entry", "attendance_date", "emp_id='$emp_id'  and month='$currentMonth' and year='$currentYear' AND unit_id='$unitid'");
+            $attendance_id     = $attendance_data['attendance_id'] ?? '';
+            $attendance_status = $attendance_data['attendance_status'] ?? '';
+            $intime            = $attendance_data['intime'] ?? '';
+            $outtime           = $attendance_data['outtime'] ?? '';
+            $emp_shift_id      = $attendance_data['shift_id'] ?? $emp_shift_ids;
+            $att_in_remark     = $attendance_data['in_remark'] ?? '';
+            $att_out_remark    = $attendance_data['out_remark'] ?? '';
+            $attheadid         = $attendance_data['attheadid'] ?? '';
+            $working_hours     = $attendance_data['working_hours'] ?? '';
+            $entry_type        = $attendance_data['entry_type'] ?? '';
 
-            $attendance_status = $obj->getvalfield("attendance_entry", "attendance_status", "emp_id='$emp_id'  and month='$currentMonth' and year='$currentYear' and attendance_id='$attendance_id' AND unit_id='$unitid'");
+ 
 
+            //$attendance_date = $obj->getvalfield("attendance_entry", "attendance_date", "emp_id='$emp_id'  and month='$currentMonth' and year='$currentYear' AND unit_id='$unitid'");
+
+           
             if ($intime != '' &&  $intime != '00:00:00') {
                 $readonly = "1";
                 $color = "";
@@ -242,15 +464,39 @@ if ($is_all_leave_add == 1) {
                 // $color = "background: aliceblue;";
             }
             $badgeClass = '';
-            if ($attendance_status == 'Present') {
-                $badgeClass = 'text-success';
-            } elseif ($attendance_status == 'Half Day') {
-                $badgeClass = 'text-warning';
-            } elseif ($attendance_status == 'Absent') {
-                $badgeClass = 'text-danger';
-            } elseif ($attendance_status == 'Leave') {
-                $badgeClass = 'text-danger';
-            }
+           switch ($attendance_status) {
+    case 'Present':
+        $badgeClass = 'text-success';
+        break;
+
+    case 'Half Day':
+    case 'Half Weekly Leave':
+    case 'Half Earning Leave':
+    case 'Half C Off':
+    case 'Half Extra Off':
+    case 'Half Leave':
+        $badgeClass = 'text-warning';
+        break;
+
+    case 'Absent':
+        $badgeClass = 'text-danger';
+        break;
+
+    case 'Weekly Leave':
+    case 'Earning Leave':
+    case 'C Off':
+    case 'Extra Off':
+    case 'Leave':
+        $badgeClass = 'text-primary';
+        break;
+
+    case 'Miss Punch':
+        $badgeClass = 'badge-miss-punch';
+        break;
+
+    default:
+        $badgeClass = 'text-secondary';
+}
 
             if ($doj <= $key['fulldate']) {
 
@@ -266,27 +512,35 @@ if ($is_all_leave_add == 1) {
                 }
                 if ($date_as_new == "" || $date_as_new == $key['fulldate']) {
 
+ if (
+    isset($missPunchMap[$emp_id][$key['fulldate']]) &&
+    empty($attendance_status)
+) {
+    $attendance_status = 'Miss Punch';
+}
+ 
+
+$punch_txt = $attendance_status=='Miss Punch' ? 'M' :'';
+
                     if ($key['fulldate'] <= $current_date) {
                         $has_valid_day = true;
         ?>
 
-                        <div class="col-lg-12 mt-1">
-                            <div class="card card-body border rounded-5 p-0 mb-1" style="<?= $holiday_bg ?>">
-                                <span class="water-mark"></span>
-                                <div class="row">
-                                    <div class="col-lg-2 text-center pt-3">
-                                        <small class="fw-semibold fs-15">
-                                            <?php echo $key['day'] . " " . $key['month'] . " | " . $key['day_name'] ?>
-                                        </small>
-                                        <input type="checkbox"
-                                            name="selected_dates[]"
-                                            value="<?= $key['fulldate']; ?>"
-                                            class="attendance-checkbox form-check-input me-2">
-                                    </div>
-                                    
-                                    <div class="col-lg-6">
-                                        <div class="radio-inputs">
-                                            <?php if (
+    <div class="col-lg-12 mt-1">
+        <div class="card card-body border rounded-5 p-0 mb-1" style="<?= $holiday_bg ?>">
+            <span class="water-mark"></span>
+            <div class="row">
+                <div class="col-lg-2 text-center pt-3">
+                    <small class="fw-semibold fs-15">
+                        <?php echo $key['day'] . " " . $key['month'] . " | " . $key['day_name'] ?>
+                    </small>
+                    <input type="checkbox" name="selected_dates[]" value="<?= $key['fulldate']; ?>"
+                        class="attendance-checkbox form-check-input me-2">
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="radio-inputs">
+                        <?php if (
                                                 $attendance_status != 'Weekly Leave' &&
                                                 $attendance_status != 'Earning Leave' &&
                                                 $attendance_status != 'Half Earning Leave' &&
@@ -296,95 +550,125 @@ if ($is_all_leave_add == 1) {
                                                 $attendance_status != 'Half Extra Off' &&
                                                 $attendance_status != 'Extra Off' &&
                                                 $attendance_status != 'Half Leave' &&
+                                                $attendance_status != 'Miss Punch' &&
                                                 $attendance_status != 'Leave'  
                                             ) {
                                             ?>
-                                                <label class="radio rounded-3 mt-2"
-                                                    <?php if ($chkedit == 1) { ?>
-                                                    onclick="opentimepicker('intime','<?php echo $key['fulldate'] ?>','<?php echo  $intime_new  ?>','<?= $att_in_remark; ?>','<?= $emp_shift_hrs; ?>','<?= $emp_shift_id; ?>');"
-                                                    <?php } ?>>
-                                                    <?php
+                        <label class="radio rounded-3 mt-2" <?php if ($chkedit == 1) { ?>
+                            onclick="opentimepicker('intime','<?php echo $key['fulldate'] ?>','<?php echo  $intime_new  ?>','<?= $att_in_remark; ?>','<?= $emp_shift_hrs; ?>','<?= $emp_shift_id; ?>');"
+                            <?php } ?>>
+                            <?php
                                                     if ($intime != '' &  $intime != '00:00:00') {
                                                     ?>
-                                                        <span class="name bg-primary" style="color: white;width:140px; height:30px;"><?php echo date("h:i:A", strtotime($intime)) ?></span>
-                                                    <?php } else { ?>
-                                                        <span class="name bg-success pe-2 ps-2 radio rounded-3 text-white" style="color: white; width:140px; height:30px;">Punch In</span>
-                                                    <?php } ?>
-                                                </label>
-                                                <label class="radio rounded-3 mt-2 ms-2" <?php if ($chkedit == 1 && $readonly == 1) { ?> onclick="opentimepicker('outtime','<?php echo $key['fulldate'] ?>','<?php echo  $outtime_new; ?>','<?= $att_out_remark ?>','<?= $emp_shift_hrs; ?>','<?= $emp_shift_id; ?>');" <?php } ?> style="<?php echo $color ?>">
+                            <span class="name bg-primary"
+                                style="color: white;width:140px; height:30px;"><?php echo date("h:i:A", strtotime($intime)) ?></span>
+                            <?php } else { ?>
+                            <span class="name bg-success pe-2 ps-2 radio rounded-3 text-white"
+                                style="color: white; width:140px; height:30px;">Punch In</span>
+                            <?php } ?>
+                        </label>
+                        <label class="radio rounded-3 mt-2 ms-2" <?php if ($chkedit == 1 && $readonly == 1) { ?>
+                            onclick="opentimepicker('outtime','<?php echo $key['fulldate'] ?>','<?php echo  $outtime_new; ?>','<?= $att_out_remark ?>','<?= $emp_shift_hrs; ?>','<?= $emp_shift_id; ?>');"
+                            <?php } ?> style="<?php echo $color ?>">
 
-                                                    <?php
+                            <?php
                                                     // echo $intime;
                                                     if ($outtime != '') {
                                                     ?>
-                                                        <span class="name bg-primary" style="color: white; width:140px; height:30px;"><?php echo date("h:i:A", strtotime($outtime)) ?></span>
-                                                    <?php } else { ?>
-                                                        <span class="name bg-danger pe-2 ps-2 radio rounded-3 text-white" style="<?php echo $readonly ?> color: white; width:140px; height:30px;">Punch Out</span>
-                                                    <?php } ?>
-                                                </label>
+                            <span class="name bg-primary"
+                                style="color: white; width:140px; height:30px;"><?php echo date("h:i:A", strtotime($outtime)) ?></span>
+                            <?php } else { ?>
+                            <span class="name bg-danger pe-2 ps-2 radio rounded-3 text-white"
+                                style="<?php echo $readonly ?> color: white; width:140px; height:30px;">Punch Out</span>
+                            <?php } ?>
+                        </label>
 
-                                            <?php } else { ?>
-                                                <span class="badge <?= $badgeClass ?> text-success ms-2 mt-2 px-3 py-2 fs-16">
-                                                    <?= $attendance_status ?> (Entry Type : <?= $entry_type ?>)
-                                                </span>
-                                            <?php } ?>
+                        <?php } else { ?>
 
-                                            <?php if ($outtime != '' &&  $outtime != '00:00:00') { ?>
-                                                <span class="badge <?= $badgeClass ?> text-success ms-2 mt-2 px-3 py-2 fs-16">
-                                                    <?= $attendance_status ?> (Entry Type : <?= $entry_type ?>)
-                                                </span>
-                                            <?php }   ?>
+                        <?php if ($attendance_status == 'Miss Punch') { ?>
 
-                                            <?php if ($is_holiday) { ?>
-                                                <span class="badge ms-2 mt-2 px-3 py-2 fs-16 text-black">
-                                                    <?= htmlspecialchars($holiday_title) ?>
-                                                </span>
-                                            <?php } ?>
-                                        </div>
+                        <span class="badge text-primary ms-2 mt-2 px-3 py-2 fs-16">
+                            <?= $attendance_status ?>
+                        </span>
 
-                                    </div>
+                        <?php if (isset($missPunchMap[$emp_id][$key['fulldate']])) { ?>
+                        <span class="badge text-danger ms-2 mt-2 px-3 py-2 fs-16">
+                            ( <?= $missPunchMap[$emp_id][$key['fulldate']] ?>)
+                        </span>
+                        <?php } ?>
 
-                                    <div class="col-lg-2 text-end pt-3 float-end fw-bold pe-5" style="margin-top:5px;">
-                                        <?php if (!empty($working_hours)) { ?>
-                                            <?= $working_hours ?> HRS
-                                        <?php } ?>
-                                    </div>
-                                    <div class="col-lg-1 text-end pt-3 float-end fw-bold pe-5" style="margin-top:5px;">
-                                        <i class="ri-eye-fill text-primary" data-bs-toggle="modal" onclick="showDetails('<?php echo $key['fulldate'] ?>','<?php echo $emp_id ?>');"></i>
-                                    </div>
+                        <?php } else { ?>
 
-                                    <?php
-                                    if ($chkedit == 1) {  ?>
-                                        <div class="col-lg-1 text-end pt-2 float-end fw-bold  pe-5"><i class="ri ri-add-circle-fill fs-2 text-success-emphasis" data-bs-toggle="modal" onclick="openPunchModal('<?php echo $key['fulldate'] ?>','<?php echo  $intime_new  ?>','<?= $att_in_remark; ?>','<?= $emp_shift_hrs; ?>','<?= $emp_shift_id; ?>','<?= $extra_off['balance']; ?>','<?= $total_earning_leave ?>','<?= $pending_coff ?>');"></i></div>
-                                    <?php } ?>
+                        <span class="badge <?= $badgeClass ?> ms-2 mt-2 px-3 py-2 fs-16">
+                            <?= $attendance_status ?> (Entry Type : <?= $entry_type ?>)
+                        </span>
 
-                                    <?php if (!empty($att_in_remark || $att_out_remark)) { ?>
-                                        <div class="col-lg-12 ms-4 border-top">
-                                            <h6 class="pt-2 pb-2">
-                                                <?php if (!empty($att_in_remark)) { ?>
-                                                    <b>Remark</b> : <?= htmlspecialchars($att_in_remark, ENT_QUOTES, 'UTF-8'); ?>
-                                                <?php } ?>
-                                                <br>
-                                                <?php if (!empty($att_out_remark)) { ?>
-                                                    <b>Remark</b> : <?= htmlspecialchars($att_out_remark, ENT_QUOTES, 'UTF-8'); ?>
-                                                <?php } ?>
-                                            </h6>
-                                        </div>
-                                    <?php } ?>
-                                </div>
-                            </div>
-                        </div>
-                    <?php  } } } } ?> 
+                        <?php } ?>
 
-        <?php if (!$has_valid_day) { ?>
-            <div class="col-lg-12">
-                <div class="alert alert-warning text-center rounded-4 shadow-sm">
-                    <i class="ri ri-information-line fs-4 me-2"></i>
-                    <strong>Punch In / Punch Out not allowed</strong><br>
-                    Attendance is not available for this month.
+                        <?php } ?>
+
+                        <?php if ($outtime != '' &&  $outtime != '00:00:00') { ?>
+                        <span class="badge <?= $badgeClass ?> text-success ms-2 mt-2 px-3 py-2 fs-16">
+                            <?= $attendance_status ?> (Entry Type : <?= $entry_type ?>)
+                        </span>
+                        <?php }   ?>
+
+                        <?php if ($is_holiday) { ?>
+                        <span class="badge ms-2 mt-2 px-3 py-2 fs-16 text-black">
+                            <?= htmlspecialchars($holiday_title) ?>
+                        </span>
+                        <?php } ?>
+                    </div>
+
                 </div>
-            </div>
-        <?php } ?>
 
+                <div class="col-lg-2 text-end pt-3 float-end fw-bold pe-5" style="margin-top:5px;">
+                    <?php if (!empty($working_hours)) { ?>
+                    <?= $working_hours ?> HRS
+                    <?php } ?>
+                </div>
+                <div class="col-lg-1 text-end pt-3 float-end fw-bold pe-5" style="margin-top:5px;">
+                    <i class="ri-eye-fill text-primary" data-bs-toggle="modal"
+                        onclick="showDetails('<?php echo $key['fulldate'] ?>','<?php echo $emp_id ?>');"></i>
+                </div>
+
+                <?php
+                                    if ($chkedit == 1) { 
+                                        
+                                        ?>
+                <div class="col-lg-1 text-end pt-2 float-end fw-bold  pe-5"><i
+                        class="ri ri-add-circle-fill fs-2 text-success-emphasis" data-bs-toggle="modal"
+                        onclick="openPunchModal('<?php echo $key['fulldate'] ?>','<?php echo  $intime_new  ?>','<?= $att_in_remark; ?>','<?= $emp_shift_hrs; ?>','<?= $emp_shift_id; ?>','<?= $extra_off['balance']; ?>','<?= $total_earning_leave ?>','<?= $pending_coff ?>','<?= $punch_txt ?>');"></i>
+                </div>
+                <?php } ?>
+
+                <?php if (!empty($att_in_remark || $att_out_remark)) { ?>
+                <div class="col-lg-12 ms-4 border-top">
+                    <h6 class="pt-2 pb-2">
+                        <?php if (!empty($att_in_remark)) { ?>
+                        <b>Remark</b> : <?= htmlspecialchars($att_in_remark, ENT_QUOTES, 'UTF-8'); ?>
+                        <?php } ?>
+                        <br>
+                        <?php if (!empty($att_out_remark)) { ?>
+                        <b>Remark</b> : <?= htmlspecialchars($att_out_remark, ENT_QUOTES, 'UTF-8'); ?>
+                        <?php } ?>
+                    </h6>
+                </div>
+                <?php } ?>
+            </div>
+        </div>
     </div>
+    <?php  } } } } ?>
+
+    <?php if (!$has_valid_day) { ?>
+    <div class="col-lg-12">
+        <div class="alert alert-warning text-center rounded-4 shadow-sm">
+            <i class="ri ri-information-line fs-4 me-2"></i>
+            <strong>Punch In / Punch Out not allowed</strong><br>
+            Attendance is not available for this month.
+        </div>
+    </div>
+    <?php } ?>
+
+</div>
 <?php } ?>

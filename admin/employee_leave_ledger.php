@@ -12,24 +12,34 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 $emp_id = (isset($_GET['emp_idd'])) ? $obj->test_input($_GET['emp_idd']) : '';
 $month = (isset($_GET['month'])) ? $obj->test_input($_GET['month']) :date('n');
 $year = (isset($_GET['year'])) ? $obj->test_input($_GET['year']) :  date('Y');
-$leave_type = isset($_GET['leave_type']) ? $obj->test_input($_GET['leave_type']) : '';
+$leave_type = isset($_GET['leave_type']) ? $obj->test_input($_GET['leave_type']) : 'earning';
 $date = date('Y-m-d', strtotime("$year-$month-01"));
+
+
+$from_date = isset($_GET['from_date']) ? $obj->test_input($_GET['from_date']) : date('Y-m-01');
+$to_date   = isset($_GET['to_date']) ? $obj->test_input($_GET['to_date']) :  date('Y-m-d');
+
 $whereCredit = "emp_id='$emp_id' AND unit_id='$unitid'";
 $whereAtt = "emp_id='$emp_id'";
  
- 
-if($year!=''){
-    $whereCredit .= " AND year='$year'";
-    $whereAtt .= " AND YEAR(attendance_date)='$year'";
-}
+if($from_date!='' && $to_date!=''){
 
-if($month!=''){
-    $whereCredit .= " AND month='$month'";
-    $whereAtt .= " AND MONTH(attendance_date)='$month'";
+    $whereCredit .= "
+    AND createdate
+    BETWEEN '$from_date' AND '$to_date'";
+
+    $whereAtt .= "
+    AND attendance_date
+    BETWEEN '$from_date' AND '$to_date'";
 }
 
 if($leave_type!=''){
-    $whereCredit .= " AND leave_type='$leave_type'";
+    if($leave_type=='earning'){
+    $whereCredit .= " AND leave_type IN('earning','earning_ded')";
+    }
+    else{
+        $whereCredit .= " AND leave_type='$leave_type'";
+    }
 } 
 
  
@@ -64,7 +74,7 @@ if($leave_type!=''){
                 <?php include('inc/alert.php'); ?>
                 <div class="row">
                     <div class="col-lg-12">
-                        <form method="get" action="">
+                       <form method="get" action="leave_ledger_pdf.php" target="_blank">
                             <div class="card" id="customerList">
                                 <div class="card-header border-bottom-dashed">
                                     <div class="row g-4 align-items-center">
@@ -78,14 +88,31 @@ if($leave_type!=''){
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
+                                        <div class="col-lg-3 mb-3">
+                                            <label for="emp_id" class="form-label">Department<span
+                                                    class="text-danger fw-bold"> </span></label>
+                                            <select class="form-select form-select-sm chosen-select"
+                                                name="department_id" id="department_id"
+                                                onchange="get_employee(this.value);">
+                                                <option value="">All</option>
+                                                <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_id asc");
+                                                foreach ($res as $key) { ?>
+                                                <option value="<?= $key['department_id']; ?>">
+                                                    <?= $key['department_name']; ?> </option>
+                                                <?php } ?>
+                                            </select>
+                                            <script>
+                                            document.getElementById('department_id').value =
+                                                '<?= $department_id; ?>';
+                                            </script>
+                                        </div>
                                         <div class="col-lg-3 col-12">
                                             <label for="emp_id" class="form-label">Employee Name<span
-                                                    class="text-danger fw-bold">*</span></label>
+                                                    class="text-danger fw-bold"> </span></label>
                                             <select class="form-select form-select-sm chosen-select" name="emp_idd"
                                                 id="emp_id">
                                                 <option value="">Select Employee</option>
-                                                <?php
-                                                    //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
+                                                <?php 
                                                     $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
                                                     foreach ($res as $key) { ?>
                                                 <option value="<?= $key['emp_id']; ?>">
@@ -99,43 +126,14 @@ if($leave_type!=''){
                                             </script>
                                         </div>
                                         <!-- Month -->
-                                        <div class="col-lg-3 col-12">
-                                            <label for="month" class="form-label">Month<span
-                                                    class="text-danger fw-bold"> </span></label>
-                                            <select class="form-select form-select-sm chosen-select" name="month"
-                                                id="month">
-                                                <option value="">Select</option>
-                                                <?php
-                                                    $months = [
-                                                        1 => 'January',
-                                                        2 => 'February',
-                                                        3 => 'March',
-                                                        4 => 'April',
-                                                        5 => 'May',
-                                                        6 => 'June',
-                                                        7 => 'July',
-                                                        8 => 'August',
-                                                        9 => 'September',
-                                                        10 => 'October',
-                                                        11 => 'November',
-                                                        12 => 'December'
-                                                    ];
-                                                    foreach ($months as $value => $name) {
-                                                        echo "<option value=\"$value\">$name</option>";
-                                                    }
-                                                    ?>
-                                            </select>
-                                            <script>
-                                            document.getElementById('month').value = '<?php echo $month ?>'
-                                            </script>
-                                        </div>
+
 
                                         <!-- Year -->
-                                        <div class="col-lg-3 col-12">
+                                        <div class="col-lg-2 col-12">
                                             <label for="year" class="form-label">Year<span
                                                     class="text-danger fw-bold">*</span></label>
                                             <select class="form-select form-select-sm chosen-select" name="year"
-                                                id="year">
+                                                id="year" onchange="setYearDate()">
                                                 <option value="">Select</option>
                                                 <?php
                                                     $startYear = 2025;
@@ -148,14 +146,26 @@ if($leave_type!=''){
                                             document.getElementById('year').value = '<?php echo $year ?>'
                                             </script>
                                         </div>
+
+                                        <div class="col-lg-2">
+                                            <label>From Date</label>
+                                            <input type="date" name="from_date" id="from_date"
+                                                class="form-control form-control-sm" value="<?= $from_date ?>">
+                                        </div>
+
+                                        <div class="col-lg-2">
+                                            <label>To Date</label>
+                                            <input type="date" name="to_date" id="to_date"
+                                                class="form-control form-control-sm" value="<?= $to_date ?>">
+                                        </div>
                                         <div class="col-lg-3 col-12">
                                             <label>Leave Type<span class="text-danger fw-bold">*</span></label>
                                             <select name="leave_type" id="leave_type"
                                                 class="form-select form-select-sm chosen-select">
-                                                <option value="">All</option>
+                                                <option value="">Select</option>
                                                 <option value="earning">Earning Leave</option>
-                                                <option value="weekly">C Off</option>
-                                                <option value="eoff">Extra Off</option>
+                                                <!-- <option value="weekly">C Off</option>
+                                                <option value="eoff">Extra Off</option> -->
                                             </select>
                                             <script>
                                             document.getElementById('leave_type').value = '<?= $leave_type ?>';
@@ -165,8 +175,10 @@ if($leave_type!=''){
                                         <div class="col-lg-4 mb-3 mt-2">
                                             <br>
 
-                                            <input type="submit" class="btn btn-sm btn-primary add-btn" value="Search"
-                                                onClick="return checkinputmaster('emp_id,year,leave_type')">
+                                          <input type="submit"
+                                            class="btn btn-sm btn-primary add-btn"
+                                            value="Search"
+                                            onclick="return validateSearch();">
                                             <a href=" <?php echo $pagename ?>" type="button"
                                                 class="btn btn-sm btn-danger add-btn">Reset</a>
                                         </div>
@@ -177,56 +189,50 @@ if($leave_type!=''){
                         </form>
                     </div>
                     <?php if(isset($_GET['leave_type'])){ ?>
-                        <div class="col-lg-12">
-                            <div class="card" id="customerList">
-                                <div class="card-header border-bottom-dashed">
-                                    <div class="row g-4 align-items-center">
-                                        <div class="col-sm">
-                                            <div>
-                                                <h5 class="card-title mb-0"><?php echo $submodule; ?> </h5>
-                                            </div>
+                    <div class="col-lg-12">
+                        <div class="card" id="customerList">
+                            <div class="card-header border-bottom-dashed">
+                                <div class="row g-4 align-items-center">
+                                    <div class="col-sm">
+                                        <div>
+                                            <h5 class="card-title mb-0"><?php echo $submodule; ?> </h5>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card-body">
+                            </div>
+                            <div class="card-body">
 
-                                    <div class="auto-scroll-wrapper">
-                                        <div class="table-responsive">
-                                            <?php
+                                <div class="auto-scroll-wrapper">
+                                    <div class="table-responsive">
+                                        <?php
                                                 $opening_balance = $obj->getOpeningBalance( 
                                                     $emp_id,
                                                     $leave_type,
-                                                    $month,
-                                                    $year,
+                                                    $from_date,
+                                                    $to_date,
                                                     $sessionid
                                                 ); 
 
                                                 $closing_balance =  $obj->getClosingBalance( 
                                                     $emp_id,
                                                     $leave_type,
-                                                    $month,
-                                                    $year,
+                                                    $from_date,
+                                                    $to_date,
                                                     $sessionid
                                                 );
                                                 $ledger = [];  
-                                                $ledger[] = [
-                                                        'date' => date(
-                                                            'M Y',
-                                                            mktime(
-                                                                0,
-                                                                0,
-                                                                0,
-                                                                !empty($month) ? $month : date('n'),
-                                                                1,
-                                                                !empty($year) ? $year : date('Y')
-                                                            )
-                                                        ),
-                                                        'leave_type' => $leave_type,
-                                                        'particular' => 'Opening Balance',
-                                                        'credit'     => $opening_balance,
-                                                        'debit'      => 0
-                                                    ];
-                                            
+                                                $openingDate = date('d-m-Y', strtotime($from_date));
+                                                $sortDate    = date('Y-m-d', strtotime($from_date));
+
+                                                $ledger[]=[
+                                                    'sort_date' => $sortDate,
+                                                    'date'=>$openingDate,
+                                                    'remark' => '',
+                                                    'leave_type'=>$leave_type,
+                                                    'particular'=>'Opening Balance',
+                                                    'credit'=>$opening_balance,
+                                                    'debit'=>0
+                                                ];
                                                 $credit_res = $obj->executequery("
                                                     SELECT 
                                                         createdate,
@@ -234,6 +240,7 @@ if($leave_type!=''){
                                                         year,
                                                         leave_type,
                                                         is_opb,
+                                                        remark,
                                                         total_leave
                                                     FROM emp_monthly_leave
                                                     WHERE $whereCredit
@@ -246,24 +253,34 @@ if($leave_type!=''){
                                                     }else{
                                                         $txt = 'Opening';
                                                     }
-                                                   $transDate = ($row['is_opb'] == 1)
+                                                    $transDate = ($row['is_opb'] == 1)
                                                         ? $row['year'] . '-' . str_pad($row['month'], 2, '0', STR_PAD_LEFT) . '-01'
                                                         : (!empty($row['createdate'])
                                                             ? $row['createdate']
                                                             : $row['year'] . '-' . str_pad($row['month'], 2, '0', STR_PAD_LEFT) . '-01');
 
                                              
-                                                        
-                                                    $ledger[] = [
-                                                        'date' => date(
-                                                                'M Y',
-                                                                mktime(0,0,0,$row['month'],1,$row['year'])
-                                                            ),
-                                                        'leave_type' => $row['leave_type'],
-                                                        'particular' => 'By'.' '. $txt,
-                                                        'credit'     => $row['total_leave'],
-                                                        'debit'      => 0
-                                                    ];
+                                                        if($row['leave_type']=='earning_ded'){
+                                                            $ledger[]=[
+                                                                'sort_date'=>$row['createdate'],
+                                                                'date'=>date('M Y',mktime(0,0,0,$row['month'],1,$row['year'])),
+                                                                'leave_type'=>'earning',
+                                                                'particular'=>'Leave Deduction',
+                                                                'remark' => $row['remark']??'',
+                                                                'credit'=>0,
+                                                                'debit'=>$row['total_leave']
+                                                            ];
+                                                        }else{
+                                                            $ledger[]=[
+                                                                'sort_date'=>$row['createdate'],
+                                                                'date'=>date('M Y',mktime(0,0,0,$row['month'],1,$row['year'])),
+                                                                'leave_type'=>$row['leave_type'],
+                                                                'remark' => $row['remark']??'',
+                                                                'particular'=>($row['is_opb']==1 ? 'By Entry Opening Balance' : 'Allotment'),
+                                                                'credit'=>$row['total_leave'],
+                                                                'debit'=>0
+                                                            ];
+                                                        }
                                                 } 
 
                                                 $used_res = $obj->executequery("
@@ -271,6 +288,7 @@ if($leave_type!=''){
                                                         attendance_date,
                                                         month,
                                                         year,
+                                                        in_remark,
                                                         attendance_status
                                                     FROM attendance_entry
                                                     WHERE $whereAtt
@@ -290,59 +308,58 @@ if($leave_type!=''){
                                                 foreach($used_res as $row){
 
                                                 $type = '';
-                                                $debit = 1;
-
+                                                $debit = 1; 
                                                 switch($row['attendance_status']){
-
                                                     case 'Extra Off':
-                                                        $type='eoff';
+                                                        $type='eoff'; 
                                                         $debit=1;
                                                         break;
-
                                                     case 'Half Extra Off':
-                                                        $type='eoff';
+                                                        $type='eoff'; 
                                                         $debit=0.5;
                                                         break;
-
                                                     case 'C Off':
-                                                        $type='weekly';
+                                                        $type='weekly'; 
                                                         $debit=1;
                                                         break;
-
                                                     case 'Half C Off':
-                                                        $type='weekly';
+                                                        $type='weekly'; 
                                                         $debit=0.5;
                                                         break;
-
                                                     case 'Leave':
                                                     case 'Earning Leave':
-                                                        $type='earning';
+                                                        $type='earning'; 
                                                         $debit=1;
                                                         break;
-
                                                     case 'Half Leave':
                                                     case 'Half Earning Leave':
-                                                        $type='earning';
+                                                        $type='earning'; 
                                                         $debit=0.5;
                                                         break;
                                                 }
-
+                                                
                                                 if($leave_type!='' && $leave_type!=$type){
                                                     continue;
                                                 }
-
+                                                $particular='Application';
                                                 $ledger[] = [
+                                                    'sort_date'=>$row['attendance_date'],
                                                     'date' => date(
                                                         'M Y',
                                                         mktime(0,0,0,$row['month'],1,$row['year'])
                                                     ),
                                                     'leave_type' => $type,
-                                                    'particular' => $row['attendance_status'],
+                                                    'remark' => $row['in_remark'],
+                                                    'particular' => $particular,
                                                     'credit'     => 0,
                                                     'debit'      => $debit
                                                 ];
                                             }
-                                            
+                                            usort($ledger,function($a,$b){
+
+                                                return strtotime($a['sort_date']) <=> strtotime($b['sort_date']);
+
+                                            });
                                         
                                             $balances = [
                                                     'earning' => 0,
@@ -351,22 +368,23 @@ if($leave_type!=''){
                                                 ];
                                             ?>
 
-                                            <table class="table table-bordered table-sm">
+                                        <table class="table table-bordered table-sm">
 
-                                                <thead class="table-primary">
-                                                    <tr>
-                                                        <th>Date</th>
-                                                        <th>Leave Type</th>
-                                                        <th>Particular</th>
-                                                        <th>Credit</th>
-                                                        <th>Debit</th>
-                                                        <th>Balance</th>
-                                                    </tr>
-                                                </thead>
+                                            <thead class="table-primary">
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Leave Type</th>
+                                                    <th>Particular</th>
+                                                    <th>Credit</th>
+                                                    <th>Debit</th>
+                                                    <th>Balance</th>
+                                                    <th>Remark</th>
+                                                </tr>
+                                            </thead>
 
-                                                <tbody>
+                                            <tbody>
 
-                                                    <?php
+                                                <?php
 
                                                         foreach($ledger as $row){
 
@@ -393,55 +411,57 @@ if($leave_type!=''){
 
                                                         ?>
 
-                                                    <tr>
+                                                <tr>
 
-                                                        <td>
-                                                           <?= $row['date'] ?>
-                                                        </td>
+                                                    <td>
+                                                        <?=$obj->dateformatindia($row['sort_date']) ?>
+                                                    </td>
 
-                                                        <td>
-                                                            <?=$leave_name?>
-                                                        </td>
+                                                    <td>
+                                                        <?=$leave_name?>
+                                                    </td>
 
-                                                        <td>
-                                                            <?=$row['particular']?>
-                                                        </td>
+                                                    <td>
+                                                        <?=$row['particular']?>
+                                                    </td>
+                                                    <td class="text-success fw-bold">
+                                                        <?=$row['credit']?>
+                                                    </td>
+                                                    <td class="text-danger fw-bold">
+                                                        <?=$row['debit']?>
+                                                    </td>
+                                                    <td>
+                                                        <?=$balances[$row['leave_type']]?>
+                                                    </td>
+                                                    <td>
+                                                        <?=$row['remark']?>
+                                                    </td>
 
-                                                        <td class="text-success fw-bold">
-                                                            <?=$row['credit']?>
-                                                        </td>
+                                                </tr>
 
-                                                        <td class="text-danger fw-bold">
-                                                            <?=$row['debit']?>
-                                                        </td>
+                                                <?php } ?>
 
-                                                        <td>
-                                                            <?=$balances[$row['leave_type']]?>
-                                                        </td>
+                                            </tbody>
+                                            <tfoot>
+                                                <tr class="table-success">
+                                                    <th colspan="5" class="text-end">
+                                                        Closing Balance
+                                                    </th>
+                                                    <th>
+                                                        <?= number_format($closing_balance,2) ?>
+                                                    </th>
+                                                    <th></th>
+                                                </tr>
+                                            </tfoot>
 
-                                                    </tr>
-
-                                                    <?php } ?>
-
-                                                </tbody>
-                                                <tfoot>
-                                                    <tr class="table-success">
-                                                        <th colspan="5" class="text-end">
-                                                            Closing Balance
-                                                        </th>
-                                                        <th>
-                                                            <?= number_format($closing_balance,2) ?>
-                                                        </th>
-                                                    </tr>
-                                                </tfoot>
-
-                                            </table>
-                                        </div>
+                                        </table>
                                     </div>
                                 </div>
 
                             </div>
-                        </div>  
+
+                        </div>
+                    </div>
                     <?php  } ?>
                 </div>
                 <!--end col-->
@@ -462,27 +482,74 @@ if($leave_type!=''){
             width: '100%',
             search_contains: true
         });
-
+ 
     });
+     function get_employee(department_id, emp_id = 0) { 
+        $.ajax({
+            type: "POST",
+            url: 'get_dep_wise_emp.php',
+            data: {
+                department_id: department_id,
+                emp_id: emp_id
+            },
 
-    function numberOnly(evt) {
-        var theEvent = evt || window.event;
+            success: function(data) {
+                $('#emp_id').html(data).trigger("change.select2");
+            }
+        });
 
-        // Handle paste
-        if (theEvent.type === 'paste') {
-            key = event.clipboardData.getData('text/plain');
-        } else {
-            // Handle key press
-            var key = theEvent.keyCode || theEvent.which;
-            key = String.fromCharCode(key);
+    }
+
+    function setYearDate() {
+        var year = document.getElementById("year").value;
+        if (year == "") {
+            document.getElementById("from_date").value = "";
+            document.getElementById("to_date").value = "";
+            return;
         }
-        var regex = /[0-9]|\.|\s/;
-        if (!regex.test(key)) {
-            theEvent.returnValue = false;
-            if (theEvent.preventDefault) theEvent.preventDefault();
+        var today = new Date();
+        var currentYear = today.getFullYear();
+        document.getElementById("from_date").value = year + "-01-01";
+        if (parseInt(year) == currentYear) {
+            var month = ("0" + (today.getMonth() + 1)).slice(-2);
+            var day = ("0" + today.getDate()).slice(-2);
+            document.getElementById("to_date").value = currentYear + "-" + month + "-" + day;
+        } else {
+            document.getElementById("to_date").value = year + "-12-31";
         }
     }
+
+    function validateSearch() {
+
+    let department = $('#department_id').val();
+    let employee   = $('#emp_id').val();
+    let year       = $('#year').val();
+    let leaveType  = $('#leave_type').val();
+
+    // At least one required
+    if (department == '' && employee == '') {
+        alert("Please select at least Department or Employee.");
+        $('#department_id').focus();
+        return false;
+    }
+
+    if (year == '') {
+        alert("Please select Year.");
+        $('#year').focus();
+        return false;
+    }
+
+    if (leaveType == '') {
+        alert("Please select Leave Type.");
+        $('#leave_type').focus();
+        return false;
+    }
+
+    return true;
+}
     </script>
+
+
 </body>
 
 </html>

@@ -69,13 +69,14 @@ if (isset($_GET[$tblpkey])) {
     $remark = $sqledit['remark'];
 } else {
     $emp_id = "";
-    $month = "";
+    $month = date("n");
+    $year = date("Y");
     $lpg_ded = "";
     $shoes_ded = "";
    // $tds_ded = "";
     $other = "";
     $remark = "";
-    $year = "";
+    
 }
 
 
@@ -83,8 +84,9 @@ if (isset($_POST['upload_excel'])) {
     $totalRecords = 0;
     $insertedCount = 0;
     $skippedCount = 0;
-    $skippedEpicNumbers = array();
-
+    $skippedEpicNumbers = [];
+    $processedEmpIds = [];
+    $bulkInsert = [];
 
     if (isset($_FILES['file_upload']['tmp_name']) && $_FILES['file_upload']['error'] == UPLOAD_ERR_OK) {
         // print_r('hii');
@@ -102,7 +104,7 @@ if (isset($_POST['upload_excel'])) {
                         continue;
                     }
 
-                    list($emp_code, $lpg_ded, $shoes_ded, $tds_ded, $other_ded) = $data;
+                    list($emp_code, $lpg_ded, $shoes_ded, $other_ded) = $data;
 
                     if (empty($emp_code)) {
                         continue;
@@ -127,26 +129,37 @@ if (isset($_POST['upload_excel'])) {
                         $skippedCount++;
                         continue;
                     }
+                    $processedEmpIds[$emp_id] = true;
 
-                    $form_data1 = array(
-                        "emp_id" => $emp_id,
-                        "month" => $file_month,
-                        "year" => $file_year,
-                        "lpg_ded" => $lpg_ded,
-                        "tds_ded" => $tds_ded,
-                        "shoes_ded" => $shoes_ded,
-                        "other" => $other_ded,
+                    $bulkInsert[] = [
+                        "emp_id"      => $emp_id,
+                        "month"       => $file_month,
+                        "year"        => $file_year,
+                        "lpg_ded"     => $lpg_ded,
+                        "shoes_ded"   => $shoes_ded,
+                        "other"       => $other_ded,
                         "createdby"   => $loginid,
                         "ipaddress"   => $ipaddress,
                         "sessionid"   => $sessionid,
-                        "createdate"   => $createdate,
-                        "unit_id"   => $unitid
-                    );
-
-                    $obj->insert_record($tblname, $form_data1);
+                        "createdate"  => $createdate,
+                        "unit_id"     => $unitid
+                    ];
+                   
                     $insertedCount++;
                 }
             }
+        }
+
+        if (!empty($processedEmpIds)) {
+            $obj->bulk_delete($tblname, [
+                'emp_id'  => array_keys($processedEmpIds),
+                'month'   => $file_month,
+                'year'    => $file_year,
+                'unit_id' => $unitid
+            ]);
+        }
+        foreach (array_chunk($bulkInsert, 500) as $chunk) {
+            $obj->bulk_insert($tblname, $chunk);
         }
     }
 
@@ -260,7 +273,7 @@ if (isset($_POST['upload_excel'])) {
                                         </div>
 
                                         <div class="col-lg-6 mb-3">
-                                            <label for="lpg_ded" class="form-label">Advance<span class="text-danger"> (Store+Mess) </span>Deduction</label>
+                                            <label for="lpg_ded" class="form-label">Advance<span class="text-danger">  </span>Deduction</label>
                                             <input type="text" id="lpg_ded" name="lpg_ded" class="form-control form-control-sm" placeholder="Enter Advance Deduction" value="<?= $lpg_ded ?>" autocomplete="off" onkeypress="numberOnly(event);" />
                                         </div>
 
@@ -273,7 +286,7 @@ if (isset($_POST['upload_excel'])) {
                                             <input type="text" id="tds_ded" name="tds_ded" class="form-control form-control-sm" placeholder="Enter TDS Deduction" value="< $tds_ded ?>" autocomplete="off" onkeypress="numberOnly(event);" />
                                         </div> -->
                                         <div class="col-lg-6 mb-3">
-                                            <label for="other" class="form-label">Other Deduction<span class="text-danger"> (if any penalty)</span></label>
+                                            <label for="other" class="form-label">Other Deduction<span class="text-danger">  </span></label>
                                             <input type="text" id="other" name="other" class="form-control form-control-sm" placeholder="Enter Other Deduction" value="<?= $other ?>" autocomplete="off" onkeypress="numberOnly(event);" />
                                         </div>
 
@@ -350,10 +363,10 @@ if (isset($_POST['upload_excel'])) {
                                         </div>
                                         <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
                                         if ($chkadd == 1) {  ?>
-                                            <!-- <div class="col-lg-4 mb-3">
+                                            <div class="col-lg-4 mb-3">
                                                 <br>
                                                 <input type="submit" name="upload_excel" class="btn btn-sm btn-primary add-btn" value="Upload" onClick="return checkinputmaster('file_month,file_year,file_upload')">
-                                            </div> -->
+                                            </div> 
                                         <?php } ?>
                                     </div>
                                 </div>

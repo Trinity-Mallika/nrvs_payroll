@@ -121,6 +121,7 @@ if (isset($_GET[$tblpkey])) {
     $grade_name = $obj->getvalfield("grade_master", "grade_name", "grade_id='$grade_id'");
     $bank_name = $obj->getvalfield("bank_master", "bank_name", "bank_id='$bank_id'");
     $shift_name = $obj->getvalfield("shift_master", "shift_name", "shift_id='$shift_id'");
+    $reporting_manager_name = $obj->getvalfield("employee_master", "first_name", "emp_id='$reporting_manager'");
 
     $unit = $obj->select_record(
         "unit_master",
@@ -451,7 +452,7 @@ ob_start();
             <tr>
                 <td class="label">Reporting Emp</td>
                 <td class="colon">:</td>
-                <td class="value"><?= $reporting_manager ?></td>
+                <td class="value"><?= $reporting_manager_name ?></td>
 
                 <td class="label">Date of Joining</td>
                 <td class="colon">:</td>

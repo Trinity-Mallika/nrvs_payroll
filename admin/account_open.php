@@ -97,16 +97,15 @@ if (isset($_GET[$tblpkey])) {
                                 <form method="post" action="employee_concern_pdf.php" target="_blank">
 
                                     <div class="row">
-
                                         <div class="col-md-3 mb-3">
-                                            <label>Employee Name<span class="text-danger fw-bold">*</span></label>
-                                            <input type="text" name="first_name" id="first_name"
+                                            <label>Employee Code<span class="text-danger fw-bold">*</span></label>
+                                            <input type="text" name="emp_code" id="emp_code"
                                                 class="form-control form-control-sm">
                                         </div>
 
                                         <div class="col-md-3 mb-3">
-                                            <label>Employee Code</label>
-                                            <input type="text" name="emp_code" id="emp_code"
+                                            <label>Employee Name<span class="text-danger fw-bold">*</span></label>
+                                            <input type="text" name="first_name" id="first_name"
                                                 class="form-control form-control-sm">
                                         </div>
 
@@ -149,6 +148,11 @@ if (isset($_GET[$tblpkey])) {
                                             <input type="text" name="basic_salary" id="basic_salary"
                                                 class="form-control form-control-sm">
                                         </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label>Date <span class="text-danger fw-bold">*</span></label>
+                                            <input type="date" name="join_date" id="join_date"
+                                                value="<?=date('Y-m-d');?>" class="form-control form-control-sm">
+                                        </div>
 
                                         <div class="col-md-12 mb-3">
                                             <label>Permanent Address <span class="text-danger fw-bold">*</span></label>
@@ -159,7 +163,7 @@ if (isset($_GET[$tblpkey])) {
                                     </div>
                                     <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn"
                                         value="Print"
-                                        onClick="return checkinputmaster('first_name,father_name,department_id,designation_id,basic_salary')">
+                                        onClick="return checkinputmaster('emp_code,first_name,father_name,department_id,designation_id,basic_salary')">
                                 </form>
 
                             </div>
@@ -187,6 +191,7 @@ if (isset($_GET[$tblpkey])) {
             search_contains: true
         });
     });
+
     function get_designation(department_id, designation_id = 0) {
         const keyvalue = '0';
         $.ajax({

@@ -2,6 +2,7 @@
 include("appsession.php");
 $imgpath = "../admin/uploaded/on_duty/";
 $from = $_POST['from_date'] ?? date('Y-m-d');
+$leave_type = $_POST['leave_type'] ?? '';
 $to   = $_POST['to_date'] ?? date('Y-m-d');
 $from = DateTime::createFromFormat('d-m-Y', $from)->format('Y-m-d');
 $to   = DateTime::createFromFormat('d-m-Y', $to)->format('Y-m-d');
@@ -18,12 +19,17 @@ $to   = DateTime::createFromFormat('d-m-Y', $to)->format('Y-m-d');
 //     GROUP BY m.on_duty_id
 //     ORDER BY m.on_duty_id DESC
 // ");
+$crit = '';
+if (!empty($leave_type)) {
+    $crit .= " AND d.leave_type = '$leave_type'";
+}  
 
 $data = $obj->executequery("
     SELECT 
         m.*, 
         em.first_name,
-       
+        d.leave_type, 
+
         MAX(d.status) as status,
         SUM(
             CASE 
@@ -103,20 +109,25 @@ $data = $obj->executequery("
         ON m.on_duty_id = d.on_duty_id
 
     LEFT JOIN employee_master em
-        ON m.emp_id = em.emp_id
- 
+        ON m.emp_id = em.emp_id 
     
     WHERE  
         m.unit_id='$unitid' 
         AND m.emp_id='$emp_id'
         AND m.type='leave'
+        $crit
         AND DATE(m.application_date) BETWEEN '$from' AND '$to'
 
     GROUP BY m.on_duty_id
     ORDER BY m.on_duty_id DESC
 ");
 
+
+ 
+
 ?>
+
+
 <div class="row">
     <?php
     $statusArr = [
@@ -129,7 +140,13 @@ $data = $obj->executequery("
 
     <?php if (!empty($data)) {
         foreach ($data as $row) {
-
+        if ($row['leave_type'] == 'EL') {
+        $red_page = "leave_apply.php";
+        } elseif ($row['leave_type'] == 'EO') {
+        $red_page = "extra_off_apply.php";
+        } elseif ($row['leave_type'] == 'CO') {
+            $red_page = "c_off_apply.php";
+        }
     ?>
 
             <div class="col-12">
@@ -264,7 +281,7 @@ $data = $obj->executequery("
 
                         <?php if ($row['status'] != 1) { ?>
                             <div class="col-4">
-                                <a href="leave_apply.php?on_duty_id=<?= $row['on_duty_id'] ?>"
+                                <a href="<?= $red_page ?>?on_duty_id=<?= $row['on_duty_id'] ?>"
                                     class="btn btn-primary btn-sm w-100">
                                     <i class="fa fa-edit"></i> Edit
                                 </a>

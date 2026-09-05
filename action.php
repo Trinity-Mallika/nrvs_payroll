@@ -149,7 +149,7 @@ class DataOperation extends Database
 
 	public function login_method_app2($table, $username, $password)
 	{
-		$sql = "SELECT * from $table WHERE emp_code='$username' AND password='$password'";
+		$sql = "SELECT * from $table WHERE emp_code='$username' AND password='$password' and is_active='1' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ";
 		// print_r($sql);
 		// die;
 
@@ -429,8 +429,6 @@ class DataOperation extends Database
 		$array = array();
 
 		$query = mysqli_query($this->con, $sql);
-
-
 
 		while ($row = mysqli_fetch_assoc($query)) {
 
@@ -1062,9 +1060,7 @@ class DataOperation extends Database
 			return $keyvalue;
 			//echo $query;die;
 		}
-	}
-
-
+	} 
 
 	function getvalfield($tablename, $column, $condition, $print = 0)
 	{
@@ -1731,69 +1727,176 @@ class DataOperation extends Database
 	}
 
 	function getExtraOffBalance($emp_id, $month, $year)
-	{
-		$month = (int)$month;
-		$current_date =  date("Y-m-d", strtotime("$year-$month-01"));
-		$current_month = (int)date("m", strtotime($current_date));
-		$current_year  = (int)date("Y", strtotime($current_date));
-		$prev_month = (int)date("m", strtotime("$current_date -1 month"));
-		$prev_year  = (int)date("Y", strtotime("$current_date -1 month"));
-
-		// Upload Total
-		$upload_total = $this->executequery("
-        SELECT
-            COALESCE(SUM(total_leave),0) as total_extra_off
-        FROM  emp_monthly_leave
-        WHERE emp_id = '$emp_id'
-        AND (
-            (month = '$current_month' AND year = '$current_year')
-            OR
-            (month = '$prev_month' AND year = '$prev_year')
-        ) and leave_type='eoff'
+{
+    $uploadArr = [];
+    $res = $this->executequery("
+        SELECT month,
+               SUM(total_leave) AS total_leave
+        FROM emp_monthly_leave
+        WHERE emp_id='$emp_id'
+        AND leave_type='eoff'
+        AND year='$year'
+        GROUP BY month
     ");
 
-
-		$total_extra_off = $upload_total[0]['total_extra_off'];
-
-		$used_extra_off = $this->getvalfield(
-			"attendance_entry",
-			"COALESCE(SUM(
-            CASE
-                WHEN attendance_status = 'Extra Off' THEN 1
-                WHEN attendance_status = 'Half Extra Off' THEN 0.5
-                ELSE 0
-            END
-        ),0)",
-			"emp_id = '$emp_id'
-        AND (
-            (
-                MONTH(attendance_date) = '$current_month'
-                AND YEAR(attendance_date) = '$current_year'
-            )
-            OR
-            (
-                MONTH(attendance_date) = '$prev_month'
-                AND YEAR(attendance_date) = '$prev_year'
-            )
-        )
-        AND attendance_status IN ('Extra Off','Half Extra Off')"
-		);
-
-		// Balance
-		$balance = $total_extra_off - $used_extra_off;
-
-		// if ($balance < 0) {
-		//     $balance = 0;
-		// }
-
-		return [
-			'current_month' => $current_month,
-			'prev_month'    => $prev_month,
-			'uploaded'      => $total_extra_off,
-			'used'          => $used_extra_off,
-			'balance'       => $balance
-		];
+	foreach($res as $row){
+ 		$uploadArr[(int)$row['month']] = (float)$row['total_leave'];
 	}
+ 
+    $usedArr = [];
+    $res = $this->executequery("
+        SELECT month,
+               SUM(
+                    CASE
+                        WHEN attendance_status='Extra Off' THEN 1
+                        WHEN attendance_status='Half Extra Off' THEN 0.5
+                        ELSE 0
+                    END
+               ) AS total_used
+        FROM attendance_entry
+        WHERE emp_id='$emp_id'
+        AND year='$year'
+        AND attendance_status IN ('Extra Off','Half Extra Off')
+        GROUP BY month
+    ");
+
+	foreach($res as $row){
+ 		$usedArr[(int)$row['month']] = (float)$row['total_used'];
+	}
+ 
+
+    $carry = 0;
+
+    //  echo "<pre>";
+
+    for($m=1;$m<=$month;$m++)
+    {
+        $upload = $uploadArr[$m] ?? 0;
+        $used   = $usedArr[$m] ?? 0;
+
+        $opening = $carry;
+
+        $usedFromPrev = min($opening,$used);
+
+        $remainingUsed = $used - $usedFromPrev;
+
+        $usedFromCurrent = min($upload,$remainingUsed);
+
+        $closing = ($opening + $upload) - $used;
+
+        // Carry only current month's remaining upload
+        $carry = $upload - $usedFromCurrent;
+
+        // echo "Month : ".date('F',mktime(0,0,0,$m,1,$year))."\n";
+        // echo "Opening           : $opening\n";
+        // echo "Upload            : $upload\n";
+        // echo "Used              : $used\n";
+        // echo "Used From Prev    : $usedFromPrev\n";
+        // echo "Used From Current : $usedFromCurrent\n";
+        // echo "Closing           : $closing\n";
+        // echo "Carry Next Month  : $carry\n";
+        // echo "-----------------------------\n";
+    }
+
+    //  echo "</pre>";
+
+    return [
+        'balance' => $closing, 
+    ];
+}
+
+	 
+
+// 	function getExtraOffBalance($emp_id, $month, $year)
+// {
+//     $month = (int)$month;
+
+//     $current_date = date("Y-m-d", strtotime("$year-$month-01"));
+
+//     $current_month = (int)date("m", strtotime($current_date));
+//     $current_year  = (int)date("Y", strtotime($current_date));
+
+//     $prev_month = (int)date("m", strtotime("$current_date -1 month"));
+//     $prev_year  = (int)date("Y", strtotime("$current_date -1 month"));
+
+//     /* ================= Previous Month Upload ================= */
+
+//     $prev_upload = $this->getvalfield(
+//         "emp_monthly_leave",
+//         "COALESCE(SUM(total_leave),0)",
+//         "emp_id='$emp_id'
+//         AND leave_type='eoff'
+//         AND month='$prev_month'
+//         AND year='$prev_year'"
+//     );
+
+//     /* ================= Previous Month Used ================= */
+
+//     $prev_used = $this->getvalfield(
+//         "attendance_entry",
+//         "COALESCE(SUM(
+//             CASE
+//                 WHEN attendance_status='Extra Off' THEN 1
+//                 WHEN attendance_status='Half Extra Off' THEN 0.5
+//                 ELSE 0
+//             END
+//         ),0)",
+//         "emp_id='$emp_id'
+//         AND MONTH(attendance_date)='$prev_month'
+//         AND YEAR(attendance_date)='$prev_year'
+//         AND attendance_status IN('Extra Off','Half Extra Off')"
+//     );
+
+//     /* ================= Current Month Upload ================= */
+
+//     $curr_upload = $this->getvalfield(
+//         "emp_monthly_leave",
+//         "COALESCE(SUM(total_leave),0)",
+//         "emp_id='$emp_id'
+//         AND leave_type='eoff'
+//         AND month='$current_month'
+//         AND year='$current_year'"
+//     );
+
+//     /* ================= Current Month Used ================= */
+
+//     $curr_used = $this->getvalfield(
+//         "attendance_entry",
+//         "COALESCE(SUM(
+//             CASE
+//                 WHEN attendance_status='Extra Off' THEN 1
+//                 WHEN attendance_status='Half Extra Off' THEN 0.5
+//                 ELSE 0
+//             END
+//         ),0)",
+//         "emp_id='$emp_id'
+//         AND MONTH(attendance_date)='$current_month'
+//         AND YEAR(attendance_date)='$current_year'
+//         AND attendance_status IN('Extra Off','Half Extra Off')"
+//     );
+
+//     /* ================= Carry Forward ================= */
+
+//     $carry_forward = max(0, $prev_upload - $prev_used);
+
+//     /* ================= Final Balance ================= */
+
+//     $balance = max(
+//         0,
+//         $carry_forward + $curr_upload - $curr_used
+//     );
+
+//     return [
+//         'prev_upload'    => $prev_upload,
+//         'prev_used'      => $prev_used,
+//         'carry_forward'  => $carry_forward,
+//         'curr_upload'    => $curr_upload,
+//         'curr_used'      => $curr_used,
+//         'uploaded'       => $carry_forward + $curr_upload,
+//         'used'           => $curr_used,
+//         'balance'        => $balance
+//     ];
+// }
 
 	function get_opening_leave_balance($emp_id, $sessionid, $month = '', $year = '')
 	{
@@ -1857,10 +1960,8 @@ class DataOperation extends Database
 		$month = (int)$month;
 		$year = (int)$year;
 		$monthCond = "";
-
 		// print_r($month);
 		// die;
-
 		if ($month > 0 && $year > 0) {
 			$monthCond = " AND (
        		 year < '$year'
@@ -1888,140 +1989,22 @@ class DataOperation extends Database
          AND leave_type='earning'
          AND sessionid='$sessionid' $monthCond"
 		);
-		$total_earning = $earning_leave - $used_earning_leave;
+
+		// Total earning deduction
+		$earning_deduction = $this->getvalfield(
+			"emp_monthly_leave",
+			"IFNULL(SUM(total_leave),0)",
+			"emp_id='$emp_id'
+			AND leave_type='earning_ded'
+			AND sessionid='$sessionid'
+			$monthCond"
+		);
+		$total_earning = $earning_leave - $earning_deduction - $used_earning_leave;
 
 		return $total_earning;
 	}
 
-
-
-
-// 	function getEarningLeave($emp_id, $sessionid, $month = '', $year = '')
-// {
-//     $month = (int)$month;
-//     $year  = (int)$year;
-
-//     $monthCond = "";
-
-//     $unit_id = $this->getvalfield(
-//         "employee_master",
-//         "unit_id",
-//         "emp_id='$emp_id'"
-//     );
-
-//     $is_all_leave_add = $this->getvalfield(
-//         "unit_master",
-//         "add_leave",
-//         "unit_id='$unit_id'"
-//     );
-
-//     if ($month > 0 && $year > 0) {
-
-//         $monthCond = " AND (
-//             year < '$year'
-//             OR (year = '$year' AND month <= '$month')
-//         ) ";
-//     }
-
-//     // Used Earn Leave
-//     $used_earning_leave = $this->getvalfield(
-//         "attendance_entry",
-//         "IFNULL(SUM(
-//             CASE
-//                 WHEN attendance_status = 'Earning Leave' THEN 1
-//                 WHEN attendance_status = 'Half Earning Leave' THEN 0.5
-//                 ELSE 0
-//             END
-//         ),0)",
-//         "emp_id='$emp_id'
-//         AND sessionid='$sessionid'
-//         $monthCond"
-//     );
-
-//     // Uploaded Earn Leave
-//     $earning_leave = $this->getvalfield(
-//         "emp_monthly_leave",
-//         "IFNULL(SUM(total_leave),0)",
-//         "emp_id='$emp_id'
-//         AND leave_type='earning'
-//         AND sessionid='$sessionid'
-//         $monthCond"
-//     );
-
-//     /*
-//     ==================================================
-//     IF add_leave = 0
-//     THEN CURRENT MONTH ATTENDANCE SE LEAVE CALCULATE
-//     ==================================================
-//     */
-
-//     if ($is_all_leave_add == 0) {
-// 		$month = !empty($month) ? (int)$month : date('n');
-// 		$year  = !empty($year)  ? (int)$year  : date('Y');
-
-//         // Employee Details
-//         $empData = $this->select_record(
-//             "employee_master",
-//             ['emp_id' => $emp_id]
-//         );
-
-//         $allow_weekly_off = $empData['allow_weekly_off'];
-//         $is_esic          = $empData['is_esic'];
-
-//         $setting_type = ($is_esic == 1) ? 'ESIC' : 'Non ESIC';
-
-//         // Current Month Attendance
-//         $attData = $this->executequery("
-//             SELECT attendance_status
-//             FROM attendance_entry
-//             WHERE emp_id='$emp_id'
-//             AND sessionid='$sessionid'
-//             AND month='$month'
-//             AND year='$year'
-//         ");
-
-//         $real_total_attandence = 0;
-
-//         foreach ($attData as $att) {
-
-//             switch ($att['attendance_status']) {
-
-//                 case 'Present':
-//                     $real_total_attandence += 1;
-//                     break;
-
-//                 case 'Half Day':
-//                     $real_total_attandence += 0.5;
-//                     break;
-//             }
-//         }
-
-//         // Weekly Leave
-//         $week_leave = $this->totalWeeklyLeave(
-//             $unit_id,
-//             $real_total_attandence,
-//             $allow_weekly_off
-//         );
-
-//         // Total Present
-//         $earn_leave_present = $real_total_attandence + $week_leave;
-
-//         // Monthly Earn Leave
-//         $monthly_leave = $this->getTotalLeaveByWorkingDays(
-//             $setting_type,
-//             $earn_leave_present,
-//             $unit_id
-//         );
-
-//         // Current Month Earn Leave Add
-//         $earning_leave += $monthly_leave;
-//     }
-
-//     // Final Balance
-//     $total_earning = $earning_leave - $used_earning_leave;
-
-//     return $total_earning;
-// 	}
+ 
 
 	function getEmpCoffLeave($emp_id, $sessionid, $month = '', $year = '')
 	{
@@ -2082,6 +2065,7 @@ class DataOperation extends Database
 			"emp_id='$emp_id'
 			AND sessionid='$sessionid' $monthCond"
 		);
+		
 		$coff_leave = $this->getvalfield(
 			"emp_monthly_leave",
 			"IFNULL(SUM(total_leave),0)",
@@ -2089,7 +2073,17 @@ class DataOperation extends Database
          AND leave_type='weekly'
          AND sessionid='$sessionid' $monthCond"
 		);
-		$total_coff = $coff_leave - $used_coff_leave;
+
+		$coff_leave_ded = $this->getvalfield(
+			"emp_monthly_leave",
+			"IFNULL(SUM(total_leave),0)",
+			"emp_id='$emp_id'
+         AND leave_type='weekly_ded'
+         AND sessionid='$sessionid' $monthCond"
+		);
+		$tot_coff = $coff_leave - $coff_leave_ded;
+
+		$total_coff = $tot_coff - $used_coff_leave;
 		return $total_coff;
 	}
 
@@ -2335,10 +2329,9 @@ class DataOperation extends Database
 			}
 		}
 
+		$baseTotal = $presentDays + $holidays;
 
-		//$baseTotal = $presentDays + $holidays;
-
-		$baseTotal = $presentDays;
+		//$baseTotal = $presentDays;
 
 		$used = [
 			'weekly'   => 0,
@@ -2431,7 +2424,9 @@ class DataOperation extends Database
 			$holidayDate = $row['date'];
 			$holidayType = strtolower(trim($row['holiday_type']));
 			// expected: national / religious / seasonal
-
+ 			if ($holidayType == 'religion') {
+				$holidayType = 'religious';
+			}
 			$prevDate = date('Y-m-d', strtotime($holidayDate . ' -1 day'));
 			$nextDate = date('Y-m-d', strtotime($holidayDate . ' +1 day'));
 
@@ -2485,11 +2480,12 @@ class DataOperation extends Database
 
 		$presentStatuses = ['Present', 'Weekly Leave', 'Earning Leave', 'Half Day', 'Extra Off', 'Half Extra Off', 'Half Weekly Leave', 'Half Earning Leave', 'Half Leave', 'C Off', 'Half Leave','Half C Off'];
 
-		foreach ($holidayRows as $row) {
-
+		foreach ($holidayRows as $row) { 
 			$holidayDate = $row['date'];
 			$holidayType = strtolower(trim($row['holiday_type']));
-
+ 			if ($holidayType == 'religion') {
+            	$holidayType = 'religious';
+        	}
 			$prevDate = date('Y-m-d', strtotime($holidayDate . ' -1 day'));
 			$nextDate = date('Y-m-d', strtotime($holidayDate . ' +1 day'));
 
@@ -2538,8 +2534,8 @@ function calculateLeaveUsage($daysInMonth,$presentDays,$weeklyBalance,$monthlyBa
 		}
 	}
     // Present + Holiday
-    //$baseTotal = $presentDays + $holidays;
-    $baseTotal = $presentDays;
+    $baseTotal = $presentDays + $holidays;
+    //$baseTotal = $presentDays;
 
     $usedWeeklyLeave = 0;
     $usedMonthlyLeave = 0;
@@ -2899,183 +2895,7 @@ function calculateLeaveUsage($daysInMonth,$presentDays,$weeklyBalance,$monthlyBa
 			}
 		}
 	}
-
-	function getClosingBalance($emp_id, $leave_type, $month = '', $year = '', $sessionid = '')
-	{
-
-		if($leave_type == 'eoff'){
-			$closing = $this->getExtraOffBalance($emp_id, $month, $year);
-			return $closing['balance'];
-		}
-
-		if($leave_type == 'weekly'){
-			$closing = $this->getEmpCoffLeave($emp_id,$sessionid, $month, $year);
-			return $closing;
-		}
-		$creditCond = "
-			emp_id='$emp_id'
-			AND leave_type='$leave_type'
-		";
-
-		if($sessionid != ''){
-			$creditCond .= " AND sessionid='$sessionid'";
-		}
-
-		if($year != ''){
-			$creditCond .= " AND year='$year'";
-		}
-
-		if($month != ''){
-			$creditCond .= " AND month <= '$month'";
-		}
-
-		$credit = (float)$this->getvalfield(
-			"emp_monthly_leave",
-			"IFNULL(SUM(total_leave),0)",
-			$creditCond
-		);
-
-		$debit = 0;
-
-		$whereAtt = "emp_id='$emp_id'";
-
-		if($year != ''){
-			$whereAtt .= " AND YEAR(attendance_date)='$year'";
-		}
-
-		if($month != ''){
-			$whereAtt .= " AND MONTH(attendance_date) <= '$month'";
-		}
-
-		$attRes = $this->executequery("
-			SELECT attendance_status
-			FROM attendance_entry
-			WHERE $whereAtt
-		");
-
-		foreach($attRes as $row){
-
-			switch($leave_type){
-
-				case 'weekly':
-					if($row['attendance_status']=='C Off'){
-						$debit += 1;
-					}
-					elseif($row['attendance_status']=='Half C Off'){
-						$debit += 0.5;
-					}
-				break;
-	
-
-				case 'earning':
-					if(in_array($row['attendance_status'],['Leave','Earning Leave'])){
-						$debit += 1;
-					}
-					elseif(in_array($row['attendance_status'],['Half Leave','Half Earning Leave'])){
-						$debit += 0.5;
-					}
-				break;
-			}
-		}
-
-		return $credit - $debit;
-	}
-
-
-	function getOpeningBalance($emp_id, $leave_type, $month, $year, $sessionid = '')
-	{
-		$month = (int)$month;
-		$year  = (int)$year;
-
-		$creditCond = "
-			emp_id='$emp_id'
-			AND leave_type='$leave_type'
-		";
-
-		if($sessionid != ''){
-			$creditCond .= " AND sessionid='$sessionid'";
-		}
-
-		$creditCond .= "
-			AND (
-				year < '$year'
-				OR (year = '$year' AND month < '$month')
-			)
-		";
-
-		$credit = (float)$this->getvalfield(
-			"emp_monthly_leave",
-			"IFNULL(SUM(total_leave),0)",
-			$creditCond
-		);
-
-		$debit = 0;
-
-		$attRes = $this->executequery("
-			SELECT attendance_status
-			FROM attendance_entry
-			WHERE emp_id='$emp_id'
-			AND (
-				YEAR(attendance_date) < '$year'
-				OR (
-					YEAR(attendance_date) = '$year'
-					AND MONTH(attendance_date) < '$month'
-				)
-			)
-		");
-
-		if($leave_type == 'eoff'){ 
-			$current_date = date("Y-m-d", strtotime("$year-$month-01"));
-			$prev_month = (int)date("m", strtotime("$current_date -1 month"));
-			$prev_year  = (int)date("Y", strtotime("$current_date -1 month")); 
-			$opening = $this->getExtraOffBalance($emp_id, $prev_month, $prev_year); 
-			return $opening['balance'];
-		}
-
-		if($leave_type == 'weekly'){ 
-			$current_date = date("Y-m-d", strtotime("$year-$month-01"));
-			$prev_month = (int)date("m", strtotime("$current_date -1 month"));
-			$prev_year  = (int)date("Y", strtotime("$current_date -1 month")); 
-			$opening = $this->getEmpCoffLeave($emp_id,$sessionid, $prev_month, $prev_year);
-			return $opening;
-		}
-
-		foreach($attRes as $row){
-
-			switch($leave_type){
-
-				// case 'weekly':
-				// 	if($row['attendance_status']=='C Off'){
-				// 		$debit += 1;
-				// 	}
-				// 	elseif($row['attendance_status']=='Half C Off'){
-				// 		$debit += 0.5;
-				// 	}
-				// break;
-
-				case 'eoff':
-					if($row['attendance_status']=='Extra Off'){
-						$debit += 1;
-					}
-					elseif($row['attendance_status']=='Half Extra Off'){
-						$debit += 0.5;
-					}
-				break;
-
-				case 'earning':
-					if(in_array($row['attendance_status'],['Leave','Earning Leave'])){
-						$debit += 1;
-					}
-					elseif(in_array($row['attendance_status'],['Half Leave','Half Earning Leave'])){
-						$debit += 0.5;
-					}
-				break;
-			}
-		}
-
-		return $credit - $debit;
-	}
-
+ 
 
 	public function getEmpUsedCoff($empIdsStr, $sessionid, $month, $year)
 	{
@@ -3125,7 +2945,20 @@ function calculateLeaveUsage($daysInMonth,$presentDays,$weeklyBalance,$monthlyBa
 		return $this->executequery("
 			SELECT
 				e.emp_id,
-				IFNULL(SUM(eml.total_leave),0) AS total_leave
+				IFNULL(
+                SUM(
+                    CASE 
+                        WHEN eml.leave_type = 'weekly'
+                        THEN eml.total_leave
+
+                        WHEN eml.leave_type = 'weekly_ded'
+                        THEN -eml.total_leave
+
+                        ELSE 0
+                    END
+                ),
+                0
+            ) AS total_leave
 
 			FROM employee_master e
 
@@ -3134,7 +2967,7 @@ function calculateLeaveUsage($daysInMonth,$presentDays,$weeklyBalance,$monthlyBa
 
 			LEFT JOIN emp_monthly_leave eml
 				ON eml.emp_id = e.emp_id
-				AND eml.leave_type='weekly'
+				AND eml.leave_type IN ('weekly', 'weekly_ded')
 				AND eml.sessionid='$sessionid'
 				AND (
 					(
@@ -3160,7 +2993,6 @@ function calculateLeaveUsage($daysInMonth,$presentDays,$weeklyBalance,$monthlyBa
 
 	function getEmployeeEarningLeave($emp_id, $month, $year, $sessionid)
 {
-    
 
     // Used Leave
     $used = $this->executequery("
@@ -3204,8 +3036,570 @@ function calculateLeaveUsage($daysInMonth,$presentDays,$weeklyBalance,$monthlyBa
         'used_leave'     => $used_leave,
         'balance_leave'  => $uploaded_leave - $used_leave
     ];
-}
+	}
+ 
+	public function earningUploadRows($sessionid, $month, $year)
+	{
+		return $this->executequery("SELECT
+			emp_id,
+			SUM(
+				CASE
+					WHEN leave_type='earning'
+					AND (
+						year < '$year'
+						OR (year='$year' AND month < '$month')
+					)
+					THEN total_leave
+					ELSE 0
+				END
+			)
+			-
+			SUM(
+				CASE
+					WHEN leave_type='earning_ded'
+					AND (
+						year < '$year'
+						OR (year='$year' AND month <= '$month')
+					)
+					THEN total_leave
+					ELSE 0
+				END
+			) AS total_leave
+			FROM emp_monthly_leave
+			WHERE sessionid='$sessionid'
+			GROUP BY emp_id
+		");
+	}
+	public function earningLeaveRows($sessionid, $month, $year)
+	{
+		return $this->executequery("SELECT 
+		        emp_id,
+		        SUM(
+		            CASE
+		                WHEN attendance_status IN ('Earning Leave', 'Leave') THEN 1
+		                WHEN attendance_status IN ('Half Earning Leave', 'Half Leave') THEN 0.5
+		                ELSE 0
+		            END
+		        ) used_leave
+		    FROM attendance_entry
+		    WHERE sessionid='$sessionid'
+		    AND (
+		        year < '$year'
+		        OR (year='$year' AND month <= '$month')
+		    )
+		    GROUP BY emp_id
+		");
+	}
 
+	public function extraOffUpload($sessionid, $year)
+	{
+		return $this->executequery(" 
+		        SELECT emp_id,
+		        month,
+		        SUM(total_leave) total_leave
+		    FROM emp_monthly_leave
+		    WHERE leave_type='eoff'
+		    AND year='$year' and sessionid='$sessionid'
+		    GROUP BY emp_id,month
+		");
+	}
+public function extraOffUsed($sessionid, $year)
+	{
+		return $this->executequery("SELECT emp_id,
+		        month,
+		        SUM(
+		                CASE
+		                    WHEN attendance_status='Extra Off' THEN 1
+		                    WHEN attendance_status='Half Extra Off' THEN 0.5
+		                    ELSE 0
+		                END
+		        ) total_used
+		    FROM attendance_entry
+		    WHERE year='$year' and sessionid='$sessionid'
+		    AND attendance_status IN ('Extra Off','Half Extra Off')
+		    GROUP BY emp_id,month
+		");
+	}
+
+
+
+
+
+
+	function getClosingBalance2($emp_id, $leave_type, $month = '', $year = '', $sessionid = '')
+{
+    if ($leave_type == 'eoff') {
+        $closing = $this->getExtraOffBalance($emp_id, $month, $year);
+        return $closing['balance'];
+    }
+
+    if ($leave_type == 'weekly') {
+        return $this->getEmpCoffLeave($emp_id, $sessionid, $month, $year);
+    }
+
+    $creditCond = "emp_id='$emp_id'";
+
+    if ($sessionid != '') {
+        $creditCond .= " AND sessionid='$sessionid'";
+    }
+
+    if ($month != '') {
+
+        $creditCond .= "
+        AND (
+            year<'$year'
+            OR (year='$year' AND month<='$month')
+        )";
+
+        $whereAtt = "
+        (
+            YEAR(attendance_date)<'$year'
+            OR (
+                YEAR(attendance_date)='$year'
+                AND MONTH(attendance_date)<='$month'
+            )
+        )";
+
+    } else {
+        $creditCond .= " AND year<='$year'";
+        $whereAtt = "YEAR(attendance_date)<='$year'";
+    }
+
+   $sql = "
+SELECT
+IFNULL(
+    SUM(
+        CASE
+            WHEN leave_type='$leave_type' THEN total_leave
+            WHEN leave_type='{$leave_type}_ded' THEN -total_leave
+            ELSE 0
+        END
+    ),0
+) AS total_leave
+FROM emp_monthly_leave
+WHERE $creditCond
+";
+
+$res = $this->executequery($sql);
+
+$credit = (float)($res[0]['total_leave'] ?? 0);
+    $debit = 0;
+    $attRes = $this->executequery("
+        SELECT attendance_status
+        FROM attendance_entry
+        WHERE emp_id='$emp_id'
+        AND sessionid='$sessionid'
+        AND $whereAtt
+    ");
+    foreach ($attRes as $row) {
+        switch ($leave_type) {
+            case 'earning':
+                if (in_array($row['attendance_status'], ['Leave', 'Earning Leave'])) {
+                    $debit += 1;
+                } elseif (in_array($row['attendance_status'], ['Half Leave', 'Half Earning Leave'])) {
+                    $debit += 0.5;
+                }
+
+                break;
+
+            case 'weekly':
+
+                if ($row['attendance_status'] == 'C Off') {
+                    $debit += 1;
+                } elseif ($row['attendance_status'] == 'Half C Off') {
+                    $debit += 0.5;
+                }
+
+                break;
+
+            case 'eoff':
+
+                if ($row['attendance_status'] == 'Extra Off') {
+                    $debit += 1;
+                } elseif ($row['attendance_status'] == 'Half Extra Off') {
+                    $debit += 0.5;
+                }
+
+                break;
+        }
+    }
+
+    return $credit - $debit;
+	}
+
+	function getOpeningBalance2($emp_id, $leave_type, $month = '', $year = '', $sessionid = '')
+	{
+		$month = (int)$month;
+		$year  = (int)$year;
+
+		if ($leave_type == 'eoff') {
+
+			if ($month > 0) {
+
+				$current_date = date("Y-m-d", strtotime("$year-$month-01"));
+				$prev_month = date("n", strtotime("$current_date -1 month"));
+				$prev_year = date("Y", strtotime("$current_date -1 month"));
+
+				return $this->getExtraOffBalance($emp_id, $prev_month, $prev_year)['balance'];
+
+			} else {
+
+				return $this->getExtraOffBalance($emp_id, 12, $year - 1)['balance'];
+			}
+		}
+
+		if ($leave_type == 'weekly') {
+
+			if ($month > 0) {
+
+				$current_date = date("Y-m-d", strtotime("$year-$month-01"));
+				$prev_month = date("n", strtotime("$current_date -1 month"));
+				$prev_year = date("Y", strtotime("$current_date -1 month"));
+
+				return $this->getEmpCoffLeave($emp_id, $sessionid, $prev_month, $prev_year);
+
+			} else {
+
+				return $this->getEmpCoffLeave($emp_id, $sessionid, 12, $year - 1);
+			}
+		}
+
+		$creditCond = "emp_id='$emp_id'";
+
+		if ($sessionid != '') {
+			$creditCond .= " AND sessionid='$sessionid'";
+		}
+
+		if ($month > 0) {
+
+			$creditCond .= "
+			AND (
+				year<'$year'
+				OR (year='$year' AND month<'$month')
+			)";
+
+			$whereAtt = "
+			(
+				YEAR(attendance_date)<'$year'
+				OR (
+					YEAR(attendance_date)='$year'
+					AND MONTH(attendance_date)<'$month'
+				)
+			)";
+
+		} else {
+
+			$creditCond .= " AND year<'$year'";
+			$whereAtt = "YEAR(attendance_date)<'$year'";
+		}
+
+	$sql = "
+SELECT
+IFNULL(
+    SUM(
+        CASE
+            WHEN leave_type='$leave_type' THEN total_leave
+            WHEN leave_type='{$leave_type}_ded' THEN -total_leave
+            ELSE 0
+        END
+    ),0
+) AS total_leave
+FROM emp_monthly_leave
+WHERE $creditCond
+";
+
+$res = $this->executequery($sql);
+
+$credit = (float)($res[0]['total_leave'] ?? 0);
+		$debit = 0;
+
+		$attRes = $this->executequery("
+			SELECT attendance_status
+			FROM attendance_entry
+			WHERE emp_id='$emp_id'
+			AND sessionid='$sessionid'
+			AND $whereAtt
+		");
+
+		foreach ($attRes as $row) {
+
+			switch ($leave_type) {
+
+				case 'earning':
+
+					if (in_array($row['attendance_status'], ['Leave', 'Earning Leave'])) {
+						$debit += 1;
+					} elseif (in_array($row['attendance_status'], ['Half Leave', 'Half Earning Leave'])) {
+						$debit += 0.5;
+					}
+
+					break;
+
+				case 'weekly':
+
+					if ($row['attendance_status'] == 'C Off') {
+						$debit += 1;
+					} elseif ($row['attendance_status'] == 'Half C Off') {
+						$debit += 0.5;
+					}
+
+					break;
+
+				case 'eoff':
+
+					if ($row['attendance_status'] == 'Extra Off') {
+						$debit += 1;
+					} elseif ($row['attendance_status'] == 'Half Extra Off') {
+						$debit += 0.5;
+					}
+
+					break;
+			}
+		}
+
+		return $credit - $debit;
+	}
+
+function getClosingBalance($emp_id, $leave_type, $from_date = '', $to_date = '', $sessionid = '')
+{
+	$month = (int)date('n', strtotime($from_date));
+	$year  = (int)date('Y', strtotime($from_date));
+
+    if ($leave_type == 'eoff') {
+        $closing = $this->getExtraOffBalance($emp_id, $month, $year);
+        return $closing['balance'];
+    }
+
+    if ($leave_type == 'weekly') {
+        return $this->getEmpCoffLeave($emp_id, $sessionid, $month, $year);
+    }
+
+    $creditCond = "emp_id='$emp_id'";
+
+    if ($sessionid != '') {
+        $creditCond .= " AND sessionid='$sessionid'";
+    }
+
+	if ($to_date != '') {
+        $creditCond .= " AND createdate <= '$to_date'";
+        $whereAtt = "attendance_date <= '$to_date'";
+    } else {
+        $whereAtt = "1=1";
+    } 
+
+   $sql = "
+SELECT
+IFNULL(
+    SUM(
+        CASE
+            WHEN leave_type='$leave_type' THEN total_leave
+            WHEN leave_type='{$leave_type}_ded' THEN -total_leave
+            ELSE 0
+        END
+    ),0
+) AS total_leave
+FROM emp_monthly_leave
+WHERE $creditCond
+";
+
+$res = $this->executequery($sql);
+
+$credit = (float)($res[0]['total_leave'] ?? 0);
+    $debit = 0;
+
+    $attRes = $this->executequery("
+        SELECT attendance_status
+        FROM attendance_entry
+        WHERE emp_id='$emp_id'
+        AND sessionid='$sessionid'
+        AND $whereAtt
+    ");
+
+    foreach ($attRes as $row) {
+
+        switch ($leave_type) {
+
+            case 'earning':
+
+                if (in_array($row['attendance_status'], ['Leave', 'Earning Leave'])) {
+                    $debit += 1;
+                } elseif (in_array($row['attendance_status'], ['Half Leave', 'Half Earning Leave'])) {
+                    $debit += 0.5;
+                }
+
+                break;
+
+            case 'weekly':
+
+                if ($row['attendance_status'] == 'C Off') {
+                    $debit += 1;
+                } elseif ($row['attendance_status'] == 'Half C Off') {
+                    $debit += 0.5;
+                }
+
+                break;
+
+            case 'eoff':
+
+                if ($row['attendance_status'] == 'Extra Off') {
+                    $debit += 1;
+                } elseif ($row['attendance_status'] == 'Half Extra Off') {
+                    $debit += 0.5;
+                }
+
+                break;
+        }
+    }
+
+    return $credit - $debit;
+	}
+
+	function getOpeningBalance($emp_id, $leave_type, $from_date = '', $todate = '', $sessionid = '')
+	{
+		$month = (int)date('n', strtotime($from_date));
+		$year  = (int)date('Y', strtotime($from_date));
+
+		if ($leave_type == 'eoff') {
+			if ($month > 0) {
+				$current_date = date("Y-m-d", strtotime("$year-$month-01"));
+				$prev_month = date("n", strtotime("$current_date -1 month"));
+				$prev_year = date("Y", strtotime("$current_date -1 month"));
+				return $this->getExtraOffBalance($emp_id, $prev_month, $prev_year)['balance'];
+			} else {
+				return $this->getExtraOffBalance($emp_id, 12, $year - 1)['balance'];
+			}
+		}
+
+		if ($leave_type == 'weekly') {
+
+			if ($month > 0) {
+
+				$current_date = date("Y-m-d", strtotime("$year-$month-01"));
+				$prev_month = date("n", strtotime("$current_date -1 month"));
+				$prev_year = date("Y", strtotime("$current_date -1 month"));
+
+				return $this->getEmpCoffLeave($emp_id, $sessionid, $prev_month, $prev_year);
+
+			} else {
+
+				return $this->getEmpCoffLeave($emp_id, $sessionid, 12, $year - 1);
+			}
+		}
+
+		$creditCond = "emp_id='$emp_id'";
+
+		if ($sessionid != '') {
+			$creditCond .= " AND sessionid='$sessionid'";
+		}
+
+		 
+
+			$creditCond .= "
+			AND createdate <'$from_date'";
+
+			$whereAtt = "attendance_date <'$from_date'";
+
+		 
+	$sql = "
+SELECT
+IFNULL(
+    SUM(
+        CASE
+            WHEN leave_type='$leave_type' THEN total_leave
+            WHEN leave_type='{$leave_type}_ded' THEN -total_leave
+            ELSE 0
+        END
+    ),0
+) AS total_leave
+FROM emp_monthly_leave
+WHERE $creditCond
+";
+
+$res = $this->executequery($sql);
+
+$credit = (float)($res[0]['total_leave'] ?? 0);
+		$debit = 0;
+
+		$attRes = $this->executequery("
+			SELECT attendance_status
+			FROM attendance_entry
+			WHERE emp_id='$emp_id'
+			AND sessionid='$sessionid'
+			AND $whereAtt
+		");
+
+	 
+
+		foreach ($attRes as $row) {
+
+			switch ($leave_type) {
+
+				case 'earning':
+
+					if (in_array($row['attendance_status'], ['Leave', 'Earning Leave'])) {
+						$debit += 1;
+					} elseif (in_array($row['attendance_status'], ['Half Leave', 'Half Earning Leave'])) {
+						$debit += 0.5;
+					}
+
+					break;
+
+				case 'weekly':
+
+					if ($row['attendance_status'] == 'C Off') {
+						$debit += 1;
+					} elseif ($row['attendance_status'] == 'Half C Off') {
+						$debit += 0.5;
+					}
+
+					break;
+
+				case 'eoff':
+
+					if ($row['attendance_status'] == 'Extra Off') {
+						$debit += 1;
+					} elseif ($row['attendance_status'] == 'Half Extra Off') {
+						$debit += 0.5;
+					}
+
+					break;
+			}
+		}
+
+		return $credit - $debit;
+	}
+
+
+function getExtraOffBalance2($emp_id,$month,$uploadArr,$usedArr)
+{
+    $carry = 0;
+    $closing = 0;
+
+    for($m=1;$m<=$month;$m++)
+    {
+        $upload = $uploadArr[$emp_id][$m] ?? 0;
+        $used   = $usedArr[$emp_id][$m] ?? 0;
+
+        $opening = $carry;
+
+        $usedFromPrev = min($opening,$used);
+
+        $remainingUsed = $used-$usedFromPrev;
+
+        $usedFromCurrent = min($upload,$remainingUsed);
+
+        $closing = ($opening+$upload)-$used;
+
+        // Carry only current month's upload
+        $carry = $upload-$usedFromCurrent;
+    }
+
+    return [
+        'opening'=>$opening,
+        'closing'=>$closing,
+        'balance'=>$closing
+    ];
+}
 
 }
 

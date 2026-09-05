@@ -36,7 +36,16 @@ $exclude_pages = [
     "deduction_report.php",
     "day_wise_attendence_report1.php",
     "employee_attendence_report1.php",
-    "additional_pay_list.php"
+    "emp_leave_deduction.php",
+    "leave_deduction_report.php",
+    "daily_attendance_entry.php",
+    "bank_sheet.php",
+    "additional_pay_report.php", 
+    "misspunch_att.php", 
+    "emp_coff_deduction.php", 
+    "unit_master.php", 
+    "additional_pay_list.php",
+    "negative_leave_bal.php"
 ];
 $chkmenu = $obj->check_menuname($pagename, $loginid);
 if ($chkmenu > 0 || in_array($pagename, $exclude_pages)) {

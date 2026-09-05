@@ -1,6 +1,6 @@
 <?php include("../adminsession.php");
 $title = "Month Wise Attendance Report";
-$pagename = "emp_multi_att_report_copy.php";
+$pagename = "emp_multi_att_report.php";
 $module = "Search Attendance";
 $submodule = "Month Wise Attendance List";
 $btn_name = "Search";
@@ -120,7 +120,8 @@ if (isset($_POST['emp_idd'])) {
 ?>
 
 <!doctype html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
+    data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
 
 <head>
     <meta charset="utf-8" />
@@ -129,15 +130,15 @@ if (isset($_POST['emp_idd'])) {
 
 </head>
 <style>
-    table.dataTable>thead>tr>th:not(.sorting_disabled),
-    table.dataTable>thead>tr>td:not(.sorting_disabled) {
-        padding-right: 5px !important;
-    }
+table.dataTable>thead>tr>th:not(.sorting_disabled),
+table.dataTable>thead>tr>td:not(.sorting_disabled) {
+    padding-right: 5px !important;
+}
 
-    table.dataTable>thead>tr>th:last-child:not(.sorting_disabled),
-    table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
-        padding-right: 20px !important;
-    }
+table.dataTable>thead>tr>th:last-child:not(.sorting_disabled),
+table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
+    padding-right: 20px !important;
+}
 </style>
 
 <body>
@@ -166,25 +167,31 @@ if (isset($_POST['emp_idd'])) {
                                     <div class="card-body">
                                         <div class="row">
                                             <div class="col-lg-3 mb-3">
-                                                <label for="bill_no" class="form-label">Employee<span class="text-danger fw-bold"></span></label>
-                                                <select class="form-select form-select-sm chosen-select" name="emp_id" id="emp_id" onchange="get_department(this.value)">
+                                                <label for="bill_no" class="form-label">Employee<span
+                                                        class="text-danger fw-bold"></span></label>
+                                                <select class="form-select form-select-sm chosen-select" name="emp_id"
+                                                    id="emp_id" onchange="get_department(this.value)">
                                                     <option value="">Select</option>
                                                     <?php
                                                     //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
                                                     $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
                                                     foreach ($res as $key) { ?>
-                                                        <option value="<?= $key['emp_id']; ?>">
-                                                            <?= $key['emp_code']; ?> - <?= ucfirst($key['first_name'] ?? ''); ?> <?= ucfirst($key['last_name'] ?? ''); ?></option>
+                                                    <option value="<?= $key['emp_id']; ?>">
+                                                        <?= $key['emp_code']; ?> -
+                                                        <?= ucfirst($key['first_name'] ?? ''); ?>
+                                                        <?= ucfirst($key['last_name'] ?? ''); ?></option>
                                                     <?php } ?>
                                                 </select>
                                                 <script>
-                                                    document.getElementById('emp_id').value =
-                                                        '<?= $emp_id; ?>';
+                                                document.getElementById('emp_id').value =
+                                                    '<?= $emp_id; ?>';
                                                 </script>
                                             </div>
                                             <div class="col-lg-3 mb-3">
-                                                <label for="department_id" class="form-label">Department Name<span class="text-danger fw-bold">*</span></label>
-                                                <select class="form-select chosen-select" name="department_id" id="department_id">
+                                                <label for="department_id" class="form-label">Department Name<span
+                                                        class="text-danger fw-bold">*</span></label>
+                                                <select class="form-select chosen-select" name="department_id"
+                                                    id="department_id">
                                                     <option value="">Please Select</option>
                                                     <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_name asc");
                                                     foreach ($res as $key) {
@@ -192,11 +199,13 @@ if (isset($_POST['emp_idd'])) {
                                                     } ?>
                                                 </select>
                                                 <script>
-                                                    document.getElementById('department_id').value = '<?= $department_id; ?>';
+                                                document.getElementById('department_id').value =
+                                                    '<?= $department_id; ?>';
                                                 </script>
                                             </div>
                                             <div class="col-lg-3 col-12">
-                                                <label for="year" class="form-label">Year<span class="text-danger fw-bold">*</span></label>
+                                                <label for="year" class="form-label">Year<span
+                                                        class="text-danger fw-bold">*</span></label>
                                                 <select class="form-select chosen-select" name="year" id="year">
                                                     <option value="">Select</option>
                                                     <?php
@@ -207,26 +216,31 @@ if (isset($_POST['emp_idd'])) {
                                                     } ?>
                                                 </select>
                                                 <script>
-                                                    document.getElementById('year').value = '<?php echo $year ?>'
+                                                document.getElementById('year').value = '<?php echo $year ?>'
                                                 </script>
                                             </div>
                                             <div class="col-md-3 md-2">
-                                                <strong><label for="Month">Month<span class="text-danger fw-bold">*</span></label></strong></br>
-                                                <select name="month" class="chosen-select form-control form-control" id="month">
+                                                <strong><label for="Month">Month<span
+                                                            class="text-danger fw-bold">*</span></label></strong></br>
+                                                <select name="month" class="chosen-select form-control form-control"
+                                                    id="month">
                                                     <option value="">--Select Month--</option>
                                                     <?php for ($iM = 1; $iM <= 12; $iM++) {
                                                     ?>
-                                                        <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>"><?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?></option>
+                                                    <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>">
+                                                        <?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?>
+                                                    </option>
 
                                                     <?php
                                                     } ?>
                                                 </select>
                                                 <script>
-                                                    document.getElementById('month').value = '<?php echo $month; ?>';
+                                                document.getElementById('month').value = '<?php echo $month; ?>';
                                                 </script>
                                             </div>
                                             <div class="col-md-3 md-2">
-                                                <strong><label for="Fields">Fields<span class="text-danger fw-bold"></span></label></strong>
+                                                <strong><label for="Fields">Fields<span
+                                                            class="text-danger fw-bold"></span></label></strong>
                                                 <select id="show_field" class="form-control" multiple>
                                                     <!-- <option value="1">Mobile Number</option> -->
                                                     <option value="2">Emp Code</option>
@@ -244,8 +258,11 @@ if (isset($_POST['emp_idd'])) {
                                             <input type="hidden" name="show_field_encoded" id="show_field_encoded">
 
                                             <div class="col-md-3 mt-4 ">
-                                                <input type="submit" class="btn btn-primary add-btn" onclick="return checkinputmaster('department_id,year,month')" name="search" value="Search">
-                                                <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset" id="reset">Reset</a>
+                                                <input type="submit" class="btn btn-primary add-btn"
+                                                    onclick="return checkinputmaster('department_id,year,month')"
+                                                    name="search" value="Search">
+                                                <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset"
+                                                    id="reset">Reset</a>
                                             </div>
                                         </div>
                                     </div>
@@ -256,17 +273,17 @@ if (isset($_POST['emp_idd'])) {
                 </div>
                 <?php if (isset($_GET['search'])) { ?>
 
-                    <div class="row mt-4 mb-4">
-                        <div class="col-lg-12">
-                            <div class="card">
+                <div class="row mt-4 mb-4">
+                    <div class="col-lg-12">
+                        <div class="card">
 
-                                <div class="card-header border-bottom-dashed">
-                                    <h5 class="card-title mb-0"><?= $submodule; ?></h5>
-                                </div>
+                            <div class="card-header border-bottom-dashed">
+                                <h5 class="card-title mb-0"><?= $submodule; ?></h5>
+                            </div>
 
-                                <div class="card-body">
+                            <div class="card-body">
 
-                                    <?php
+                                <?php
 
                                     $fromDate = "$year-$month-01";
                                     $toDate   = date("Y-m-t", strtotime($fromDate));
@@ -274,43 +291,43 @@ if (isset($_POST['emp_idd'])) {
                                     /* ---------------- EMPLOYEES ---------------- */
 
                                     $employees = $obj->executequery("
-SELECT 
-e.emp_id,
-e.emp_code,
-e.first_name,
-e.last_name,
-e.mobile_no,
-e.aadhar_no,
-e.shift_id,
-um.unit_name,
-e.basic_salary,
-e.date_of_joining,
-e.job_location,
-g.grade_name,
-d.department_name,
-des.designation,
-s.working_hour AS shift_hours
+                                        SELECT 
+                                        e.emp_id,
+                                        e.emp_code,
+                                        e.first_name,
+                                        e.last_name,
+                                        e.mobile_no,
+                                        e.aadhar_no,
+                                        e.shift_id,
+                                        um.unit_name,
+                                        e.basic_salary,
+                                        e.date_of_joining,
+                                        e.job_location,
+                                        g.grade_name,
+                                        d.department_name,
+                                        des.designation,
+                                        s.working_hour AS shift_hours
 
-FROM employee_master e
+                                        FROM employee_master e
 
-LEFT JOIN grade_master g 
-ON g.grade_id = e.grade_id
+                                        LEFT JOIN grade_master g 
+                                        ON g.grade_id = e.grade_id
 
-LEFT JOIN unit_master um 
-ON um.unit_id = e.unit_id
+                                        LEFT JOIN unit_master um 
+                                        ON um.unit_id = e.unit_id
 
-LEFT JOIN department_master d 
-ON d.department_id = e.department_id
+                                        LEFT JOIN department_master d 
+                                        ON d.department_id = e.department_id
 
-LEFT JOIN designation_master des 
-ON des.designation_id = e.designation_id
+                                        LEFT JOIN designation_master des 
+                                        ON des.designation_id = e.designation_id
 
-LEFT JOIN shift_master s 
-ON s.working_hour = e.shift_id 
+                                        LEFT JOIN shift_master s 
+                                        ON s.working_hour = e.shift_id 
 
-WHERE e.unit_id='$unitid' $crit2
-GROUP BY e.emp_id
-");
+                                        WHERE e.unit_id='$unitid' $crit2
+                                        GROUP BY e.emp_id
+                                        ");
 
 
                                     $empIds = array_column($employees, 'emp_id');
@@ -318,66 +335,204 @@ GROUP BY e.emp_id
 
                                     /* ---------------- PUNCH DATA ---------------- */
 
-                                    $rawPunchMap = [];
+                                    $punchMap = [];
+                                    $lastOpen = []; // last open IN per employee
 
-                                    $rawData = $obj->executequery("
-                                            SELECT emp_id, attendance_date, punch_time
-                                            FROM attendance_raw_data
-                                            WHERE emp_id IN ($empIdsStr)
-                                            AND attendance_date BETWEEN '$fromDate' AND '$toDate'
-                                            ORDER BY emp_id, attendance_date, punch_time
-                                        ");
+                                    if (!empty($empIdsStr)) {
 
-                                    foreach ($rawData as $row) {
-                                        $rawPunchMap[$row['emp_id']][$row['attendance_date']][] = $row['punch_time'];
+                                    $entryMap = [];
+
+ 
+
+    $entryData = $obj->executequery("
+        SELECT emp_id, attendance_date, working_hours, overtime, attendance_status
+        FROM attendance_entry
+        WHERE emp_id IN ($empIdsStr)
+        AND attendance_date BETWEEN '$fromDate' AND '$toDate'
+    ");
+
+    foreach ($entryData as $row) {
+        $entryMap[$row['emp_id']][$row['attendance_date']] = [
+            'working_hours' => $row['working_hours'],
+            'overtime'      => $row['overtime'],
+            'status'        => $row['attendance_status']
+        ];
+    }
+
+                                    $punchData = $obj->executequery("
+    SELECT 
+        l.emp_id,
+        em.shift_id,
+        l.attendance_date,
+        l.attendance_stamp,
+        l.in_status
+    FROM attendance_log l left join employee_master em on em.emp_id=l.emp_id
+    WHERE l.emp_id IN ($empIdsStr)
+    AND l.attendance_date BETWEEN '$fromDate' AND '$toDate'
+    ORDER BY l.emp_id, l.attendance_stamp
+");
+
+                                        
+
+                                    foreach ($punchData as $row) {
+
+    $emp    = $row['emp_id'];
+    $date   = $row['attendance_date'];
+    $status = $row['in_status'];
+    $time   = date("H:i", strtotime($row['attendance_stamp']));
+    $stamp  = strtotime($row['attendance_stamp']);
+
+    if (!isset($punchMap[$emp])) {
+        $punchMap[$emp] = [];
+    }
+
+    /* ================= GET SHIFT WINDOW ================= */
+
+    $working_hrs = $row['shift_id'] ?? '08:00:00';
+ 
+    $shift_row = $obj->executequery("
+        SELECT in_time 
+        FROM shift_master 
+        WHERE working_hour='$working_hrs' 
+        ORDER BY in_time ASC 
+        LIMIT 1
+    ");
+
+    $morning_in = $shift_row[0]['in_time'] ?? '06:00:00';
+
+    /* ================= IN LOGIC ================= */
+    if ($status == 'IN') {
+
+        if (!isset($punchMap[$emp][$date])) {
+            $punchMap[$emp][$date] = [];
+        }
+
+        $punchMap[$emp][$date][] = [
+            'in'  => $time,
+            'in_stamp' => $stamp,
+            'out' => '',
+         
+        ];
+
+        $lastOpen[$emp] = [
+            'date'  => $date,
+            'index' => count($punchMap[$emp][$date]) - 1,
+            'stamp' => $stamp
+        ];
+    }
+
+    /* ================= OUT LOGIC ================= */
+   if ($status == 'OUT') {
+
+    $matched = false;
+
+    foreach (array_reverse($punchMap[$emp], true) as $pDate => $entries) {
+
+        foreach (array_reverse($entries, true) as $idx => $entry) {
+
+            if (!empty($entry['in'])) {
+
+                $inStamp = $entry['in_stamp'];
+
+                $base_date = date('Y-m-d', strtotime($pDate . ' +1 day'));
+                $max_out = strtotime($base_date . ' ' . $morning_in) + (4 * 3600);
+//             echo "<pre>";
+// echo "IN Date: " . $pDate . "\n";
+// echo "IN Time: " . date('Y-m-d H:i:s', $inStamp) . "\n";
+// echo "OUT Time: " . date('Y-m-d H:i:s', $stamp) . "\n";
+// echo "Max Out Time: " . date('Y-m-d H:i:s', $max_out) . "\n";
+// echo "</pre>";
+
+                if (
+                    (
+                        $stamp > $inStamp ||
+                        date('Y-m-d', $stamp) > date('Y-m-d', $inStamp)
+                    )
+                    && $stamp <= $max_out
+                ) {
+
+                    // 🔥 ALWAYS overwrite
+                // agar already OUT hai → naya pair banao
+if (!empty($punchMap[$emp][$pDate][$idx]['out'])) {
+
+    $punchMap[$emp][$pDate][] = [
+        'in' => '',
+        'out' => $time
+    ];
+
+} else {
+
+    $punchMap[$emp][$pDate][$idx]['out'] = $time;
+}
+
+                    $matched = true;
+                    break 2;
+                }
+            }
+        }
+    }
+
+  if (!$matched) {
+
+    // ✅ SAME DATE me hi show hoga
+    if (!isset($punchMap[$emp][$date])) {
+        $punchMap[$emp][$date] = [];
+    }
+
+    $punchMap[$emp][$date][] = [
+        'in'  => '',
+        'out' => $time
+    ];
+}
+}
+}
                                     }
-
-
                                     ?>
 
-                                    <div class="table-responsive">
+                                <div class="table-responsive">
 
-                                        <table id="buttons-datatables" class="table table-sm table-bordered table-hover align-middle display">
+                                    <table id="buttons-datatables"
+                                        class="table table-sm table-bordered table-hover align-middle display">
 
-                                            <thead class="table-light">
+                                        <thead class="table-light">
 
-                                                <tr>
-
-                                                    <th>OU Name</th>
-
-                                                    <?php
+                                            <tr>
+                                                <th>Unit Name</th>
+                                                <?php
                                                     foreach ($showFields as $fid) {
                                                         if (!isset($fieldMap[$fid])) continue;
                                                         echo "<th>{$fieldMap[$fid]['label']}</th>";
                                                     }
                                                     ?>
+                                                <th>Attendance</th>
+                                                <th>In1</th>
+                                                <th>Out1</th>
+                                                <th>In2</th>
+                                                <th>Out2</th>
+                                                <th>In3</th>
+                                                <th>Out3</th>
+                                                <th>In4</th>
+                                                <th>Out4</th>
+                                                <th>In5</th>
+                                                <th>Out5</th>
+                                                <th>In6</th>
+                                                <th>Out6</th>
+                                                <th>In7</th>
+                                                <th>Out7</th>
+                                                <th>In8</th>
+                                                <th>Out8</th>
+                                                <th>In9</th>
+                                                <th>Out9</th>
+                                                <th>WH</th>
+                                                <th>OT</th>
+                                                <th>Status</th>
+                                            </tr>
 
-                                                    <th>Attendance</th>
+                                        </thead>
 
-                                                    <th>In1</th>
-                                                    <th>Out1</th>
-                                                    <th>In2</th>
-                                                    <th>Out2</th>
-                                                    <th>In3</th>
-                                                    <th>Out3</th>
-                                                    <th>In4</th>
-                                                    <th>Out4</th>
-                                                    <th>In5</th>
-                                                    <th>Out5</th>
-                                                    <th>In6</th>
-                                                    <th>Out6</th>
+                                        <tbody>
 
-                                                    <th>WH</th>
-                                                    <th>OT</th>
-                                                    <th>Status</th>
-
-                                                </tr>
-
-                                            </thead>
-
-                                            <tbody>
-
-                                                <?php
+                                            <?php
 
                                                 $daysInMonth = date('t', strtotime($fromDate));
 
@@ -388,9 +543,7 @@ GROUP BY e.emp_id
                                                     for ($d = 1; $d <= $daysInMonth; $d++) {
 
                                                         $date = date("Y-m-d", strtotime("$year-$month-$d"));
-                                                        $punches = $rawPunchMap[$empId][$date] ?? [];
-
-                                                        $result = $obj->processAttendance($punches, $allShifts);
+                                                        $punches = $punchMap[$empId][$date] ?? [];
 
                                                         echo "<tr>";
                                                         echo "<td>{$emp['unit_name']}</td>";
@@ -409,28 +562,23 @@ GROUP BY e.emp_id
                                                             echo "<td>{$value}</td>";
                                                         }
 
-
                                                         echo "<td>" . date("d-M-Y", strtotime($date)) . "</td>";
 
-                                                        $pairs = $result['pairs'];
+                                                        for ($i = 0; $i < 9; $i++) {
 
-                                                        for ($i = 0; $i < 6; $i++) {
-                                                            echo "<td>" . ($pairs[$i]['in'] ?? '') . "</td>";
-                                                            echo "<td>" . ($pairs[$i]['out'] ?? '') . "</td>";
+                                                            $in  = $punches[$i]['in'] ?? '';
+                                                            $out = $punches[$i]['out'] ?? '';
+
+                                                            echo "<td>$in</td>";
+                                                            echo "<td>$out</td>";
                                                         }
+$wh     = $entryMap[$empId][$date]['working_hours'] ?? '';
+$ot     = $entryMap[$empId][$date]['overtime'] ?? '';
+$status = $entryMap[$empId][$date]['status'] ?? '';
 
-                                                        echo "<td>{$result['working_hours']}</td>";
-                                                        echo "<td>{$result['overtime']}</td>";
-                                                        echo "<td>{$result['late']} min</td>";
-                                                        echo "<td>{$result['early']} min</td>";
-
-                                                        $wh     = $punches[0]['working_hours'] ?? '';
-                                                        $ot     = $punches[0]['overtime'] ?? '';
-                                                        $status = $punches[0]['attendance_status'] ?? '';
-
-                                                        // echo "<td>$wh</td>";
-                                                        // echo "<td>$ot</td>";
-                                                        // echo "<td>$status</td>";
+                                                        echo "<td>$wh</td>";
+                                                        echo "<td>$ot</td>";
+                                                        echo "<td>$status</td>";
 
                                                         echo "</tr>";
                                                     }
@@ -438,16 +586,16 @@ GROUP BY e.emp_id
 
                                                 ?>
 
-                                            </tbody>
+                                        </tbody>
 
-                                        </table>
-
-                                    </div>
+                                    </table>
 
                                 </div>
+
                             </div>
                         </div>
                     </div>
+                </div>
 
                 <?php } ?>
 
@@ -463,40 +611,40 @@ GROUP BY e.emp_id
     <!-- script tag -->
 
     <script>
-        $(document).ready(function() {
-            $(".chosen-select").select2();
-            const $select = $("#show_field").select2({
-                placeholder: "Select Fields",
-                width: "100%",
-                closeOnSelect: false
-            });
-
-            const selectedFields = <?= json_encode($showFields) ?> || [];
-            if (selectedFields.length) {
-                $select.val(selectedFields.map(String)).trigger("change");
-            }
-
-            $("form").on("submit", function() {
-                const selected = $select.val() || [];
-                $("#show_field_encoded").val(selected.join(","));
-                $select.removeAttr("name");
-            });
+    $(document).ready(function() {
+        $(".chosen-select").select2();
+        const $select = $("#show_field").select2({
+            placeholder: "Select Fields",
+            width: "100%",
+            closeOnSelect: false
         });
 
-        function get_department(emp_id) {
-            $.ajax({
-                type: "POST",
-                url: '',
-                data: {
-
-                    emp_idd: emp_id,
-                },
-                success: function(data) {
-                    $('#department_id').html(data).trigger("change.select2");
-                }
-            });
-
+        const selectedFields = <?= json_encode($showFields) ?> || [];
+        if (selectedFields.length) {
+            $select.val(selectedFields.map(String)).trigger("change");
         }
+
+        $("form").on("submit", function() {
+            const selected = $select.val() || [];
+            $("#show_field_encoded").val(selected.join(","));
+            $select.removeAttr("name");
+        });
+    });
+
+    function get_department(emp_id) {
+        $.ajax({
+            type: "POST",
+            url: '',
+            data: {
+
+                emp_idd: emp_id,
+            },
+            success: function(data) {
+                $('#department_id').html(data).trigger("change.select2");
+            }
+        });
+
+    }
     </script>
 </body>
 

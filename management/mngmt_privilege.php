@@ -193,7 +193,7 @@ if (isset($_GET[$tblpkey])) {
                                                         <?php
 
                                                             //$where = array("menuname" => "Master");
-                                                            $where = array("type" => "mngmt");
+                                                            $where = array("type" => "mngmt" , "enable" => 1);
 
                                                             $sql_get = $obj->select_data("m_userprivilege", $where);
 

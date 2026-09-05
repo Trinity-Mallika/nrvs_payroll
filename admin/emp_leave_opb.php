@@ -38,27 +38,34 @@ if (isset($_POST['save_all_leave'])) {
         $empIds = [];
         foreach ($allRows as $row) {
 
-            $month = date('n');
-            $year  = date('Y');
+          $fromdate = $obj->getvalfield(
+            "m_session",
+            "fromdate",
+            "sessionid='$sessionid'"
+        );
+
+        $month = date('n', strtotime($fromdate));
+        $year = date('Y', strtotime($fromdate));
+            
             $emp_id = $row['emp_id'];
-            $empIds[] = $emp_id; 
+            $empIds[] = $emp_id;
             $opening_leave = $row['opening_leave'];
-            $coff = $row['coff']??0;
+            $coff = $row['coff'] ?? 0;
             $department_id = $obj->getvalfield(
-                    "employee_master",
-                    "department_id",
-                    "emp_id='$emp_id'"
-                );
+                "employee_master",
+                "department_id",
+                "emp_id='$emp_id'"
+            );
 
             $insertRows[] = [
-                "emp_id" => $emp_id, 
-                "department_id" => $department_id, 
+                "emp_id" => $emp_id,
+                "department_id" => $department_id,
                 "total_leave" => $opening_leave,
                 "remining_leave" => $opening_leave,
                 "leave_type" => 'earning',
                 "month" => $month,
                 "year" => $year,
-                  'is_opb' =>'1',
+                'is_opb' => '1',
                 "unit_id" => $unitid,
                 "sessionid" => $sessionid,
                 "createdby" => $loginid,
@@ -67,33 +74,33 @@ if (isset($_POST['save_all_leave'])) {
             ];
 
 
-            if ($coff > 0) { 
+            if ($coff > 0) {
                 $monthlyLeaveRows[] = [
                     "emp_id"          => $emp_id,
-                    "department_id"   => $department_id, 
+                    "department_id"   => $department_id,
                     "total_leave"     => $coff,
                     "remining_leave"  => $coff,
                     "month"           => $month,
                     "year"            => $year,
                     "leave_type"      => "weekly",
-                      'is_opb' =>'1',
-                    "salary_struc_id" => 0, 
+                    'is_opb' => '1',
+                    "salary_struc_id" => 0,
                     "createdby"       => $loginid,
                     "ipaddress"       => $ipaddress,
-                    "createdate"      => $createdate, 
+                    "createdate"      => $createdate,
                     "unit_id"         => $unitid,
                     "sessionid"       => $sessionid
                 ];
             }
         }
-      
+
 
         if (!empty($insertRows)) {
             $obj->bulk_delete('emp_monthly_leave', [
                 'emp_id' => $empIds,
                 'unit_id' => $unitid,
-                'leave_type'=> 'earning',
-                'is_opb' =>'1',
+                'leave_type' => 'earning',
+                'is_opb' => '1',
                 'sessionid' => $sessionid
             ]);
 
@@ -107,8 +114,8 @@ if (isset($_POST['save_all_leave'])) {
                 'emp_id'    => $empIds,
                 'unit_id'   => $unitid,
                 'sessionid' => $sessionid,
-                'is_opb' =>'1',
-                'leave_type'=> 'weekly'
+                'is_opb' => '1',
+                'leave_type' => 'weekly'
             ]);
 
             foreach (array_chunk($monthlyLeaveRows, 500) as $chunk) {
@@ -139,10 +146,10 @@ if (isset($_POST['save_all_leave'])) {
     <link rel="stylesheet" href="assets/css/toogle.css">
 </head>
 <style>
-.cls-read {
-    pointer-events: none;
-    background-color: #f5f5f5;
-}
+    .cls-read {
+        pointer-events: none;
+        background-color: #f5f5f5;
+    }
 </style>
 
 <body>
@@ -158,167 +165,163 @@ if (isset($_POST['save_all_leave'])) {
                 ?>
                 <div class="row">
                     <?php if (!isset($_GET['submit'])) { ?>
-                    <div class="col-lg-12">
-                        <div class="card">
-                            <div class="card-header border-bottom-dashed">
-                                <div class="row g-4 align-items-center">
-                                    <div class="col-sm">
-                                        <div>
-                                            <h5 class="card-title mb-0"><?= $module ?></h5>
-                                        </div>
+                        <div class="col-lg-12">
+                            <div class="card">
+                                <div class="card-header border-bottom-dashed">
+                                    <div class="row g-4 align-items-center">
+                                        <div class="col-sm">
+                                            <div>
+                                                <h5 class="card-title mb-0"><?= $module ?></h5>
+                                            </div>
 
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="card-body">
-                                <form method="get" autocomplete="off">
-                                    <div class="row">
-                                        <div class="mb-3 col-12 col-lg-3">
-                                            <label for="emp_id" class="form-label">Employee Name<span
-                                                    class="text-danger fw-bold"> </span></label>
-                                            <select class="form-select form-select-sm chosen-select" name="emp_id"
-                                                id="emp_id" onchange="get_department(this.value)">
-                                                <option value="">Select Employee</option>
-                                                <?php
+                                <div class="card-body">
+                                    <form method="get" autocomplete="off">
+                                        <div class="row">
+                                            <div class="mb-3 col-12 col-lg-3">
+                                                <label for="emp_id" class="form-label">Employee Name<span
+                                                        class="text-danger fw-bold"> </span></label>
+                                                <select class="form-select form-select-sm chosen-select" name="emp_id"
+                                                    id="emp_id" onchange="get_department(this.value)">
+                                                    <option value="">All</option>
+                                                    <?php
 
                                                     $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
                                                     foreach ($res as $key) { ?>
-                                                <option value="<?= $key['emp_id']; ?>">
-                                                    <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?>
-                                                    <?= ucfirst($key['last_name'] ?? ''); ?></option>
-                                                <?php } ?>
-                                            </select>
+                                                        <option value="<?= $key['emp_id']; ?>">
+                                                            <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?>
+                                                            <?= ucfirst($key['last_name'] ?? ''); ?></option>
+                                                    <?php } ?>
+                                                </select>
 
-                                        </div>
+                                            </div>
 
-                                        <div class="mb-3 col-12 col-lg-3">
-                                            <label for="department_id" class="form-label">Department Name<span
-                                                    class="text-danger fw-bold"> </span></label>
-                                            <select class="form-select form-select-sm chosen-select"
-                                                name="department_id" id="department_id">
-                                                <option value="">Select</option>
-                                                <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_id asc");
+                                            <div class="mb-3 col-12 col-lg-3">
+                                                <label for="department_id" class="form-label">Department Name<span
+                                                        class="text-danger fw-bold"> </span></label>
+                                                <select class="form-select form-select-sm chosen-select"
+                                                    name="department_id" id="department_id">
+                                                    <option value="">All</option>
+                                                    <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_id asc");
                                                     foreach ($res as $key) { ?>
-                                                <option value="<?= $key['department_id']; ?>">
-                                                    <?= $key['department_name']; ?> </option>
-                                                <?php } ?>
-                                            </select>
-                                        </div>
+                                                        <option value="<?= $key['department_id']; ?>">
+                                                            <?= $key['department_name']; ?> </option>
+                                                    <?php } ?>
+                                                </select>
+                                            </div>
 
-                                        <div class="mb-3 col-12 col-lg-3">
-                                            <label for="sessionid" class="form-label">Leave Finyear<span
-                                                    class="text-danger fw-bold">*</span></label>
-                                            <select class="form-select form-select-sm chosen-select" name="sessionid"
-                                                id="sessionid1">
-                                                <option value="">Select</option>
-                                                <?php $res = $obj->executequery("Select * from m_session  order by sessionid asc");
+                                            <div class="mb-3 col-12 col-lg-3">
+                                                <label for="sessionid" class="form-label">Leave Finyear<span
+                                                        class="text-danger fw-bold">*</span></label>
+                                                <select class="form-select form-select-sm chosen-select" name="sessionid"
+                                                    id="sessionid1">
+                                                    <option value="">Select</option>
+                                                    <?php $res = $obj->executequery("Select * from m_session  order by sessionid asc");
                                                     foreach ($res as $key) { ?>
-                                                <option value="<?= $key['sessionid']; ?>">
-                                                    <?= $key['fromdate']; ?>-<?= $key['todate']; ?>
-                                                    (<?= $key['session_name'] ?>) </option>
-                                                <?php } ?>
-                                            </select>
+                                                        <option value="<?= $key['sessionid']; ?>">
+                                                            <?= $key['fromdate']; ?>-<?= $key['todate']; ?>
+                                                            (<?= $key['session_name'] ?>) </option>
+                                                    <?php } ?>
+                                                </select>
+                                            </div>
+
+
+                                            <div class="col-12 col-lg-3 mt-4">
+                                                <input type="submit" class="btn btn-sm btn-success" name="submit"
+                                                    value="Search" onClick="return checkinputmaster('sessionid1')">
+                                                <a href="<?php echo $pagename; ?>" type="button"
+                                                    class="btn btn-sm btn-danger add-btn">Reset</a>
+                                            </div>
+
                                         </div>
-
-
-                                        <div class="col-12 col-lg-3 mt-4">
-                                            <input type="submit" class="btn btn-sm btn-success" name="submit"
-                                                value="Search" onClick="return checkinputmaster('sessionid1')">
-                                            <a href="<?php echo $pagename; ?>" type="button"
-                                                class="btn btn-sm btn-danger add-btn">Reset</a>
-                                        </div>
-
-                                    </div>
-                                </form>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
                     <?php } ?>
                     <?php if (isset($_GET['submit'])) { ?>
-                    <div class="col-lg-12">
-                        <div class="card">
-                            <div class="card-header border-bottom-dashed">
-                                <div class="row g-4 align-items-center">
-                                    <div class="col-sm">
-                                        <div>
-                                            <h5 class="card-title mb-0"><?= $module ?> <a href="<?= $pagename ?>"
-                                                    class="float-end btn btn-primary btn-sm">Search Again</a></h5>
+                        <div class="col-lg-12">
+                            <div class="card">
+                                <div class="card-header border-bottom-dashed">
+                                    <div class="row g-4 align-items-center">
+                                        <div class="col-sm">
+                                            <div>
+                                                <h5 class="card-title mb-0"><?= $module ?> <a href="<?= $pagename ?>"
+                                                        class="float-end btn btn-primary btn-sm">Search Again</a></h5>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-header">
+                                    <div class="row mt-2">
+                                        <div class="col-md-2 col-3 text-end">
+                                            Unit Name :
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <h6 class="text-dark"><?= $unit_name ?></h6>
                                         </div>
 
+                                        <div class="col-md-2 col-3 text-end">
+                                            Financial Year :
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <h6 class="text-dark"><?= $session_name ?></h6>
+                                        </div>
+
+                                        <div class="col-12 text-center">
+                                            <small class="text-danger fw-bold">
+                                                Note: Leave balances shown below are based on the uploaded leave balances
+                                                for the selected financial year.
+                                            </small>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="card-header">
-                                <div class="row mt-2">
-                                    <div class="col-md-2 col-3 text-end">
-                                        Unit Name :
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <h6 class="text-dark"><?= $unit_name ?></h6>
-                                    </div>
+                                <div class="card-body">
+                                    <div class="auto-scroll-wrapper">
+                                        <div class="table-responsive">
 
-                                    <div class="col-md-2 col-3 text-end">
-                                        Financial Year :
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <h6 class="text-dark"><?= $session_name ?></h6>
-                                    </div>
-
-                                    <div class="col-12 text-center">
-                                        <small class="text-danger fw-bold">
-                                            Note: Leave balances shown below are based on the uploaded leave balances
-                                            for the selected financial year.
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="auto-scroll-wrapper">
-                                    <div class="table-responsive">
-
-                                        <table id="buttons-datatables" class="display table table-sm table-bordered"
-                                            style="width:100%">
-                                            <thead>
-
-                                                <tr class="table-primary">
-                                                    <th></th>
-                                                    <th></th>
-                                                    <th></th>
-
-                                                    <th></th>
+                                            <table id="buttons-datatables" class="display table table-sm table-bordered"
+                                                style="width:100%">
+                                                <thead>
 
 
-                                                    
+                                                    <tr class="table-primary">
+                                                        <th>Sr. No.</th>
+                                                        <th>Code</th>
+                                                        <th>Employee Name</th>
+                                                        <th>Department</th>
+                                                        <!-- <th>Earn Leave (April - 2026)</th> -->
 
-                                                    <th>
-                                                        <input type="text"
-                                                            class="form-control form-control-sm bulk-fill w-50"
-                                                            data-target="opening_leave_input" placeholder="0"
-                                                            onkeypress="numberOnly(event);" readonly>
-                                                    </th>
-                                                      <th>
-                                                        <input type="text"
-                                                            class="form-control form-control-sm bulk-fill w-50"
-                                                            data-target="coff_input" placeholder="0"
-                                                            onkeypress="numberOnly(event);" readonly>
-                                                    </th>  
-                                                    <th></th>
-                                                </tr>
-                                                <tr class="table-primary">
-                                                    <th>Sr. No.</th>
-                                                    <th>Code</th>
-                                                    <th>Employee Name</th>
-                                                    <th>Department</th>
-                                                    <!-- <th>Earn Leave (April - 2026)</th> -->
-                                                    
-                                                    <th>Leave</th>
-                                                      <th>C-Off</th> 
-                                                    <th>Total</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php
-                                                    $slno = 1; 
+                                                        <th>Leave</th>
+                                                        <th>C-Off</th>
+                                                        <th>Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr class="table-primary ">
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th></th>
+                                                        <th>
+                                                            <input type="text"
+                                                                class="form-control form-control-sm bulk-fill w-50"
+                                                                data-target="opening_leave_input" placeholder="0"
+                                                                onkeypress="numberOnly(event);" readonly>
+                                                        </th>
+                                                        <th>
+                                                            <input type="text"
+                                                                class="form-control form-control-sm bulk-fill w-50"
+                                                                data-target="coff_input" placeholder="0"
+                                                                onkeypress="numberOnly(event);" readonly>
+                                                        </th>
+                                                        <th></th>
+                                                    </tr>
+                                                    <?php
+                                                    $slno = 1;
                                                     $sql = "SELECT 
                                                         em.emp_id,
                                                         em.is_esic,
@@ -366,15 +369,15 @@ if (isset($_POST['save_all_leave'])) {
                                                     $res = $obj->executequery($sql);
                                                     // $res=$obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' $crit AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY emp_code ASC");        
                                                     foreach ($res as $row) {
-                                                        $opening_leave = $row['opening_leave']; 
-                                                        $coff = $row['coff_leave']; 
-                                                        $total = $coff +$opening_leave;
+                                                        $opening_leave = $row['opening_leave'];
+                                                        $coff = $row['coff_leave'];
+                                                        $total = $coff + $opening_leave;
 
                                                     ?>
-                                                <tr>
-                                                    <td><?= $slno++ ?></td>
-                                                    <td><?= $row['emp_code'] ?></td>
-                                                    <td><?php
+                                                        <tr>
+                                                            <td><?= $slno++ ?></td>
+                                                            <td><?= $row['emp_code'] ?></td>
+                                                            <td><?php
                                                                 echo $row['first_name'];
                                                                 $join_date = new DateTime($row['date_of_joining']);
                                                                 $today = new DateTime();
@@ -384,51 +387,53 @@ if (isset($_POST['save_all_leave'])) {
                                                                     $diff->m . " months, " .
                                                                     $diff->d . " days";
                                                                 ?>
-                                                    </td>
-                                                    <td><?= $row['department_name'] ?></td>
+                                                            </td>
+                                                            <td><?= $row['department_name'] ?></td>
 
-                                                    <td>
-                                                        <input type="text" name="opening_leave[]"
-                                                            id="opening_leave<?= $row['emp_id'] ?>"
-                                                            class="form-control form-control-sm leave-input opening_leave_input w-50"
-                                                            data-type="opening_leave" data-emp="<?= $row['emp_id'] ?>"
-                                                            value="<?= $opening_leave ?>"
-                                                            onkeypress="numberOnly(event);" readonly>
-                                                    </td>
+                                                            <td>
+                                                                <input type="text" name="opening_leave[]"
+                                                                    id="opening_leave<?= $row['emp_id'] ?>"
+                                                                    class="form-control form-control-sm leave-input opening_leave_input w-50"
+                                                                    data-type="opening_leave" data-emp="<?= $row['emp_id'] ?>"
+                                                                    value="<?= $opening_leave ?>"
+                                                                    onkeypress="numberOnly(event);">
+                                                                <span class="d-none export-value"><?= $opening_leave ?></span>
+                                                            </td>
 
-                                                    <td>
-                                                        <input type="text" name="coff[]"
-                                                            id="coff<?= $row['emp_id'] ?>"
-                                                            class="form-control form-control-sm leave-input coff_input w-50"
-                                                            data-type="coff" data-emp="<?= $row['emp_id'] ?>"
-                                                            value="<?= $coff ?>"
-                                                            onkeypress="numberOnly(event);" readonly >
-                                                    </td>
-                                                    <td>
-                                                        <input type="text"
-                                                            class="form-control form-control-sm total_input w-50"
-                                                            readonly onkeypress="numberOnly(event);"
-                                                            value="<?= $total ?>" readonly>
-                                                    </td>
+                                                            <td>
+                                                                <input type="text" name="coff[]"
+                                                                    id="coff<?= $row['emp_id'] ?>"
+                                                                    class="form-control form-control-sm leave-input coff_input w-50"
+                                                                    data-type="coff" data-emp="<?= $row['emp_id'] ?>"
+                                                                    value="<?= $coff ?>"
+                                                                    onkeypress="numberOnly(event);" readonly>
+                                                                <span class="d-none export-value"><?= $coff ?></span>
+                                                            </td>
+                                                            <td>
+                                                                <input type="text"
+                                                                    class="form-control form-control-sm total_input w-50"
+                                                                    readonly onkeypress="numberOnly(event);"
+                                                                    value="<?= $total ?>" readonly>
+                                                                <span class="d-none export-value"><?= $total ?></span>
+                                                            </td>
 
+                                                        </tr>
+                                                    <?php } ?>
+                                                </tbody>
+                                            </table>
 
-                                                </tr>
-                                                <?php } ?>
-                                            </tbody>
-                                        </table>
-
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="text-end mt-3">
-                                    <button type="button" class="btn btn-success btn-sm" id="save_leave_btn"
-                                        onclick="save_leave();">
-                                        Save Leave Opening
-                                    </button>
-                                </div>
+                                    <div class="text-end mt-3">
+                                        <button type="button" class="btn btn-success btn-sm" id="save_leave_btn"
+                                            onclick="save_leave();">
+                                            Save Leave Opening
+                                        </button>
+                                    </div>
 
+                                </div>
                             </div>
                         </div>
-                    </div>
                     <?php } ?>
                     <!-- Third col End -->
                 </div>
@@ -443,139 +448,144 @@ if (isset($_POST['save_all_leave'])) {
     <?php include('inc/js.php') ?>
     <?php include('inc/footer.php') ?>
     <script>
-    $(document).ready(function() {
-        $('#example').DataTable();
-        $(".chosen-select").select2({
-            width: '100%',
-            search_contains: true
+        $('.leave-input').on('keyup change', function() {
+            var value = $(this).val();
+            $(this).closest('td').find('.export-value').text(value);
         });
 
-    });
-
-    function numberOnly(evt) {
-        var theEvent = evt || window.event;
-        // Handle paste
-        if (theEvent.type === 'paste') {
-            key = event.clipboardData.getData('text/plain');
-        } else {
-            // Handle key press
-            var key = theEvent.keyCode || theEvent.which;
-            key = String.fromCharCode(key);
-        }
-        var regex = /[0-9]|\.|\s/;
-        if (!regex.test(key)) {
-            theEvent.returnValue = false;
-            if (theEvent.preventDefault) theEvent.preventDefault();
-        }
-    }
-    $(document).ready(function() {
-
-        // bulk fill from header
-        $('.bulk-fill').on('keyup change', function() {
-
-            let value = $(this).val();
-            let target = $(this).data('target');
-
-            $('.' + target).val(value).trigger('keyup');
-
-        });
-
-        $(document).on('keyup change', '.leave-input', function() {
-
-            let row = $(this).closest('tr');
-
-            //let earn_leave = parseFloat(row.find('.earn_leave_input').val()) || 0;
-             let coff = parseFloat(row.find('.coff_input').val()) || 0;
-            let opening_leave = parseFloat(row.find('.opening_leave_input').val()) || 0;
-           
-
-            let total =coff+ opening_leave;
-
-            row.find('.total_input').val(total);
-
-        });
-    });
-
-    function save_leave() {
-
-        //let sessionid = $('#sessionid').val();
-        let sessionid = <?= $sessionid ?>;
-
-        if (sessionid == '') {
-            alert('Please Select Financial Year');
-            return false;
-        }
-
-        let allRows = [];
-
-        $('tbody tr').each(function() {
-
-            let emp_id = $(this).find('.opening_leave_input').data('emp');
-
-            //let earn_leave = $('#earn_leave' + emp_id).val() || 0;
-
-             let coff = $('#coff' + emp_id).val() || 0;
-
-            let opening_leave = $('#opening_leave' + emp_id).val() || 0;
-
-            let total =
-                parseFloat(opening_leave)+ parseFloat(coff);
-
-            allRows.push({
-                emp_id: emp_id,
-                 coff: coff,
-                opening_leave: opening_leave,
-                total_input: total
+        $(document).ready(function() {
+            $('#example').DataTable();
+            $(".chosen-select").select2({
+                width: '100%',
+                search_contains: true
             });
 
         });
 
-        $.ajax({
-            url: '',
-            type: 'POST',
-            data: {
-                save_all_leave: 1,
-                sessionid: sessionid,
-                allRows: JSON.stringify(allRows)
-            },
-            beforeSend: function() {
+        function numberOnly(evt) {
+            var theEvent = evt || window.event;
+            // Handle paste
+            if (theEvent.type === 'paste') {
+                key = event.clipboardData.getData('text/plain');
+            } else {
+                // Handle key press
+                var key = theEvent.keyCode || theEvent.which;
+                key = String.fromCharCode(key);
+            }
+            var regex = /[0-9]|\.|\s/;
+            if (!regex.test(key)) {
+                theEvent.returnValue = false;
+                if (theEvent.preventDefault) theEvent.preventDefault();
+            }
+        }
+        $(document).ready(function() {
 
-                $('#save_leave_btn').html('Saving...');
-                $('#save_leave_btn').prop('disabled', true);
+            // bulk fill from header
+            $('.bulk-fill').on('keyup change', function() {
 
-            },
-            success: function(response) {
-console.log('response',response);
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: 'Leave Opening Saved Successfully',
-                    timer: 2000,
-                    showConfirmButton: false
+                let value = $(this).val();
+                let target = $(this).data('target');
+
+                $('.' + target).val(value).trigger('keyup');
+
+            });
+
+            $(document).on('keyup change', '.leave-input', function() {
+
+                let row = $(this).closest('tr');
+
+                //let earn_leave = parseFloat(row.find('.earn_leave_input').val()) || 0;
+                let coff = parseFloat(row.find('.coff_input').val()) || 0;
+                let opening_leave = parseFloat(row.find('.opening_leave_input').val()) || 0;
+
+
+                let total = coff + opening_leave;
+
+                row.find('.total_input').val(total);
+
+            });
+        });
+
+        function save_leave() {
+
+            //let sessionid = $('#sessionid').val();
+            let sessionid = <?= $sessionid ?>;
+
+            if (sessionid == '') {
+                alert('Please Select Financial Year');
+                return false;
+            }
+
+            let allRows = [];
+
+            $('tbody tr').each(function() {
+
+                let emp_id = $(this).find('.opening_leave_input').data('emp');
+
+                //let earn_leave = $('#earn_leave' + emp_id).val() || 0;
+
+                let coff = $('#coff' + emp_id).val() || 0;
+
+                let opening_leave = $('#opening_leave' + emp_id).val() || 0;
+
+                let total =
+                    parseFloat(opening_leave) + parseFloat(coff);
+
+                allRows.push({
+                    emp_id: emp_id,
+                    coff: coff,
+                    opening_leave: opening_leave,
+                    total_input: total
                 });
 
-                $('#save_leave_btn').html('Save Leave Opening');
-                $('#save_leave_btn').prop('disabled', false);
+            });
 
-            }
-        });
+            $.ajax({
+                url: '',
+                type: 'POST',
+                data: {
+                    save_all_leave: 1,
+                    sessionid: sessionid,
+                    allRows: JSON.stringify(allRows)
+                },
+                beforeSend: function() {
 
-    }
+                    $('#save_leave_btn').html('Saving...');
+                    $('#save_leave_btn').prop('disabled', true);
+
+                },
+                success: function(response) {
+                    console.log('response', response);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Leave Opening Saved Successfully',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+
+                    $('#save_leave_btn').html('Save Leave Opening');
+                    $('#save_leave_btn').prop('disabled', false);
+
+                }
+            });
+
+        }
 
 
-    function get_department(emp_id) {
-        $.ajax({
-            type: "POST",
-            url: 'get_depart_data.php',
-            data: {
-                emp_idd: emp_id,
-            },
-            success: function(data) {
-                $('#department_id').html(data).trigger("change.select2");
-            }
-        });
+        function get_department(emp_id) {
+            $.ajax({
+                type: "POST",
+                url: 'get_depart_data.php',
+                data: {
+                    emp_idd: emp_id,
+                },
+                success: function(data) {
+                    $('#department_id').html(data).trigger("change.select2");
+                }
+            });
 
-    }
+        }
     </script>
 
 </body>

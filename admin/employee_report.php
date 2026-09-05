@@ -77,14 +77,46 @@ if (isset($_GET['gender'])) {
 
 if (isset($_GET['resign_status'])) {
     $resign_status = $obj->test_input($_GET['resign_status']);
-    if ($resign_status != '') {
-        $crit .= " and em.is_active='$resign_status'";
-    }
-    // if ($resign_status == '0') {
-    //     $crit .= " and (em.resign_status != '1' OR (em.resign_status = '1' AND em.last_working_date >= CURDATE()))";
-    // } else {
-    //     $crit .= " and em.resign_status = '1'";
+    // if ($resign_status != '') {
+    //     $crit .= " and em.is_active='$resign_status'";
     // }
+   if (isset($_GET['resign_status'])) {
+
+    $resign_status = $obj->test_input($_GET['resign_status']);
+
+    if ($resign_status == '1') {
+
+        // ACTIVE EMPLOYEES
+        $crit .= "
+            AND em.is_active = '1'
+            AND (
+                em.resign_status != '1'
+                OR (
+                    em.resign_status = '1'
+                    AND em.last_working_date >= CURDATE()
+                )
+            )
+        ";
+
+    } elseif ($resign_status == '0') {
+
+        // INACTIVE / RESIGNED EMPLOYEES
+        $crit .= "
+            AND (
+                em.is_active = '0'
+                OR (
+                    em.resign_status = '1'
+                    AND em.last_working_date < CURDATE()
+                )
+            )
+        ";
+    }
+
+} else {
+
+    // ALL
+    $resign_status = "";
+}
 } else {
     $resign_status = "";
 };
@@ -94,7 +126,14 @@ if ($dob != '') {
     $day   = date('d', strtotime($dob));
     $month = date('m', strtotime($dob));
 
-    $crit .= " AND DAY(em.dob) = '$day' AND MONTH(em.dob) = '$month'";
+    $crit .= " AND DAY(em.dob) = '$day' AND MONTH(em.dob) = '$month' AND em.is_active = '1'
+            AND (
+                em.resign_status != '1'
+                OR (
+                    em.resign_status = '1'
+                    AND em.last_working_date >= CURDATE()
+                )
+            )";
 }
 
 $anniversary_date = $_GET['anniversary_date'] ?? '';
@@ -102,19 +141,40 @@ if ($anniversary_date != '') {
     $day   = date('d', strtotime($anniversary_date));
     $month = date('m', strtotime($anniversary_date));
 
-    $crit .= " AND DAY(em.anniversary_date) = '$day' AND MONTH(em.anniversary_date) = '$month'";
+    $crit .= " AND DAY(em.anniversary_date) = '$day' AND MONTH(em.anniversary_date) = '$month' AND em.is_active = '1'
+            AND (
+                em.resign_status != '1'
+                OR (
+                    em.resign_status = '1'
+                    AND em.last_working_date >= CURDATE()
+                )
+            )";
 }
 
 $work_anniversary = $_GET['work_anniversary'] ?? '';
 if ($work_anniversary != '') {
     $day   = date('d', strtotime($work_anniversary));
     $month = date('m', strtotime($work_anniversary));
-    $crit .= " AND DAY(em.date_of_joining) = '$day' AND MONTH(em.date_of_joining) = '$month'";
+    $crit .= " AND DAY(em.date_of_joining) = '$day' AND MONTH(em.date_of_joining) = '$month' AND em.is_active = '1'
+            AND (
+                em.resign_status != '1'
+                OR (
+                    em.resign_status = '1'
+                    AND em.last_working_date >= CURDATE()
+                )
+            )";
 }
 
 $sixty_plus_age = $_GET['sixty_plus_age'] ?? '0';
 if ($sixty_plus_age == 1) {
-    $crit .= " AND TIMESTAMPDIFF(YEAR, em.dob, CURDATE()) >= 60";
+    $crit .= " AND TIMESTAMPDIFF(YEAR, em.dob, CURDATE()) >= 60   AND em.is_active = '1'
+            AND (
+                em.resign_status != '1'
+                OR (
+                    em.resign_status = '1'
+                    AND em.last_working_date >= CURDATE()
+                )
+            )" ; 
 }
 
 $fieldMap = [
@@ -209,6 +269,7 @@ if (isset($_GET['submit'])) {
 </style>
 
 <body>
+    <?php include('inc/loader.php') ?>
     <?php include('inc/header.php') ?>
     <?php include('inc/sidebar.php') ?>
     <!-- end auth-page-wrapper -->
@@ -220,7 +281,7 @@ if (isset($_GET['submit'])) {
                 <?php include('inc/alert.php'); ?>
                 <div class="row">
                     <?php if (!isset($_GET['submit'])) { ?>
-                    
+
                     <div class="col-lg-12">
                         <div class="card" id="customerList">
                             <div class="card-header border-bottom-dashed">
@@ -398,7 +459,7 @@ if (isset($_GET['submit'])) {
                             ON em.reporting_manager = erpt.emp_id
                         LEFT JOIN grade_master gm 
                             ON em.grade_id = gm.grade_id
-                        WHERE em.unit_id = '$unitid' $crit and (em.resign_status != '1' OR (em.resign_status = '1' AND em.last_working_date >= CURDATE()))
+                        WHERE em.unit_id = '$unitid' $crit  
                         group by em.emp_id
                         ORDER BY em.emp_code ASC
                         "; 
@@ -414,7 +475,7 @@ if (isset($_GET['submit'])) {
                                             <h5 class="card-title mb-0">
                                                 <?= $submodule; ?>
                                             </h5>
-                                            <div class="ms-2 text-muted"> 
+                                            <div class="ms-2 text-muted">
                                                 <?php if (!empty($department_name)) { ?>
                                                 <b>Dept:</b> <?= $department_name; ?>
                                                 <?php } ?>
@@ -455,7 +516,11 @@ if (isset($_GET['submit'])) {
                                                     foreach ($res as $row) {
                                                     ?>
                                                 <tr id="tr_<?= $row["emp_id"]; ?>">
-                                                    <td><?php echo $slno++; ?></td>
+                                                    <td><?php echo $slno++; ?> <a
+                                                            href="employee_master.php?emp_id=<?= $row['emp_id'] ?>&mode=view"
+                                                            class="btn btn-sm btn-primary">
+                                                           view
+                                                        </a></td>
                                                     <td><?= $row["emp_code"]; ?></td>
                                                     <td> <?= ucfirst($row['first_name'] ?? ''); ?>
                                                         <?= ucfirst($row['last_name'] ?? ''); ?></td>

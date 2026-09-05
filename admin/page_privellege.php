@@ -25,6 +25,7 @@ if (isset($_POST['submit'])) {
     $page_heading = $obj->test_input($_POST['page_heading']);
     $pagelink = $obj->test_input($_POST['pagelink']);
     $page_type = $obj->test_input($_POST['page_type']);
+    $enable = $obj->test_input($_POST['enable']??0);
 
     //check Duplicate
 
@@ -37,6 +38,7 @@ if (isset($_POST['submit'])) {
                 'type' => 'hrms',
                 'pagelink' => $pagelink,
                 'page_type' => $page_type,
+                'enable' => $enable,
                 'page_heading' => $page_heading,
                 'ipaddress' => $ipaddress,
                 'createdate' => $createdate,
@@ -48,7 +50,7 @@ if (isset($_POST['submit'])) {
             echo "<script>location='$pagename?action=$action'</script>";
         } else {
             //update 
-            $form_data = array('menuname' => $menuname, 'pagelink' => $pagelink, 'page_type' => $page_type,'page_heading' => $page_heading, 'ipaddress' => $ipaddress, 'lastupdated' => $createdate, 'createdby' => $loginid);
+            $form_data = array('menuname' => $menuname, 'pagelink' => $pagelink, 'page_type' => $page_type,'page_heading' => $page_heading, 'ipaddress' => $ipaddress, 'lastupdated' => $createdate, 'createdby' => $loginid, 'enable' => $enable);
             $where = array($tblpkey => $keyvalue);
             $keyvalue = $obj->update_record($tblname, $where, $form_data);
             $action = 2;
@@ -68,11 +70,13 @@ if (isset($_GET[$tblpkey])) {
     $page_heading =  $sqledit['page_heading'];
     $pagelink =  $sqledit['pagelink'];
     $page_type =  $sqledit['page_type'];
+    $enable =  $sqledit['enable'];
 } else {
     $menuname =  $obj->getvalfield($tblname, "menuname", "1=1 order by  $tblpkey desc");
     $page_heading =  "";
     $pagelink =  "";
     $page_type =  "";
+    $enable =  "1";
 }
 
 ?>
@@ -151,12 +155,26 @@ if (isset($_GET[$tblpkey])) {
                                             </select>
                                             <script>
                                             document.getElementById('page_type').value =
-                                                '<?php echo ucfirst(strtolower($page_type)); ?>';
+                                                '<?php echo $page_type; ?>';
+                                            </script>
+                                        </div>
+
+                                           <div class="mb-3 col-12 col-lg-3">
+                                            <label for="enable" class="form-label">Status<span
+                                                    class="text-danger fw-bold">*</span></label>
+                                            <select class="form-control form-control-sm chosen-select" name="enable"
+                                                id="enable">
+                                                <option value="">Select Status</option>
+                                                <option value="1">Enable</option>
+                                                <option value="0">Disable</option>
+                                            </select>
+                                            <script>
+                                            document.getElementById('enable').value = '<?php echo $enable ?>';
                                             </script>
                                         </div>
                                         <div class="col-md-3 mt-4">
                                             <input type="submit"
-                                                onclick="return checkinputmaster('menuname,page_heading,pagelink')"
+                                                onclick="return checkinputmaster('menuname,page_heading,pagelink,enable')"
                                                 name="submit" class="btn btn-primary btn-sm"
                                                 value="<?php echo $btn_name; ?>">
                                             <input type="hidden" name="<?php echo $tblpkey; ?>"
@@ -194,6 +212,7 @@ if (isset($_GET[$tblpkey])) {
                                                 <th>Page Type</th>
                                                 <th>Page Heading</th>
                                                 <th>Page Link</th>
+                                                <th>Status</th>
                                                 <th class="text-center">Action</th>
                                             </tr>
                                         </thead>
@@ -210,6 +229,7 @@ if (isset($_GET[$tblpkey])) {
                                                 <td><?php echo $row_get['page_type']?></td>
                                                 <td><?php echo $row_get['page_heading'] ?></td>
                                                 <td><?php echo $row_get['pagelink'] ?></td>
+                                                <td><?php echo $row_get['enable']==1?'Enabled':'Disabled' ?></td>
                                                 <td>
                                                     <ul class="list-inline hstack gap-2 mb-0">
                                                         <li class="list-inline-item " data-bs-toggle="tooltip"

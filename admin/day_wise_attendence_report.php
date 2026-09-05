@@ -54,10 +54,8 @@ if (isset($_GET['att_action'])) {
     }
 } else {
     $att_action = "";
-}
-
-?>
-
+} 
+?> 
 
 <!doctype html>
 <html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
@@ -100,7 +98,7 @@ if (isset($_GET['att_action'])) {
                                 </div>
                             </div>
                             <div class="card-body">
-                                <form method="get">
+                                <form method="get" id="attendanceForm">
                                     <div class="row">
                                         <div class="col-lg-3 mb-3">
                                             <label for="emp_id" class="form-label">Attendence Date<span
@@ -152,6 +150,7 @@ if (isset($_GET['att_action'])) {
                                                 id="att_action">
                                                 <option value="">All</option>
                                                 <option value="Incomplete">Incomplete</option>
+                                                <option value="misspunch">Misspunch</option>
                                                 <option value="Present">Present</option>
                                                 <option value="Earning Leave">Earning Leave</option>
                                                 <option value="Weekly Leave">Weekly Leave</option>
@@ -222,15 +221,14 @@ if (isset($_GET['att_action'])) {
                                         </thead>
                                         <tbody>
                                             <?php
-                                                $slno = 1;
+                                                $slno = 1; 
 
                                                 if ($att_action == 'Absent') {
                                                     $res = $obj->executequery("SELECT em.*, ae.*,sm.shift_name,dem.designation,dm.department_name FROM employee_master em LEFT JOIN attendance_entry ae ON em.emp_id = ae.emp_id AND ae.attendance_date = '$attendance_date' LEFT JOIN shift_master sm ON ae.shift_id=sm.shift_id LEFT JOIN department_master dm ON em.department_id=dm.department_id LEFT JOIN designation_master dem ON em.designation_id=dem.designation_id WHERE em.unit_id = '$unitid' $crit2 AND (em.resign_status != '1' OR (em.resign_status = '1' AND em.last_working_date >= CURDATE())) ORDER BY em.emp_id DESC");
                                                 } else {
                                                     $res = $obj->executequery("SELECT ae.*,sm.shift_name,dm.department_name, em.first_name, em.last_name, em.designation_id,dem.designation,em.emp_code ,em.resign_status,em.last_working_date FROM $tblname ae LEFT JOIN employee_master em ON ae.emp_id = em.emp_id LEFT JOIN shift_master sm ON ae.shift_id=sm.shift_id LEFT JOIN department_master dm ON ae.department_id=dm.department_id LEFT JOIN designation_master dem ON em.designation_id=dem.designation_id WHERE ae.unit_id = '$unitid' $crit AND (em.resign_status != '1' OR (em.resign_status = '1' AND em.last_working_date >= CURDATE())) ORDER BY ae.$tblpkey DESC");
                                                 }
-
-
+ 
                                                 foreach ($res as $row) {
 
                                                 ?>
@@ -567,6 +565,30 @@ if (isset($_GET['att_action'])) {
 
         });
     }
+
+    $('#attendanceForm').on('submit', function(e) {
+
+    var att_action = $('#att_action').val();
+
+    if (att_action === 'misspunch') {
+
+        e.preventDefault();
+
+        var attendance_date = $('#attendance_date').val();
+        var department_id   = $('#department_id').val();
+        var shift_id        = $('#shift_id').val();
+
+        var url = 'misspunch_att.php'
+            + '?attendance_date=' + encodeURIComponent(attendance_date)
+            + '&department_id=' + encodeURIComponent(department_id)
+            + '&shift_id=' + encodeURIComponent(shift_id)
+            + '&att_action=' + encodeURIComponent(att_action)
+            + '&search=' + 'Search';
+
+        window.location.href = url;
+    }
+
+});
     </script>
 </body>
 

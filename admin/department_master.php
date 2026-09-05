@@ -15,6 +15,7 @@ if (isset($_POST['submit'])) {
     $department_name  = $obj->test_input($_POST['department_name']);
     $emp_id  = $obj->test_input($_POST['emp_id']);
     $c_off_check = isset($_POST['c_off_check']) ? 1 : 0;
+    $allow_add_leave = isset($_POST['allow_add_leave']) ? 1 : 0;
 
     $count = $obj->getvalfield($tblname, "count(*)", "department_name='$department_name' and subdivision_id='$subdivision_id' and unit_id='$unitid' and $tblpkey!='$keyvalue'");
 
@@ -24,6 +25,7 @@ if (isset($_POST['submit'])) {
         "department_name" => $department_name,
         "emp_id" => $emp_id,
         "c_off_check"   => $c_off_check,
+        "allow_add_leave"   => $allow_add_leave,
         "createdby" => $loginid,
         "sessionid"   => $sessionid,
         "unit_id"   => $unitid,
@@ -38,7 +40,8 @@ if (isset($_POST['submit'])) {
             $lastid = $obj->insert_record_lastid($tblname, $form_data);
 
             $update_employee = [
-                'reporting_manager' => $emp_id
+                'reporting_manager' => $emp_id,
+                'allow_add_leave' => $allow_add_leave
             ];
 
             $where_employee = [
@@ -56,7 +59,8 @@ if (isset($_POST['submit'])) {
             $obj->update_record($tblname, $where, $form_data);
 
             $update_employee = [
-                'reporting_manager' => $emp_id
+                'reporting_manager' => $emp_id,
+                'allow_add_leave' => $allow_add_leave,
             ];
 
             $where_employee = [
@@ -82,12 +86,14 @@ if (isset($_GET[$tblpkey])) {
     $department_name =  $sqledit['department_name'];
     $emp_id =  $sqledit['emp_id'];
     $c_off_check   = $sqledit['c_off_check'];
+    $allow_add_leave   = $sqledit['allow_add_leave'];
 } else {
     // $category_id = "";
     $subdivision_id = "";
     $department_name = "";
     $emp_id = "";
     $c_off_check   = 0;
+    $allow_add_leave   = 0;
 }
 ?>
 
@@ -190,6 +196,20 @@ if (isset($_GET[$tblpkey])) {
                                             document.getElementById('emp_id').value =
                                                 '<?= $emp_id; ?>';
                                             </script>
+                                        </div>
+
+                                         <div class="col-lg-3 mb-3 mt-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input"
+                                                    type="checkbox"
+                                                    name="allow_add_leave"
+                                                    id="allow_add_leave"
+                                                    value="1"
+                                                    <?= ($allow_add_leave == 1) ? 'checked' : '' ?>>
+                                                <label class="form-check-label" for="allow_add_leave">
+                                                   Add Leave on Week Offs
+                                                </label>
+                                            </div> 
                                         </div>
 
                                         

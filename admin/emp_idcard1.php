@@ -3,7 +3,7 @@ include("../adminsession.php");
 require_once __DIR__ . '/mpdf/vendor/autoload.php';
 
 $mpdf = new \Mpdf\Mpdf([
-    'format' => [95,148], // ID Card Size
+    'format' => [95, 148], // ID Card Size
     'margin_left'   => 0,
     'margin_right'  => 0,
     'margin_top'    => 0,
@@ -32,7 +32,7 @@ WHERE e.emp_id='$emp_id'
 
 $row = $obj->executequery($sql);
 
-if(empty($row)){
+if (empty($row)) {
     die("Employee Not Found");
 }
 
@@ -45,27 +45,10 @@ $emp = $row[0];
 $unit = $obj->select_record(
     "unit_master",
     array("unit_id" => $emp['unit_id'])
-);
-
-// =======================
-// DEMO DATA
-// =======================
-
-// $company_name    = "NRVS STEELS LIMITED";
-// $company_address = "TARAIMAL, RAIGARH (C.G.)";
+); 
 
 $company_name    = $unit['unit_name'] ?? '';
-$company_address = $unit['address'] ?? '';
-
-// $name         = "SHASHIKAMAL MIRI";
-// $father       = "LATE RADHELAL MIRI";
-// $ecode        = "2213";
-// $blood_group  = "HR (PF + ESI)";
-// $designation  = "ADMIN";
-// $department   = "ADMIN";
-// $mobile       = "952782335";
-// $alt_mobile   = "9755248462";
-// $address      = "RAIPUR, CHHATTISGARH";
+$company_address = $unit['address'] ?? ''; 
 
 $name         = strtoupper($emp['first_name']);
 $father       = strtoupper($emp['father_name']);
@@ -74,26 +57,18 @@ $blood_group  = $emp['blood_group'];
 $designation  = strtoupper($emp['designation']);
 $department   = strtoupper($emp['department_name']);
 $mobile       = $emp['mobile_no'];
-$alt_mobile   = $emp['alt_mobile_no'];
+$alt_mobile       = $emp['emer_contact_no'];
+$dob   = $emp['dob'];
 $address      = strtoupper($emp['present_address']);
 
-$bg    = __DIR__ . '/img/idcard.png';
+$department = html_entity_decode($department, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+$designation = html_entity_decode($designation, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+$address    = html_entity_decode($address, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+$bg    = __DIR__ . '/img/idcard2.png';
 
 $logo  = __DIR__ . '/img/logo1.png';
-// $default_logo = __DIR__ . '/img/logo.png';
-
-// $logo = $default_logo;
-
-// if (!empty($unit['logo_image'])) {
-
-//     $unitLogoPath = __DIR__ . '/../management/uploaded/emp_documents/' . $unit['logo_image'];
-
-//     if (file_exists($unitLogoPath)) {
-//         $logo = $unitLogoPath;
-//     }
-// }
-
-// $photo = __DIR__ . '/img/user.jpg';
+ 
 $photo = !empty($emp['profile_image'])
     ? __DIR__ . '/uploaded/emp_documents/' . $emp['profile_image']
     : __DIR__ . '/img/user.jpg';
@@ -101,16 +76,18 @@ $photo = !empty($emp['profile_image'])
 // $signature = __DIR__ . '/img/signature.jpg';
 $signature = !empty($emp['emp_sign'])
     ? __DIR__ . '/uploaded/emp_documents/' . $emp['emp_sign']
-    :"";
- 
+    : "";
+
 
 $call = __DIR__ . '/img/call.png';
 $user_pic = __DIR__ . '/img/name.png';
 $f_pic = __DIR__ . '/img/f_name.png';
 $code_pic = __DIR__ . '/img/code.png';
+$dob_pic = __DIR__ . '/img/dob.png';
 $blood_pic = __DIR__ . '/img/blood.png';
 $position_pic = __DIR__ . '/img/position.png';
 $suitcase_pic = __DIR__ . '/img/suitcase.png';
+$location_pic = __DIR__ . '/img/location.png';
 // =======================
 // HTML
 // =======================
@@ -129,8 +106,8 @@ body{
 
 .card{
     width:95mm;
-    height:148mm;
-    background:url('.$bg.');
+    height:155mm;
+    background:url(' . $bg . ');
     background-image-resize:6;
     position:relative;
 }
@@ -149,15 +126,13 @@ body{
 .details{
     width:100%;
     border-collapse:collapse;
-    margin-top:30px;
-    margin-left:50px;
-    
+    margin:20px;
 }
     
 
 .details td{
-    font-size:11px;
-    padding:2px 0;
+    font-size:13px;
+    padding:3px 0;
     vertical-align:top;
     
 }
@@ -188,7 +163,7 @@ body{
 
     <!-- TOP SPACE -->
     <tr>
-        <td colspan="3" height="40"></td>
+        <td colspan="3" height="10"></td>
     </tr>
 
     <!-- COMPANY -->
@@ -199,17 +174,17 @@ body{
             <tr>
 
                 <td width="20%" style="text-align:center;">
-                    <img src="'.$logo.'" width="70">
+                    <img src="' . $logo . '" width="70">
                 </td>
 
                 <td  >
                     <div class="company">
-                        '.$company_name.'
+                        ' . $company_name . '
                     </div>
                       <hr style="color:#ff3c00; background-color:#f22d00; height:1px; border:none; margin:2px 0;">
 
                     <div class="address">
-                        '.$company_address.'
+                        ' . $company_address . '
                     </div>
                 </td>
 
@@ -221,7 +196,7 @@ body{
 
     <!-- SPACE BEFORE PHOTO -->
       <tr>
-        <td colspan="3" height="0"></td>
+        <td colspan="3" height="8"></td>
     </tr>
 
     <!-- PHOTO -->
@@ -230,10 +205,10 @@ body{
 
         <table style="
             width:40mm;
-            height:40mm;
+            height:45mm;
             border-collapse:collapse;
-            margin-right:-1.5mm;
-            margin-top:-2mm;
+            margin-right:-1.1mm;
+            margin-top:-1.3mm;
              
         ">
             <tr>
@@ -243,7 +218,7 @@ body{
                     text-align:center;
                     vertical-align:middle;
                 ">
-                     '.(!empty($photo) ? '<img src="'.$photo.'" width="42mm" height="40mm">' : '').'
+                     ' . (!empty($photo) ? '<img src="' . $photo . '" width="42mm" height="42mm">' : '') . '
                 </td>
             </tr>
         </table>
@@ -253,7 +228,7 @@ body{
 
     <!-- NAME STRIP SPACE -->
     <tr>
-        <td colspan="3" height="8"></td>
+        <td colspan="3" height="15"></td>
     </tr>
 
     <!-- NAME -->
@@ -267,7 +242,7 @@ body{
             text-transform:uppercase;
             letter-spacing:.3px;
         ">
-            '.$name.'
+            ' . $name . '
         </div>
 
     </td>
@@ -286,48 +261,51 @@ body{
             <table class="details">
 
                 <tr>
-                  
-                    <td class="label"> <img src="'.$user_pic.'" width="12" height="12">
-        &nbsp;NAME</td>
-                    <td class="colon">:</td>
-                    <td class="value">'.$name.'</td>
-                </tr>
-
-                <tr>
-                    <td class="label"><img src="'.$f_pic.'" width="12" height="12">
+                    <td class="label"><img src="' . $f_pic . '" width="12" height="12">
         &nbsp;F/H NAME</td>
                     <td class="colon">:</td>
-                    <td class="value">'.$father.'</td>
+                    <td class="value">' . $father . '</td>
                 </tr>
 
                 <tr>
-                    <td class="label"><img src="'.$code_pic.'" width="12" height="12">
+                    <td class="label"><img src="' . $code_pic . '" width="12" height="12">
         &nbsp;E.CODE</td>
                     <td class="colon">:</td>
-                    <td class="value">'.$ecode.'</td>
+                    <td class="value">' . $ecode . '</td>
                 </tr>
 
                 <tr>
-                    <td class="label"><img src="'.$blood_pic.'"width="10" height="10"> &nbsp;BLOOD GROUP</td>
+                    <td class="label"><img src="' . $dob_pic . '"width="10" height="10"> &nbsp;D.O.B.</td>
                     <td class="colon">:</td>
-                    <td class="value">'.$blood_group.'</td>
+                    <td class="value">'.$obj->dateformatindia($dob).'</td>
                 </tr>
 
                 <tr>
-                    <td class="label"><img src="'.$position_pic.'" width="12" height="12">
+                    <td class="label"><img src="' . $blood_pic . '"width="10" height="10"> &nbsp;BLOOD GROUP</td>
+                    <td class="colon">:</td>
+                    <td class="value">' . $blood_group . '</td>
+                </tr>
+
+                <tr>
+                    <td class="label"><img src="' . $position_pic . '" width="12" height="12">
         &nbsp;DESIGNATION</td>
                     <td class="colon">:</td>
-                    <td class="value">'.$designation.'</td>
+                    <td class="value">' . $designation . '</td>
                 </tr>
 
                 <tr>
-                    <td class="label"><img src="'.$suitcase_pic.'" width="12" height="12">
+                    <td class="label"><img src="' . $suitcase_pic . '" width="12" height="12">
         &nbsp;DEPARTMENT</td>
                     <td class="colon">:</td>
-                    <td class="value">'.$department.'</td>
+                    <td class="value">' . $department . '</td>
                 </tr>
 
-                 
+                <tr>
+                    <td class="label"><img src="' . $location_pic . '" width="12" height="12">
+        &nbsp;ADDRESS</td>
+                    <td class="colon">:</td>
+                    <td class="value">'.$address.'</td>
+                </tr>
 
             </table>
 
@@ -339,15 +317,15 @@ body{
 
     <!-- SIGNATURE SPACE -->
     <tr>
-        <td colspan="3" height="6"></td>
+        <td colspan="3" height="1"></td>
     </tr>
     
 
     <!-- SIGNATURE -->
     <tr>
-    <td colspan="3" align="center">
+    <td colspan="3" align="center" style="padding:0px 35px;">
 
-      '.(!empty($signature) ? '<img src="'.$signature.'" width="32mm">' : '').'
+      ' . (!empty($signature) ? '<img src="' . $signature . '" width="32mm">' : '') . '
 
         <div style="
             font-size:8px;
@@ -367,22 +345,23 @@ body{
 </div>
 <div style="
     position:absolute;
-    bottom:1mm;
+    bottom:2.2mm;
     left:0;
     width:100%;
     color:#FFFFFF;
+    padding:0px 20px;
 ">
 
     <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
 
             <!-- MOBILE -->
-            <td width="50%" align="center">
+            <td width="50%" align="left">
 
                 <table cellpadding="0" cellspacing="0">
                     <tr>
                         <td>
-                            <img src="'.$call.'" width="16" style="vertical-align:middle;">
+                            <img src="' . $call . '" width="16" style="vertical-align:middle;">
                         </td>
 
                         <td style="padding-left:4px; text-align:left;">
@@ -392,7 +371,7 @@ body{
                             </div>
 
                             <div style="font-size:12px; font-weight:bold; line-height:12px;color:white;">
-                                '.$mobile.'
+                                ' . $mobile . '
                             </div>
 
                         </td>
@@ -401,18 +380,15 @@ body{
 
             </td>
 
-            <!-- DIVIDER -->
-            <td width="4%" align="center">
-                <div style="height:10mm; border-left:1px solid #FFFFFF;"></div>
-            </td>
+           
 
             <!-- ALT -->
-            <td width="20%" align="center">
+            <td width="50%" align="center">
 
                 <table cellpadding="0" cellspacing="0">
                     <tr>
                         <td>
-                            <img src="'.$call.'" width="16" style="vertical-align:middle;">
+                            <img src="' . $call . '" width="16" style="vertical-align:middle;">
                         </td>
 
                         <td style="padding-left:4px; text-align:left;">
@@ -422,7 +398,7 @@ body{
                             </div>
 
                             <div style="font-size:12px; font-weight:bold; line-height:12px; color:white;">
-                                '.$alt_mobile.'
+                                ' . $alt_mobile . '
                             </div>
 
                         </td>
@@ -438,7 +414,8 @@ body{
 </body>
 </html>
 ';
+// print($html);
+// die;
 
 $mpdf->WriteHTML($html);
 $mpdf->Output('IDCARD.pdf', 'I');
-?>

@@ -6,6 +6,7 @@ $tblname = "employee_master";
 $tblpkey = "emp_id";
 $imgpath = '../uploaded/emp_documents/';
 $imgpath1 = 'uploaded/emp_documents/';
+$mode = (isset($_GET['mode'])) ? $obj->test_input($_GET['mode']) :'New';
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 $created_time = date('H:i:s');
@@ -39,6 +40,7 @@ if (isset($_POST['submit'])) {
     $pan_no = $obj->test_input($_POST['pan_no']);
     $driving_license = $obj->test_input($_POST['driving_license']);
     $driving_licence_cat_id = $obj->test_input($_POST['driving_licence_cat_id']??0);
+    $is_mannual_att = $obj->test_input($_POST['is_mannual_att']??0);
     $driving_lic_expiry_date = $obj->test_input($_POST['driving_lic_expiry_date']);
     $passport_no = $obj->test_input($_POST['passport_no']);
     $identification_masks = $obj->test_input($_POST['identification_masks']);
@@ -72,6 +74,7 @@ if (isset($_POST['submit'])) {
     $is_esic = $obj->test_input($_POST['is_esic'] ?? 0);
     $is_rejoin = $obj->test_input($_POST['is_rejoin'] ?? 0);
     $allow_weekly_off = $obj->test_input($_POST['allow_weekly_off'] ?? 0);
+    $allow_add_leave = $obj->test_input($_POST['allow_add_leave'] ?? 0);
     $is_perform_incen = $obj->test_input($_POST['is_perform_incen'] ?? 0);
     $is_active = $obj->test_input($_POST['is_active'] ?? 0);
 
@@ -145,6 +148,7 @@ if (isset($_POST['submit'])) {
         "pan_no" => $pan_no,
         "driving_license" => $driving_license,
         "driving_licence_cat_id" => $driving_licence_cat_id,
+        "is_mannual_att" => $is_mannual_att,
         "driving_lic_expiry_date" => $driving_lic_expiry_date,
         "passport_no" => $passport_no,
         "identification_masks" => $identification_masks,
@@ -177,6 +181,7 @@ if (isset($_POST['submit'])) {
         "is_pf" => $is_pf,
         "is_esic" => $is_esic,
         "allow_weekly_off" => $allow_weekly_off,
+        "allow_add_leave" => $allow_add_leave,
         "is_perform_incen" => $is_perform_incen,
         "is_active" => $is_active,
         "last_active_date" => $createdate,
@@ -209,6 +214,7 @@ if (isset($_POST['submit'])) {
         'promotion_date' => $date_of_joining,
         'unit_id' => $unitid,     
         'type' => 'promotion',     
+        'is_initial' => '1',     
         'department_id' => $department_id,
         'designation_id' => $designation_id,
         'basic_salary' => $basic_salary,
@@ -220,10 +226,10 @@ if (isset($_POST['submit'])) {
     );
 
     $allowedTypes = ['jpg', 'jpeg', 'png'];
-    $imageName = $_FILES["profile_image"]['name'];
-    $imageName2 = $_FILES["emp_sign"]['name'];
-    $imageFileType = strtolower(pathinfo($imageName, PATHINFO_EXTENSION));
-    $imageFileType2 = strtolower(pathinfo($imageName2, PATHINFO_EXTENSION));
+    $imageName = $_FILES["profile_image"]['name'] ?? '';
+    $imageName2 = $_FILES["emp_sign"]['name'] ?? '';
+    $imageFileType = !empty($imageName) ? strtolower(pathinfo($imageName, PATHINFO_EXTENSION)) : '';
+    $imageFileType2 = !empty($imageName2) ? strtolower(pathinfo($imageName2, PATHINFO_EXTENSION)) : '';
 
 
     $count = $obj->getvalfield($tblname, "count(*)", "(biomatric_id = '$biomatric_id' OR emp_code = '$emp_code' OR mobile_no = '$mobile_no') and unit_id='$unitid' and $tblpkey!='$keyvalue'");
@@ -453,11 +459,13 @@ if (isset($_GET[$tblpkey])) {
     $is_pf = $sqledit['is_pf'];
     $is_esic = $sqledit['is_esic'];
     $allow_weekly_off = $sqledit['allow_weekly_off'];
+    $allow_add_leave = $sqledit['allow_add_leave'];
     $is_perform_incen = $sqledit['is_perform_incen'];
     $is_active = $sqledit['is_active'];
     $is_rejoin = $sqledit['is_rejoin'];
     $form21_last_date = $sqledit['form21_last_date'];
     $is_form21_last_date = $sqledit['is_form21_last_date'];
+    $is_mannual_att = $sqledit['is_mannual_att'];
    
     $pf_uan = $sqledit['pf_uan'];
     $uan_no = $sqledit['uan_no'];
@@ -475,10 +483,11 @@ if (isset($_GET[$tblpkey])) {
     // die;
 } else {
     $emp_code = $biomatric_id = $obj->getcode("employee_master", "emp_code",  "1='1'");
-    $first_name = $last_name = $father_name  = $gender = $dob = $age = $blood_group = $marital_status =   $religion = $caste = $mobile_no = $alt_mobile_no = $email_id = $present_address = $permanent_address = $emer_contact_name = $emer_contact_relation = $emer_contact_no = $aadhar_no = $pan_no = $driving_license=$driving_licence_cat_id =$driving_lic_expiry_date= $passport_no = $identification_masks = $department_id = $designation_id = $grade_id = $date_of_joining =   $shift_id = $employee_type = $reporting_manager = $employer_name = $employer_designation_id = $service_from = $service_to = $reason = $job_responsibility = $last_salary = $profile_image = $emp_sign = $basic_salary =$emp_category= $opening_balance = $opening_date = $hra = $da = $conveyance = $medical_allowance = $special_allowance = $is_pf = $is_esic =$allow_weekly_off= $is_perform_incen= $is_active=$is_rejoin = $is_pt = $is_lwf = $ctc = $gross_salary = $net_salary = $anniversary_date= $pf_uan = $uan_no = $esic_no = $pf_joining_date = $esic_joining_date = $document_ids = $form21_last_date =  $last_name = '';
-    $is_form21_last_date = $ecoff=$coff ='0';
+    $first_name = $last_name = $father_name  = $dob = $age = $blood_group = $marital_status =   $religion = $caste = $mobile_no = $alt_mobile_no = $email_id = $present_address = $permanent_address = $emer_contact_name = $emer_contact_relation = $emer_contact_no = $aadhar_no = $pan_no = $driving_license=$driving_licence_cat_id =$driving_lic_expiry_date= $passport_no = $identification_masks = $department_id = $designation_id = $grade_id = $date_of_joining =   $shift_id = $employee_type = $reporting_manager = $employer_name = $employer_designation_id = $service_from = $service_to = $reason = $job_responsibility = $last_salary = $profile_image = $emp_sign = $basic_salary =$emp_category= $opening_balance = $opening_date = $hra = $da = $conveyance = $medical_allowance = $special_allowance = $is_pf = $is_esic =$allow_weekly_off=$allow_add_leave= $is_perform_incen= $is_active=$is_rejoin = $is_pt = $is_lwf = $ctc = $gross_salary = $net_salary = $anniversary_date= $pf_uan = $uan_no = $esic_no = $pf_joining_date = $esic_joining_date = $document_ids = $form21_last_date =  $last_name = '';
+    $is_form21_last_date = $ecoff=$coff =$is_mannual_att='0';
     $nationality = 'INDIAN';
     $job_location = 'Raigarh';
+    $gender = 'Male';
 }
 
 ?>
@@ -492,6 +501,7 @@ if (isset($_GET[$tblpkey])) {
     <title><?php echo $title; ?></title>
     <?php include('inc/css.php') ?>
     <link rel="stylesheet" href="assets/css/toogle.css">
+    <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css">
 </head>
 <style>
 .table-borderless tr td {
@@ -687,11 +697,11 @@ td {
                                                             class="text-danger fw-bold"> </span></label>
                                                     <select class="form-select form-select-sm chosen-select"
                                                         name="emp_category" id="emp_category">
-                                                        <option value="">Select</option> 
-                                                        <option value="Skilled">Skilled</option>
+                                                        <option value="">Select</option>
                                                         <option value="Unskilled">Unskilled</option>
-                                                        <option value="Semiskilled">Semiskilled</option> 
-                                                        <option value="Highskilled">Highskilled</option> 
+                                                        <option value="Semiskilled">Semiskilled</option>
+                                                        <option value="Skilled">Skilled</option>
+                                                        <option value="Highskilled">Highskilled</option>
                                                     </select>
                                                     <script>
                                                     document.getElementById('emp_category').value =
@@ -712,9 +722,9 @@ td {
                                                         id="age" value="<?= $age ?>" placeholder="Enter Age"
                                                         autocomplete="off" onkeypress="numberOnly(event);" maxlength="3"
                                                         readonly>
-                                                </div> 
-                                                 <div class="col-md-2">
-                                                    <label class="form-label">Blood Group  <span
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Blood Group <span
                                                             class="text-danger fw-bold"></span></label>
                                                     <select class="form-select form-select-sm chosen-select"
                                                         name="blood_group" id="blood_group">
@@ -804,7 +814,8 @@ td {
                                                 <div class="col-md-2">
                                                     <label class="form-label">Is PF<span
                                                             class="text-danger fw-bold">*</span> </label>
-                                                    <select class="form-select form-select-sm chosen-select" name="is_pf" id="is_pf">
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="is_pf" id="is_pf">
                                                         <option value="">Select</option>
                                                         <option value="1">YES</option>
                                                         <option value="0">NO</option>
@@ -816,22 +827,22 @@ td {
                                                 <div class="col-md-2">
                                                     <label class="form-label">Is ESI<span
                                                             class="text-danger fw-bold">*</span> </label>
-                                                    <select class="form-select form-select-sm chosen-select" name="is_esic"
-                                                        id="is_esic">
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="is_esic" id="is_esic">
                                                         <option value="">Select</option>
                                                         <option value="1">YES</option>
                                                         <option value="0">NO</option>
                                                     </select>
                                                     <script>
                                                     document.getElementById('is_esic').value =
-                                                    '<?php echo $is_esic; ?>';
+                                                        '<?php echo $is_esic; ?>';
                                                     </script>
                                                 </div>
                                                 <div class="col-md-2">
                                                     <label class="form-label">Allow Weekly Off<span
                                                             class="text-danger fw-bold">*</span> </label>
-                                                    <select class="form-select form-select-sm chosen-select" name="allow_weekly_off"
-                                                        id="allow_weekly_off">
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="allow_weekly_off" id="allow_weekly_off">
                                                         <option value="">Select</option>
                                                         <option value="1">YES</option>
                                                         <option value="0">NO</option>
@@ -841,11 +852,12 @@ td {
                                                         '<?php echo $allow_weekly_off; ?>';
                                                     </script>
                                                 </div>
-                                                 <div class="col-md-2">
+                                                
+                                                <div class="col-md-2">
                                                     <label class="form-label">Performance Incentive<span
                                                             class="text-danger fw-bold">*</span> </label>
-                                                    <select class="form-select form-select-sm chosen-select" name="is_perform_incen"
-                                                        id="is_perform_incen">
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="is_perform_incen" id="is_perform_incen">
                                                         <option value="">Select</option>
                                                         <option value="1">YES</option>
                                                         <option value="0">NO</option>
@@ -855,16 +867,35 @@ td {
                                                         '<?php echo $is_perform_incen; ?>';
                                                     </script>
                                                 </div>
-                                                <div class="col-md-2 mt-4">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="is_active"
-                                                            id="is_active" value="1"
-                                                            <?= ($is_active == 1) ? 'checked' : '' ?>>
-                                                        <label class="form-check-label" for="is_active">
-                                                            Is Active
-                                                        </label>
-                                                    </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Is Active<span
+                                                            class="text-danger fw-bold">*</span> </label>
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="is_active" id="is_active">
+                                                        <option value="">Select</option>
+                                                        <option value="1">YES</option>
+                                                        <option value="0">NO</option>
+                                                    </select>
+                                                    <script>
+                                                    document.getElementById('is_active').value =
+                                                        '<?php echo $is_active; ?>';
+                                                    </script>
                                                 </div>
+                                                 <div class="col-md-2">
+                                                    <label class="form-label">Add Leave on Week Offs<span
+                                                            class="text-danger fw-bold">*</span> </label>
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="allow_add_leave" id="allow_add_leave">
+                                                        <option value="">Select</option>
+                                                        <option value="1">YES</option>
+                                                        <option value="0">NO</option>
+                                                    </select>
+                                                    <script>
+                                                    document.getElementById('allow_add_leave').value =
+                                                        '<?php echo $allow_add_leave; ?>';
+                                                    </script>
+                                                </div>
+
                                                 <div class="col-md-2"><label>PF NO.</label><input
                                                         class="form-control form-control-sm" placeholder="Enter PF NO."
                                                         name="pf_uan" id="pf_uan" value="<?= $pf_uan ?>"></div>
@@ -910,11 +941,12 @@ td {
 
                                                 </div>
 
-                                                 <div class="col-md-3">
+                                                <div class="col-md-3">
                                                     <label class="form-label">Marital Status<span
                                                             class="text-danger fw-bold"></span></label>
-                                                    <select class="form-select form-select-sm chosen-select" name="marital_status"
-                                                        id="marital_status" onchange="toggleAnniversary()">
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="marital_status" id="marital_status"
+                                                        onchange="toggleAnniversary()">
                                                         <option value="">Select</option>
                                                         <option value="Unmarried">Unmarried</option>
                                                         <option value="Married">Married</option>
@@ -952,10 +984,10 @@ td {
                                                 </div>
 
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Gender<span
-                                                            class="text-danger fw-bold"> </span> </label>
-                                                    <select class="form-select form-select-sm chosen-select" name="gender"
-                                                        id="gender">
+                                                    <label class="form-label">Gender<span class="text-danger fw-bold">
+                                                        </span> </label>
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="gender" id="gender">
                                                         <option value="">Select</option>
                                                         <option value="Male">Male</option>
                                                         <option value="Female">Female</option>
@@ -979,22 +1011,42 @@ td {
                                                     <?php
                                                     } ?>
                                                 </div>
-
                                                 <div class="col-md-3">
                                                     <label class="form-label">Employee Signature <span
-                                                            class="text-danger fw-bold"> </span></label>
-                                                    <input type="file" class="form-control form-control-sm"
-                                                        name="emp_sign" id="emp_sign" accept="image/*">
-                                                    <?php if ($emp_sign != "") {
-                                                    ?>
-                                                    <img src="<?php echo $imgpath1 . $emp_sign;  ?>"
-                                                        style="height: 50px;" alt="">
-                                                    <?php
-                                                    } ?>
+                                                            class="text-danger fw-bold">(Please Remove Image background
+                                                            then Upload)</span><a href="https://www.remove.bg/"
+                                                            target="_blank"> click here</a></label>
+                                                    <input type="file" class="d-none" name="emp_sign" id="emp_sign"
+                                                        accept="image/jpeg,image/png">
+                                                    <button type="button" class="btn btn-outline-primary btn-sm w-100"
+                                                        onclick="document.getElementById('emp_sign').click();">
+                                                        <i class="ri-upload-2-line"></i> Choose Signature
+                                                    </button>
+                                                    <div id="signPreview" class="mt-2 text-center">
+                                                        <?php if ($emp_sign != "") { ?>
+                                                        <img src="<?php echo $imgpath1 . $emp_sign; ?>"
+                                                            style="max-height:60px; border:1px solid #ddd; padding:4px; border-radius:4px;"
+                                                            alt="Current Signature">
+                                                        <?php } ?>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Is Manual Att.<span
+                                                            class="text-danger fw-bold">*</span> </label>
+                                                    <select class="form-select form-select-sm chosen-select"
+                                                        name="is_mannual_att" id="is_mannual_att">
+                                                        <option value="0">NO</option>
+                                                        <option value="1">YES</option>
+                                                    </select>
+                                                    <script>
+                                                    document.getElementById('is_mannual_att').value =
+                                                        '<?php echo $is_mannual_att; ?>';
+                                                    </script>
                                                 </div>
 
 
-                                                 <div class="table-responsive" style="height:250px;">
+                                                <div class="table-responsive" style="height:250px;">
                                                     <?php if ($keyvalue > 0) { ?>
                                                     <div class="mb-2">
                                                         <button onclick="exportTableToExcel('exportExcel')"
@@ -1061,9 +1113,11 @@ td {
                                                                 </td>
                                                                 <td>
                                                                     <input type="hidden" value="0" id="emp_bank_id">
+                                                                     <?php if ($mode !='view') {  ?>
                                                                     <button type="button" class="btn btn-sm btn-success"
                                                                         onclick="save_bank_details();"
                                                                         id="bank_btn">Add</button>
+                                                                        <?php } ?>
                                                                 </td>
                                                             </tr>
 
@@ -1081,15 +1135,15 @@ td {
 
                                             <div class="mt-4 text-end">
                                                 <button type="button" class="btn btn-primary btn-next"
-                                                    data-validate="emp_code,biomatric_id,first_name,father_name,department_id,designation_id,date_of_joining,basic_salary,dob,mobile_no,aadhar_no,shift_id,is_pf,is_esic,allow_weekly_off,is_perform_incen,reporting_manager,present_address">
+                                                    data-validate="emp_code,biomatric_id,first_name,father_name,department_id,designation_id,date_of_joining,basic_salary,dob,mobile_no,aadhar_no,shift_id,is_pf,is_esic,allow_weekly_off,is_perform_incen,is_active,allow_add_leave,reporting_manager,present_address">
                                                     Next
                                                     →</button>
                                             </div>
                                         </div>
- <!-- data-validate="emp_code,biomatric_id,first_name,father_name,department_id,designation_id,date_of_joining,basic_salary,emp_category,dob,blood_group,mobile_no,aadhar_no,shift_id,is_pf,is_esic,allow_weekly_off,is_perform_incen,reporting_manager,marital_status,present_address,permanent_address,gender,profile_image" -->
+                                        <!-- data-validate="emp_code,biomatric_id,first_name,father_name,department_id,designation_id,date_of_joining,basic_salary,emp_category,dob,blood_group,mobile_no,aadhar_no,shift_id,is_pf,is_esic,allow_weekly_off,is_perform_incen,reporting_manager,marital_status,present_address,permanent_address,gender,profile_image" -->
                                         <!-- ⭐ STEP 2 : CONTACT DETAILS -->
 
-                                       
+
                                         <div class="form-step">
 
                                             <div class="row g-3">
@@ -1155,17 +1209,18 @@ td {
                                                         value="<?= $driving_license ?>"
                                                         placeholder="Enter Driving License">
                                                 </div>
-                                                 <div class="col-lg-3 ">
-                                                    <label for="driving_licence_cat_id" class="form-label">Driving License Category<span
-                                                            class="text-danger fw-bold"> </span></label>
+                                                <div class="col-lg-3 ">
+                                                    <label for="driving_licence_cat_id" class="form-label">Driving
+                                                        License Category<span class="text-danger fw-bold">
+                                                        </span></label>
                                                     <select class="form-select form-select-sm chosen-select"
-                                                        name="driving_licence_cat_id" id="driving_licence_cat_id"
-                                                        onchange="get_designation(this.value);">
+                                                        name="driving_licence_cat_id" id="driving_licence_cat_id">
                                                         <option value="">Select</option>
                                                         <?php $res = $obj->executequery("Select * from  driving_licence_cat order by driving_licence_cat_id asc");
                                                         foreach ($res as $key) { ?>
                                                         <option value="<?= $key['driving_licence_cat_id']; ?>">
-                                                            <?= $key['short_name']; ?>- <?= $key['licence_cat_name']; ?></option>
+                                                            <?= $key['short_name']; ?>- <?= $key['licence_cat_name']; ?>
+                                                        </option>
                                                         <?php } ?>
                                                     </select>
                                                     <script>
@@ -1199,7 +1254,7 @@ td {
                                                     <input type="text" class="form-control form-control-sm"
                                                         name="nationality" id="nationality" value="<?= $nationality ?>"
                                                         placeholder="Enter Nationality">
-                                                </div> 
+                                                </div>
 
                                                 <div class="col-md-3">
                                                     <label>Employment Type</label>
@@ -1218,8 +1273,8 @@ td {
                                                 </div>
 
                                                 <div class="col-md-3">
-                                                    <label>Job Location<span
-                                                            class="text-danger fw-bold"> </span></label>
+                                                    <label>Job Location<span class="text-danger fw-bold">
+                                                        </span></label>
                                                     <input type="text" class="form-control form-control-sm"
                                                         name="job_location" id="job_location"
                                                         value="<?= $job_location  ?>" placeholder="Enter Job Location">
@@ -1326,9 +1381,11 @@ td {
 
                                                                 <td>
                                                                     <input type="hidden" value="0" id="education_id">
+                                                                     <?php if ($mode !='view') {  ?>
                                                                     <button type="button" class="btn btn-sm btn-success"
                                                                         onclick="save_emp_education();"
                                                                         id="education_btn">Add</button>
+                                                                        <?php } ?>
                                                                 </td>
                                                             </tr>
                                                         </thead>
@@ -1403,10 +1460,11 @@ td {
 
                                                                 <td>
                                                                     <input type="hidden" value="0" id="emp_doc_id">
-
+ <?php if ($mode !='view') {  ?>
                                                                     <button type="button" class="btn btn-sm btn-success"
                                                                         onclick="save_emp_document();"
                                                                         id="document_btn">Add</button>
+                                                                        <?php } ?>
                                                                 </td>
                                                             </tr>
                                                         </thead>
@@ -1506,9 +1564,11 @@ td {
 
                                                                 <td>
                                                                     <input type="hidden" value="0" id="emp_language_id">
+                                                                     <?php if ($mode !='view') {  ?>
                                                                     <button type="button" class="btn btn-sm btn-success"
                                                                         onclick="save_emp_language();"
                                                                         id="language_btn">Add</button>
+                                                                        <?php } ?>
                                                                 </td>
                                                             </tr>
                                                         </thead>
@@ -1575,12 +1635,15 @@ td {
                                                                         </div>
                                                                     </div>
                                                                 </td>
-                                                                <td>
+                                                                <td> 
                                                                     <input type="hidden" id="old_aadhar_card">
-                                                                    <input type="hidden" id="family_detail_id">
+                                                                    <input type="hidden" id="family_detail_id"
+                                                                        value="0">
+                                                                    <?php if ($mode !='view') {  ?>
                                                                     <button type="button" class="btn btn-sm btn-success"
                                                                         onclick="save_family();"
                                                                         id="family_btn">Add</button>
+                                                                    <?php } ?>
                                                                 </td>
                                                             </tr>
                                                         </thead>
@@ -1677,7 +1740,7 @@ td {
                                 </div>
                             </div>
                             <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
-                            if ($chkadd == 1) {  ?>
+                            if ($chkadd == 1 && $mode !='view') {  ?>
                             <div class="col-lg-12 mb-3 d-flex justify-content-center gap-2">
                                 <br>
                                 <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
@@ -1967,7 +2030,7 @@ td {
                     }).then(() => {
                         fetch_family_details();
                         $('#member_name').val('');
-                        $('#family_detail_id').val('');
+                        $('#family_detail_id').val('0');
                         $('#family_aadhar_card').val('');
                         $('#member_relation').val('');
                         $('#family_aadhar_preview').html('');
@@ -1996,10 +2059,11 @@ td {
 
     function fetch_family_details() {
         let keyvalue = '<?= $keyvalue; ?>';
+        let mode = '<?= $mode; ?>';
         jQuery.ajax({
             type: 'POST',
             url: 'ajax/ajax_fetch_family_details.php',
-            data: 'keyvalue=' + keyvalue + '&type=family',
+            data: 'keyvalue=' + keyvalue + '&type=family'+ '&mode=' + mode,
             dataType: 'html',
             success: function(data) {
                 //alert(data);
@@ -2171,10 +2235,11 @@ td {
 
     function fetch_education_details() {
         let keyvalue = '<?= $keyvalue; ?>';
+        let mode = '<?= $mode; ?>';
         jQuery.ajax({
             type: 'POST',
             url: 'ajax/ajax_fetch_family_details.php',
-            data: 'keyvalue=' + keyvalue + '&type=education',
+            data: 'keyvalue=' + keyvalue + '&type=education' + '&mode=' + mode,
             dataType: 'html',
             success: function(data) {
                 //alert(data);
@@ -2323,10 +2388,11 @@ td {
 
     function fetch_document_details() {
         let keyvalue = '<?= $keyvalue; ?>';
+        let mode = '<?= $mode; ?>';
         jQuery.ajax({
             type: 'POST',
             url: 'ajax/ajax_fetch_family_details.php',
-            data: 'keyvalue=' + keyvalue + '&type=document',
+            data: 'keyvalue=' + keyvalue + '&type=document' + '&mode=' + mode,
             dataType: 'html',
             success: function(data) {
                 //alert(data);
@@ -2444,10 +2510,11 @@ td {
 
     function fetch_language_details() {
         let keyvalue = '<?= $keyvalue; ?>';
+        let mode = '<?= $mode; ?>';
         jQuery.ajax({
             type: 'POST',
             url: 'ajax/ajax_fetch_family_details.php',
-            data: 'keyvalue=' + keyvalue + '&type=language_known',
+            data: 'keyvalue=' + keyvalue + '&type=language_known' + '&mode=' + mode,
             dataType: 'html',
             success: function(data) {
                 //alert(data);
@@ -2501,7 +2568,7 @@ td {
         document.getElementById("language_name").focus();
     }
 
-    function edit_bank(id, bank_name, acc_holder, acc_no, ifsc, status,branch_name) {
+    function edit_bank(id, bank_name, acc_holder, acc_no, ifsc, status, branch_name) {
         $('#emp_bank_id').val(id);
 
         $('#bank_id').val(bank_name).trigger('change');
@@ -2616,10 +2683,11 @@ td {
 
     function fetch_bank_details() {
         let keyvalue = '<?= $keyvalue; ?>';
+        let mode = '<?= $mode; ?>';
         jQuery.ajax({
             type: 'POST',
             url: 'ajax/ajax_fetch_family_details.php',
-            data: 'keyvalue=' + keyvalue + '&type=bank_details',
+            data: 'keyvalue=' + keyvalue + '&type=bank_details' + '&mode=' + mode, 
             dataType: 'html',
             success: function(data) {
                 //alert(data);
@@ -2886,7 +2954,9 @@ td {
         const steps = [{
                 tab: 'EMPLOYEE INFORMATION',
                 fields: ['emp_code', 'biomatric_id', 'first_name', 'father_name', 'department_id', 'designation_id',
-                    'date_of_joining', 'basic_salary', 'dob', 'mobile_no', 'aadhar_no', 'shift_id', 'is_pf','is_esic', 'allow_weekly_off','is_perform_incen','reporting_manager','present_address' 
+                    'date_of_joining', 'basic_salary', 'dob', 'mobile_no', 'aadhar_no', 'shift_id', 'is_pf',
+                    'is_esic', 'allow_weekly_off', 'allow_add_leave', 'is_perform_incen', 'is_active', 'reporting_manager',
+                    'present_address'
                 ]
             },
             // 'emp_code', 'biomatric_id', 'first_name', 'father_name', 'department_id', 'designation_id',
@@ -3020,6 +3090,84 @@ td {
             document.getElementById("age").value = age;
         }
     }
+    </script>
+
+    <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+
+    <!-- Crop Modal -->
+    <div class="modal fade" id="cropModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:950px;">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title">Crop Signature</h6>
+                    <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-2 text-center" style="background:#f5f5f5;">
+                    <img id="cropImage" style="max-width:100%; max-height:650px;">
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="cropConfirm">Apply Crop</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.querySelector('#emp_sign').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+
+        var modalEl = document.getElementById('cropModal');
+        var modal = new bootstrap.Modal(modalEl);
+        var imgEl = document.getElementById('cropImage');
+        var cropper = null;
+
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            imgEl.src = ev.target.result;
+            modal.show();
+            cropper = new Cropper(imgEl, {
+                aspectRatio: 3 / 1,
+                viewMode: 1,
+                autoCropArea: 0.95,
+                responsive: true,
+                guides: true
+            });
+        };
+        reader.readAsDataURL(file);
+
+        document.getElementById('cropConfirm').onclick = function() {
+            if (!cropper) return;
+            var canvas = cropper.getCroppedCanvas({
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high'
+            });
+            canvas.toBlob(function(blob) {
+                cropper.destroy();
+                cropper = null;
+                modal.hide();
+                var croppedFile = new File([blob], file.name, {
+                    type: 'image/png'
+                });
+                var dt = new DataTransfer();
+                dt.items.add(croppedFile);
+                document.querySelector('#emp_sign').files = dt.files;
+                document.getElementById('signPreview').innerHTML =
+                    '<img src="' + URL.createObjectURL(blob) +
+                    '" style="max-height:60px; border:1px solid #ddd; padding:4px; border-radius:4px;" alt="Signature">';
+            }, 'image/png', 0.92);
+        };
+
+        modalEl.addEventListener('hidden.bs.modal', function handler() {
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            modalEl.removeEventListener('hidden.bs.modal', handler);
+        });
+    });
     </script>
 
 

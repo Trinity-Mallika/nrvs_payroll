@@ -112,8 +112,8 @@
 
 $title = 'Attendence Details';
 $pagename = 'attendance_details.php';
-
-$emp_id = $_SESSION['emp_id'];
+$emp_id          = $_POST['emp_id']??$_SESSION['emp_id'];
+// $emp_id = $_SESSION['emp_id'];
 $basic_salary = $obj->getvalfield("employee_master","basic_salary","emp_id='$emp_id'");
 
 $currentYear  = $_POST['currentYear'];
@@ -203,11 +203,13 @@ $holidayRows = $obj->executequery(" SELECT date , holiday_type FROM holiday_entr
     $holidayRows,
     $holidayAttendanceMap
 );
-
+ 
 $holiday = $holidayData['total'];
+$reportFromDate = "$currentYear-$currentMonth-01";          // report start
+$fromDate_att = date('Y-m-d', strtotime("$reportFromDate -1 day")); // fetch start
+$toDate_att  = date("Y-m-t", strtotime($reportFromDate));  
 
-
-                                    $punchData = $obj->executequery("
+$punchData = $obj->executequery("
     SELECT 
         l.emp_id,
         em.shift_id,
@@ -216,7 +218,7 @@ $holiday = $holidayData['total'];
         l.in_status
     FROM attendance_log l left join employee_master em on em.emp_id=l.emp_id
     WHERE l.emp_id='$emp_id'
-    AND l.attendance_date BETWEEN '$fromDate' AND '$toDate'
+    AND l.attendance_date BETWEEN '$fromDate_att' AND '$toDate_att'
     ORDER BY l.emp_id, l.attendance_stamp
 ");
 
@@ -465,7 +467,7 @@ elseif (
                         $statusClass = 'status-holiday';
                         $attendance_status = 'Public Holiday';
                     }
-                     elseif ($attendance_status == 'Public Holiday') {
+                    elseif ($attendance_status == 'Public Holiday'|| $attendance_status == 'National Holiday'||$attendance_status == 'Religion Holiday' || $attendance_status == 'Seasonal Holiday') {
                         $statusClass = 'status-holiday';
                     }
                     elseif ($attendance_status == 'Present') {

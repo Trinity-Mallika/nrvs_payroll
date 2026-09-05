@@ -16,12 +16,12 @@ $year = date('Y');
 $emp_id =  $department_id = "";
 $unit_pf_rate = $obj->getvalfield("unit_master", "pf_rate", "unit_id='$unitid'");
 $unit_esic_rate = $obj->getvalfield("unit_master", "esic_rate", "unit_id='$unitid'");
- 
+$is_all_leave_add = $obj->getvalfield("unit_master", "add_leave", "unit_id='$unitid'");
 function roundVal($v)
 {
     return round((float)$v);
 }
-$is_all_leave_add = $obj->getvalfield("unit_master", "add_leave", "unit_id='$unitid'");
+ 
 $slabs = $obj->executequery("SELECT sm.slab_id,sm.from_salary,sm.to_salary, ss.basic_percent,ss.hra_percent,ss.medical_allow,ss.conve_allow,ss.pf_per,ss.esic_per,ss.pf_emp_per,ss.esic_emp_per FROM salary_slab sm JOIN salary_slab_master ss ON ss.slab_id = sm.slab_id ORDER BY sm.from_salary ASC");
 
 if (isset($_POST['month'], $_POST['year'])) {
@@ -62,19 +62,30 @@ if (isset($_POST['month'], $_POST['year'])) {
 //     }
 
 
-    $loanAdvanceRows = $obj->executequery("
+$fromDate  = date("Y-m-d", strtotime("$year-$month-01"));
+$toDate   = date("Y-m-t", strtotime($fromDate));  
+
+$loanAdvanceRows = $obj->executequery("
     SELECT * FROM loan_advance_details
     WHERE month='$month'
     AND year='$year'
     AND status=1
 ");
 
-    $loanMap = [];
-    foreach ($loanAdvanceRows as $r) {
-        $loanMap[$r['emp_id']][$r['type']] = $r;
-    }
+$loanMap = []; 
+foreach ($loanAdvanceRows as $r) {
+    $loanMap[$r['emp_id']][$r['type']][] = $r;
+}
 
 $is_locked = $obj->getvalfield("salary_structure","count(*)","payment_status=2 and month='$month' and year='$year' $crit and unit_id='$unitid'");
+$apr_from_mgm = $obj->getvalfield("salary_structure","count(*)","apr_from_mgm=1 and month='$month' and year='$year' $crit and unit_id='$unitid'");
+if ($apr_from_mgm > 0) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Some salaries are Approved By Management. Please Unapproved salary records before generating salary again.'
+    ]);
+    die;
+}
 if ($is_locked > 0) {
     echo json_encode([
         'status' => 'error',
@@ -82,10 +93,6 @@ if ($is_locked > 0) {
     ]);
     die;
 }
-
- 
-
-
 
 $obj->delete_record('salary_structure', $deleteWhere);
 
@@ -132,7 +139,7 @@ $employees = $obj->executequery("
     ) eas 
         ON eas.emp_id = e.emp_id
     WHERE 
-        e.unit_id = '$unitid'
+        e.unit_id = '$unitid' 
         AND e.is_active = '1'
         AND e.date_of_joining <= '$lastDateOfMonth'
         $crit
@@ -150,7 +157,8 @@ $employees = $obj->executequery("
         AND (
             eas.active_id IS NULL
             OR eas.is_active = '1'
-        )   
+        )  
+       
     GROUP BY e.emp_id
     ORDER BY e.first_name ASC
 "); 
@@ -159,13 +167,54 @@ $employees = $obj->executequery("
         $empIds = array_column($employees, 'emp_id');
         $empIdsStr = implode(",", $empIds);
 
+
+    $holidayAttendanceStart = date('Y-m-d', strtotime($fromDate . ' -1 day'));
+    $holidayAttendanceEnd   = date('Y-m-d', strtotime($toDate . ' +1 day'));
+    $holidayAttendanceRows = $obj->executequery("
+                                SELECT 
+                            emp_id,
+                            attendance_date,
+                            attendance_status
+
+                            FROM attendance_entry
+
+                            WHERE emp_id IN ($empIdsStr)
+
+                            AND attendance_date BETWEEN '$holidayAttendanceStart' 
+                            AND '$holidayAttendanceEnd'
+
+                            AND unit_id='$unitid'
+                        ");
+                        $holidayAttendanceMap = [];
+
+    foreach ($holidayAttendanceRows as $row) {
+
+        $holidayAttendanceMap[$row['emp_id']][$row['attendance_date']]
+            = $row['attendance_status'];
+    }
+    $holidayRows = $obj->executequery("
+    SELECT date , holiday_type
+    FROM holiday_entry
+    WHERE FIND_IN_SET('$unitid', unit_id)
+    AND date BETWEEN '$fromDate' AND '$toDate'");
+
+    $holidays = [];
+    foreach ($holidayRows as $h) {
+        $holidays[$h['date']] = true;
+    }
+
+
+
         $summaryRows = $obj->executequery("
         SELECT emp_id,
             SUM(attendance_status='Present') AS present,
             SUM(attendance_status='Half Day') AS half,
-            SUM(attendance_status IN('Weekly Leave','Earning Leave','C Off','Leave','Public Holiday')) AS paid_leave_day,
+            SUM(attendance_status IN('Weekly Leave','Earning Leave','C Off','Leave','Public Holiday','National Holiday','Religion Holiday','Seasonal Holiday')) AS paid_leave_day,
+
+            SUM(attendance_status IN('National Holiday','Religion Holiday','Seasonal Holiday')) AS tot_paid_holiday,
+
             SUM(attendance_status IN('Half Weekly Leave','Half Earning Leave','Half C Off','Half Leave')) AS tot_half_day,
-            SUM(attendance_status IN('Weekly Leave','Earning Leave','C Off','Leave','Extra Off','Public Holiday')) AS paid_leave,
+            SUM(attendance_status IN('Weekly Leave','Earning Leave','C Off','Leave','Extra Off','Public Holiday','National Holiday','Religion Holiday','Seasonal Holiday')) AS paid_leave,
             SUM(attendance_status IN('Half Weekly Leave','Half Earning Leave','Half C Off','Half Leave','Half Extra Off')) AS tot_half,
             SUM(attendance_status ='Half Extra Off') AS half_extra_off,
             SUM(attendance_status ='Extra Off') AS full_extra_off,
@@ -185,62 +234,15 @@ $employees = $obj->executequery("
         foreach($summaryRows as $row){
             $summary[$row['emp_id']] = $row;
         }
-
-        $earningLeaveRows = $obj->executequery("
-        SELECT
-            emp_id,
-
-            SUM(
-                CASE
-                    WHEN attendance_status='Earning Leave' THEN 1
-                    WHEN attendance_status='Half Earning Leave' THEN 0.5
-                    ELSE 0
-                END
-            ) AS used_leave
-
-            FROM attendance_entry
-
-            WHERE emp_id IN ($empIdsStr)
-
-            AND sessionid='$sessionid'
-
-            AND (
-                year < '$year'
-                OR (year='$year' AND month <= '$month')
-            )
-
-            GROUP BY emp_id
-        ");
-
+ 
+        $earningLeaveRows = $obj->earningLeaveRows($sessionid,$month,$year);
         $usedEarnMap = [];
 
         foreach($earningLeaveRows as $r){
             $usedEarnMap[$r['emp_id']] = $r['used_leave'];
         }
- 
-        // EARNING LEAVE UPLOADED 
-        $earningUploadRows = $obj->executequery("
-            SELECT
-                emp_id,
-
-                SUM(total_leave) AS total_leave
-
-            FROM emp_monthly_leave
-
-            WHERE emp_id IN ($empIdsStr)
-
-            AND leave_type='earning'
-
-            AND sessionid='$sessionid'
-
-            AND (
-                year < '$year'
-                OR (year='$year' AND month < '$month')
-            )
-
-            GROUP BY emp_id
-        ");
-
+  
+        $earningUploadRows=$obj->earningUploadRows($sessionid,$month,$year);
         $earningUploadMap = [];
 
         foreach($earningUploadRows as $r){
@@ -257,23 +259,36 @@ $employees = $obj->executequery("
 
 
         $deductionRows = $obj->executequery("
-    SELECT
-        emp_id, 
-        IFNULL(SUM(lpg_ded + shoes_ded + other),0) AS total_other_deduction
-    FROM emp_deduction
-    WHERE month='$month'
-    AND year='$year'
-    AND emp_id IN ($empIdsStr)
-    GROUP BY emp_id
-");
+            SELECT
+                emp_id, 
+                IFNULL(SUM(lpg_ded + shoes_ded + other),0) AS total_other_deduction
+            FROM emp_deduction
+            WHERE month='$month'
+            AND year='$year'
+            AND emp_id IN ($empIdsStr)
+            GROUP BY emp_id
+        ");
 
-$deductionMap = [];
-foreach ($deductionRows as $row) {
-    $deductionMap[$row['emp_id']] = $row;
-}
+        $deductionMap = [];
+        foreach ($deductionRows as $row) {
+            $deductionMap[$row['emp_id']] = $row;
+        }
 
-        
+        $additionRow = $obj->executequery("
+            SELECT
+                emp_id, 
+                IFNULL(SUM(basic_arear + other_reimbursement + increment_arear+bonus+leave_encasement+notice_period),0) AS total_additional
+            FROM additional_payment
+            WHERE month='$month'
+            AND year='$year'
+            AND emp_id IN ($empIdsStr)
+            GROUP BY emp_id
+        ");
 
+        $additionMap = [];
+        foreach ($additionRow as $row1) {
+            $additionMap[$row1['emp_id']] = $row1;
+        }
     }
 
     $salaryRows = [];
@@ -297,16 +312,24 @@ foreach ($deductionRows as $row) {
             $is_allow_c_off = $depart_data['c_off_check'] ?? '0';
             $allow_earn_leave_carry = $depart_data['earn_leave_check'] ?? '';
             $date_of_joining = $emp['date_of_joining'] ?? '';
- 
 
-            $loan_amt = $loanMap[$emp_id]['Loan']['amount'] ?? 0;
-            $loan_details_id = $loanMap[$emp_id]['Loan']['loan_details_id'] ?? 0;
-            $advance_amt = $loanMap[$emp_id]['Advance']['amount'] ?? 0;
-            $advance_details_id = $loanMap[$emp_id]['Advance']['loan_details_id'] ?? 0;
+            $loan_amt = 0;
+            $advance_amt = 0;
+
+            $loanRecords = $loanMap[$emp_id]['Loan'] ?? [];
+            $advanceRecords = $loanMap[$emp_id]['Advance'] ?? [];
+
+            foreach ($loanRecords as $loan) {
+                $loan_amt += $loan['amount'];
+            }
+
+            foreach ($advanceRecords as $advance) {
+                $advance_amt += $advance['amount'];
+            }
             $otherDeduction = isset($deductionMap[$emp_id]) ? $deductionMap[$emp_id]['total_other_deduction'] : 0;
+            $additional_payment = isset($additionMap[$emp_id]) ? $additionMap[$emp_id]['total_additional'] : 0;
             
-            //$emp_deduction = $obj->getvalfield("emp_deduction", "count(*)", "emp_id='$emp_id' AND month='$month' AND year='$year'");
-            // if ($present_days == 0) continue;
+           
 
             $presentSalary = $emp['basic_salary'];
             $a = $summary[$emp_id] ?? []; 
@@ -317,6 +340,7 @@ foreach ($deductionRows as $row) {
             $half_extra_off = $a['half_extra_off'] ?? 0;
             $full_extra_off = $a['full_extra_off'] ?? 0;
             $total_opening_leave = $a['total_opening_leave'] ?? 0;
+            $tot_paid_holiday = $a['tot_paid_holiday'] ?? 0;
 
             $total_present_day  = ($a['present'] ?? 0) + ($a['paid_leave_day'] ?? 0);
             $total_half_day     = ($a['tot_half_day'] ?? 0) + ($a['half'] ?? 0);
@@ -324,7 +348,10 @@ foreach ($deductionRows as $row) {
             $used_extra_off = $full_extra_off+($half_extra_off/2);
             $present_day_total = $total_present_day +($total_half_day/2);
 
-            $real_total_working_day = $total_present1 + ($total_half1 / 2); 
+            $holidayData = $obj->getHolidayCountWithSandwichRule2($emp_id,$holidayRows,$holidayAttendanceMap);
+            $holiday = $holidayData['total']; 
+
+            $real_total_working_day = $total_present1 + ($total_half1 / 2)+$holiday+$tot_paid_holiday; 
 
             $total_working_day = $total_present + ($total_half / 2); 
          
@@ -342,10 +369,14 @@ foreach ($deductionRows as $row) {
             $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
          
             $total_earning_leave = ($earningUploadMap[$emp_id] ?? 0) - ($usedEarnMap[$emp_id] ?? 0); 
+            
+          
+
+
             $result = $obj->calculateWorkingDays([
                 'daysInMonth' => $totalDaysInMonth,
                 'present'     => $total_working_day,
-                'holiday'     => 0,
+                'holiday'     => $holiday,
                 //'advance'     => $total_att_leave,
                 'weekly'      => $week_leave,
                 'monthly'     => $monthly_leave,
@@ -496,7 +527,7 @@ foreach ($deductionRows as $row) {
                 // }
             }
             $total_net_salary = $totalSalary - $pf_emp - $esic_emp;
-            $total_pay_sal_after_ded =  $total_net_salary - $loan_amt - $advance_amt - $otherDeduction;
+            $total_pay_sal_after_ded =  $total_net_salary+$additional_payment - $loan_amt - $advance_amt - $otherDeduction;
 
             $form_data = [
                 "emp_id" => $emp_id,
@@ -534,7 +565,7 @@ foreach ($deductionRows as $row) {
                 "sessionid" => $sessionid,
                 "createdate" => date("Y-m-d H:i:s"),
 
-                //"paid_holiday"      => $holiday,
+                "paid_holiday"      => $holiday,
                 "present_day"      => $present_day_total,
                 "weekly_off"      => $usedWeekly,
                 "leave_days"      => $usedMonthly,
@@ -546,19 +577,36 @@ foreach ($deductionRows as $row) {
                 "total_opening_leave" => $total_opening_leave,
                 //"total_c_off" => $three_month_leave,
                 "other_deduction" => $otherDeduction,
+                "additional_payment" => $additional_payment,
                 "loan_amt" => $loan_amt,
                 "total_pay_sal_after_ded" => $total_pay_sal_after_ded,
                 "advance_amt" => $advance_amt
             ];
             // print_r($form_data);
-            // die;
-            $obj->update_record("loan_advance_details", ['loan_details_id' => $loan_details_id], ['is_paid' => 1, 'paid_date' => $createdate]);
-            $obj->update_record("loan_advance_details", ['loan_details_id' => $advance_details_id], ['is_paid' => 1, 'paid_date' => $createdate]);
+            // die; 
+            foreach ($loanRecords as $loan) {
+                $obj->update_record(
+                    "loan_advance_details",
+                    ['loan_details_id' => $loan['loan_details_id'] , 'type'=>'Loan'],
+                    [
+                        'is_paid'   => 1,
+                        'paid_date' => $createdate
+                    ]
+                );
+            }
+
+            foreach ($advanceRecords as $advance) {
+                $obj->update_record(
+                    "loan_advance_details",
+                    [ 'loan_details_id' => $advance['loan_details_id'] , 'type'=>'Advance' ],
+                    ['is_paid'   => 1,
+                        'paid_date' => $createdate
+                    ]
+                );
+            }
 
             $salaryRows[] = $form_data;
             //$obj->insert_record("salary_structure", $form_data);
-
-            
 
             $count_generated++;
         }

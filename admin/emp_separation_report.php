@@ -67,7 +67,7 @@ if ($fromdate != '' && $todate != '') {
 </style>
 
 <body>
-    <?php include('inc/header.php') ?>
+    <?php include('inc/header.php') ?> 
     <?php include('inc/sidebar.php') ?>
     <!-- end auth-page-wrapper -->
     <div class="main-content">

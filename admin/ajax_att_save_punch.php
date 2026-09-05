@@ -214,8 +214,14 @@ if ($punch_status == 'Absent') {
             $form_date['attendance_status'] = 'Half Earning Leave'; 
         } elseif ($punch_status == 'public_holiday') {
             $form_date['attendance_status'] = 'Public Holiday'; 
-        }
-       
+        }elseif ($punch_status == 'national_holiday') {
+            $form_date['attendance_status'] = 'National Holiday'; 
+        }elseif ($punch_status == 'religion_holiday') {
+            $form_date['attendance_status'] = 'Religion Holiday'; 
+        }elseif ($punch_status == 'seasonal_holiday') {
+            $form_date['attendance_status'] = 'Seasonal Holiday'; 
+        } 
+ 
         $lastid = $obj->insert_record_lastid("attendance_entry", $form_date);
 
         $form_data1 = array(
@@ -335,8 +341,14 @@ if ($punch_status == 'Absent') {
             $form_date['attendance_status'] = 'Half Leave'; 
         }elseif ($punch_status == 'public_holiday') {
             $form_date['attendance_status'] = 'Public Holiday'; 
+        } elseif ($punch_status == 'national_holiday') {
+            $form_date['attendance_status'] = 'National Holiday'; 
+        } elseif ($punch_status == 'religion_holiday') {
+            $form_date['attendance_status'] = 'Religion Holiday'; 
+        } elseif ($punch_status == 'seasonal_holiday') {
+            $form_date['attendance_status'] = 'Seasonal Holiday'; 
         } 
-
+ 
         $where = ['attendance_id' => $attendance_id];
         $obj->update_record("attendance_entry", $where, $form_date);
         $form_data1 = array(

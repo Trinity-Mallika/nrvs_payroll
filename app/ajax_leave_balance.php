@@ -21,7 +21,7 @@ END
 ),0) availed_leave
 FROM leave_apply_detail
 WHERE emp_id='$emp_id'
-AND status!='1'
+AND status='0'
 AND unit_id='$unitid'
 GROUP BY leave_type
 ";

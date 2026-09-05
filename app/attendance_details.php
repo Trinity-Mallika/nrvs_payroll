@@ -86,9 +86,27 @@ $res = $obj->executequery("
         END) AS total_half_e_off,
 
         SUM(CASE 
-            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave','Public Holiday') THEN 1 
+            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave','Public Holiday','National Holiday','Religion Holiday','Seasonal Holiday') THEN 1 
             ELSE 0 
         END) AS total_present,
+
+        SUM(CASE 
+            WHEN attendance_status IN ('National Holiday','Religion Holiday','Seasonal Holiday') THEN 1 
+            ELSE 0 
+        END) AS tot_paid_holiday,
+
+        SUM(CASE 
+            WHEN attendance_status IN ('National Holiday') THEN 1 
+            ELSE 0 
+        END) AS national_holiday,
+        SUM(CASE 
+            WHEN attendance_status IN ('Religion Holiday') THEN 1 
+            ELSE 0 
+        END) AS religion_holiday,
+        SUM(CASE 
+            WHEN attendance_status IN ('Seasonal Holiday') THEN 1 
+            ELSE 0 
+        END) AS seasonal_holiday,
 
         SUM(CASE 
             WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave') THEN 1 
@@ -113,19 +131,10 @@ $total_c_off     = $row['total_c_off'] ?? 0;
 $total_half_c_off     = $row['total_half_c_off'] ?? 0;
 $total_e_off     = $row['total_e_off'] ?? 0;
 $total_half_e_off     = $row['total_half_e_off'] ?? 0;
-
-
-$real_total_attandence = $total_present1 + ($total_half1 / 2);
-$total_attandence      = $total_present + ($total_half / 2);
-
-$totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
-$week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $emp_id, $currentMonth, $currentYear);
-$earn_leave_present =  $real_total_attandence + $week_leave;
-$monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
-$extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear); 
-$total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
-$total_curr_week_leave = $obj->getCurrentWeekLeave($emp_id, $currentMonth, $currentYear);
-$pending_coff =$obj->getEmpCoffLeave($emp_id, $sessionid, $currentMonth, $currentYear);
+$tot_paid_holiday     = $row['tot_paid_holiday'] ?? 0;
+$national_att_holiday     = $row['national_holiday'] ?? 0;
+$religion_att_holiday     = $row['religion_holiday'] ?? 0;
+$seasonal_att_holiday     = $row['seasonal_holiday'] ?? 0;
 
 $holidayData = $obj->getHolidayCountWithSandwichRule(
     $emp_id,
@@ -135,9 +144,24 @@ $holidayData = $obj->getHolidayCountWithSandwichRule(
 );
 
 $holiday_total     = $holidayData['total'] ?? 0;
-$holiday_national  = $holidayData['national'] ?? 0;
-$holiday_religious = $holidayData['religious'] ?? 0;
-$holiday_seasonal  = $holidayData['seasonal'] ?? 0;
+$holiday_national  = $holidayData['national']+ $national_att_holiday ?? 0;
+$holiday_religious = $holidayData['religious']+ $religion_att_holiday ?? 0;
+$holiday_seasonal  = $holidayData['seasonal']+ $seasonal_att_holiday ?? 0;
+
+$real_total_attandence1 = $total_present1 + ($total_half1 / 2);
+$real_total_attandence = $total_present1 + ($total_half1 / 2)+$holiday_total+$tot_paid_holiday;
+$total_attandence      = $total_present + ($total_half / 2);
+
+$totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
+$week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $emp_id, $currentMonth, $currentYear);
+$earn_leave_present =  $real_total_attandence + $week_leave;
+$monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
+$extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear); 
+$total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid,$currentMonth, $currentYear);
+$total_curr_week_leave = $obj->getCurrentWeekLeave($emp_id, $currentMonth, $currentYear);
+$pending_coff =$obj->getEmpCoffLeave($emp_id, $sessionid, $currentMonth, $currentYear);
+
+ 
 
 
 
@@ -197,7 +221,7 @@ if ($is_all_leave_add == 1) {
  
             <div class="scroll-container mt-4">
                 <div class="box border-card-blue bg-light-blue">
-                    <h3 class="mb-1"><?= $real_total_attandence; ?></h3>
+                    <h3 class="mb-1"><?= $real_total_attandence1; ?></h3>
                     <h6 class="mb-0 text-center">Present</h6>
                 </div>
 

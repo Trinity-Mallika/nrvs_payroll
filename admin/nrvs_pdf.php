@@ -83,62 +83,83 @@ if (isset($_GET[$tblpkey])) {
     $net_pay = $total_earning - $total_deduction;
     $total_salary_words = ucwords($obj->getIndianCurrency($net_pay));
 }
-
-$leave = $obj->getEmployeeEarningLeave($emp_id, $month, $year, $sessionid);
-$earning_leave = $leave['balance_leave'] ?? 0;
-
-$extra_off =
-    $obj->getExtraOffBalance(
-        $emp_id,
-        $month,
-        $year
-    );
-
-$coff_leave =
-    $obj->getEmpCoffLeave(
-        $emp_id,
-        $sessionid,
-        $month,
-        $year
-    );
-
-$total_balance =
-    $earning_leave +
-    ($extra_off['balance'] ?? 0) +
-    $coff_leave;
+ 
+$earning_deduction = $obj->getvalfield(
+	"emp_monthly_leave",
+	"IFNULL(SUM(total_leave),0)",
+	"emp_id='$emp_id'
+	AND leave_type='earning_ded'
+	AND sessionid='$sessionid'
+	AND year = '$year' AND month= '$month'"
+);
 
 
+$res = $obj->executequery("
+    SELECT 
+        SUM(CASE WHEN attendance_status = 'Present' THEN 1 ELSE 0 END) AS present_full,
+        SUM(CASE WHEN attendance_status = 'Half Day' THEN 1 ELSE 0 END) AS present_half, 
+       
+        SUM(CASE WHEN attendance_status IN ('Earning Leave', 'Leave') THEN 1 ELSE 0 END) AS earning_full,
+        SUM(CASE WHEN attendance_status IN ('Half Earning Leave', 'Half Leave') THEN 1 ELSE 0 END) AS earning_half,
 
-$res_att = $obj->executequery("
-    SELECT  
-        SUM(CASE 
-            WHEN attendance_status IN ('Weekly Leave','Earning Leave','Extra Off','C Off') THEN 1 
-            ELSE 0 
-        END) AS total_full_leave,
+        SUM(CASE WHEN attendance_status IN ('C Off', 'Weekly Leave') THEN 1 ELSE 0 END) AS coff_full,
+        SUM(CASE WHEN attendance_status IN ('Half C Off', 'Half Weekly Leave') THEN 1 ELSE 0 END) AS coff_half,
 
-        SUM(CASE 
-            WHEN attendance_status IN ('Half Weekly Leave','Half Earning Leave','Half Extra Off','Half C Off') THEN 0.5 
-            ELSE 0 
-        END) AS total_half 
+        SUM(CASE WHEN attendance_status = 'Extra Off' THEN 1 ELSE 0 END) AS extra_off_full,
+        SUM(CASE WHEN attendance_status = 'Half Extra Off' THEN 1 ELSE 0 END) AS extra_off_half,  
+ 
+        SUM(CASE WHEN attendance_status = 'Public Holiday' THEN 1 ELSE 0 END) AS public_holiday
+
     FROM attendance_entry
-    WHERE emp_id = '$emp_id' 
-    AND month = '$month' 
+    WHERE emp_id = '$emp_id'
+    AND month = '$month'
     AND year = '$year'
+    AND unit_id = '$unitid'
 ");
-$row = $res_att[0] ?? [];
 
-$total_full_leave = $row['total_full_leave'] ?? 0;
-$total_half    = $row['total_half'] ?? 0;
-$taken_leave = $total_full_leave + $total_half;
-//$opening = $total_balance + $taken_leave;
-$opening_leave = $total_balance + $taken_leave;
+$row = $res[0] ?? []; 
+
+$present_full = $row['present_full'] ?? 0;
+$present_half = $row['present_half'] ?? 0;
+
+$total_present = $present_full + ($present_half / 2); 
+
+$earning_full = $row['earning_full'] ?? 0;
+$earning_half = $row['earning_half'] ?? 0;
+
+$total_earning_leave = $earning_full + ($earning_half / 2); 
+
+$coff_full = $row['coff_full'] ?? 0;
+$coff_half = $row['coff_half'] ?? 0;
+
+$total_coff = $coff_full + ($coff_half / 2); 
+
+$extra_off_full = $row['extra_off_full'] ?? 0;
+$extra_off_half = $row['extra_off_half'] ?? 0;
+
+$total_extra_off = $extra_off_full + ($extra_off_half / 2); 
+
+$total_public_holiday = $row['public_holiday'] ?? 0; 
+$real_total_attandence = $present_full + ($present_half / 2);
+ 
+$total_attandence =
+      $total_present 
+    + $total_earning_leave
+    + $total_coff
+    + $total_extra_off
+    + $total_public_holiday;
+
+ 
+ 
+
 if (!empty($emp_id)) {
     $emp_data = $obj->select_record("employee_master", array("emp_id" => $emp_id));
     $first_name       = $emp_data['first_name'];
     $last_name       = $emp_data['last_name'];
     $father_name       = $emp_data['father_name'];
     $pan_no       = $emp_data['pan_no'];
-    $aadhar_no       = $emp_data['aadhar_no'];
+  $aadhar_no = $emp_data['aadhar_no'];
+$masked_aadhar = 'XXXXXXXX' . substr($aadhar_no, -4);
     $pf_uan       = $emp_data['pf_uan'];
     $uan_no       = $emp_data['uan_no'];
     $esic_no       = $emp_data['esic_no'];
@@ -150,7 +171,12 @@ if (!empty($emp_id)) {
     $unit_id       = $emp_data['unit_id'];
     $designation = $obj->getvalfield("designation_master", "designation", "designation_id='$designation_id'");
     $department_name = $obj->getvalfield("department_master", "department_name", "department_id='$department_id'");
+    $is_allow_c_off = $obj->getvalfield("department_master", "c_off_check", "department_id='$department_id'"); 
+    $allow_earn_leave_carry = $obj->getvalfield("department_master", "earn_leave_check", "department_id='$department_id'"); 
     $month_name = strtoupper(date('M', mktime(0, 0, 0, $month, 1)));
+  
+    $is_esic = $emp_data['is_esic'];
+    $setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
 
     // Active Bank Details
     $bank_data = $obj->select_record(
@@ -178,6 +204,25 @@ if (!empty($emp_id)) {
     $pay_mode = "A/C TRANSFER";
     $branch_name = "";
 }
+$week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $emp_id,$month, $year);
+ $earn_leave_present = $real_total_attandence + $week_leave;
+$monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
+$is_all_leave_add = $obj->getvalfield("unit_master", "add_leave", "unit_id='$unitid'");
+$result = $obj->calculateLeaveUsage(
+    $total_month_days,
+    $total_attandence,
+    $week_leave,
+    $monthly_leave,
+    // $three_month_leave,
+    $is_allow_c_off,
+    $is_all_leave_add,
+    $allow_earn_leave_carry,0,0,$date_of_joining,$month,$year
+);
+    
+$used_monthly_leave  = $result['used_monthly']; 
+$used_weekly  = $result['used_weekly'];
+$tpd  = $result['total_working_days']; 
+$absent  = $result['absent']; 
 
 $default_logo = __DIR__ . '/img/logo1.png';
 $logo = $default_logo;
@@ -292,7 +337,7 @@ td{
 <tr><td>DEPARTMENT</td><td class="colon">:</td><td>' . $department_name . '</td></tr>
 <tr><td>DATE OF BIRTH</td><td class="colon">:</td><td>' . $obj->dateformatindia($date_of_birth)  . '</td></tr>
 <tr><td>PAN NO.</td><td class="colon">:</td><td>' . $pan_no . '</td></tr>
-<tr><td>AADHAR NO.</td><td class="colon">:</ td><td>' . $aadhar_no . '</ td></tr>
+<tr><td>AADHAR NO.</td><td class="colon">:</ td><td>' . $masked_aadhar . '</ td></tr>
 </table>
 
 </td>
@@ -315,23 +360,36 @@ td{
 
 </td>
 </tr>
-</table>
-
+</table>  
 <table>
 <tr align="center">
 <td><b>MONTH DAYS</b></td>
 <td>' . number_format($total_month_days, 2) . '</td>
-<td><b>LOP DAYS</b></td>
-<td>' . number_format($lop_day, 2) . '</td>
-<td><b>PAY DAYS</b></td>
-<td>' . number_format($total_working_days, 2) . '</td>
+<td><b>Present</b></td>
+<td>' . number_format($total_present, 2) . '</td>
+<td><b>Leave </b></td>
+<td>' . number_format($total_earning_leave, 2) . '</td>
+<td><b>C Off</b></td>
+<td>' . number_format($total_coff, 2) . '</td>
+ 
 </tr>
-</table>
 
+<tr align="center">
+<td><b>Extra Off</b></td>
+<td>' . number_format($total_extra_off, 2) . '</td> 
+<td><b>Week Off</b></td>
+<td>' . number_format($used_weekly, 2) . '</td> 
+<td><b>PAY DAYS</b></td>
+<td>' . number_format($tpd, 2) . '</td> 
+<td><b>LOP DAYS</b></td>
+<td>' . number_format($absent, 2) . '</td>
+ 
+</tr>
+</table>   
 <table>
 <tr>
-<td width="50%" class="subhead">EARNINGS HEADS</td>
-<td width="50%" class="subhead">DEDUCTION HEADS</td>
+<td width="50%" class="subhead">EARNINGS</td>
+<td width="50%" class="subhead">DEDUCTION</td>
 </tr>
 
 <tr>
@@ -374,7 +432,7 @@ td{
 
     ($additional_payment > 0 ? '
 <tr>
-    <td>ADDITION</td>
+    <td>ARREAR</td>
     <td class="colon">:</td>
     <td class="right">' . number_format($additional_payment, 2) . '</td>
 </tr>' : '') .
@@ -400,7 +458,7 @@ td{
 
 <table>
 <tr>
-<td width="25%" class="bold">TOTAL EARNINGS</td>
+<td width="25%" class="bold">TOTAL EARNING</td>
 <td width="25%" class="right bold">' . number_format($total_earning, 2) . '</td>
 <td width="25%" class="bold">TOTAL DEDUCTION</td>
 <td width="25%" class="right bold">' . number_format($total_deduction, 2) . '</td>
@@ -417,22 +475,12 @@ td{
 <td colspan="4"><b>IN WORD:- ' . $total_salary_words . '</b></td>
 </tr>
 </table>
-<table>
-<tr align="center">
-<td><b>LEAVE OPENING</b></td>
-<td>' . $opening_leave . '</td>
-<td><b>LEAVE TAKEN</b></td>
-<td>' . $taken_leave . '</td>
-<td><b>LEAVE CLOSING</b></td>
-<td>' . $total_balance . '</td>
-</tr>
-</table>
+ 
 <p style="text-weight:700;text-align:center;margin:10px 0px 5px;">This is computer generated pay-slip and do not require any Signature. ' . date('D, d M Y h:i:s A') . '</p>
 <hr style="margin:5px 0px;" />
 <p style="text-align:right;"><b>"Safety First & Must"</b></p> 
 </head>
 </html>
-';
-
+'; 
 $mpdf->WriteHTML($html);
 $mpdf->Output('salary-slip.pdf', 'I');

@@ -12,16 +12,26 @@ $mpdf = new \Mpdf\Mpdf([
     'margin_left' => 20,
     'margin_right' => 20,
 ]);
-
-$first_name        = $_POST['first_name'] ?? '';
-$emp_code          = $_POST['emp_code'] ?? '';
-$father_name       = $_POST['father_name'] ?? '';
-
-$department_id     = $_POST['department_id'] ?? '';
-$designation_id    = $_POST['designation_id'] ?? '';
-
-$basic_salary      = $_POST['basic_salary'] ?? '';
-$permanent_address = $_POST['permanent_address'] ?? '';
+// $emp_id = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
+// if($emp_id>0){
+//     $emp_data = $obj->select_record("employee_master",['emp_id'=>$emp_id]);
+//     $first_name        = $emp_data['first_name'] ?? '';
+//     $emp_code          = $emp_data['emp_code'] ?? '';
+//     $father_name       = $emp_data['father_name'] ?? '';
+//     $department_id     = $emp_data['department_id'] ?? '';
+//     $designation_id    = $emp_data['designation_id'] ?? '';
+//     $basic_salary      = $emp_data['basic_salary'] ?? '';
+//     $permanent_address = $emp_data['permanent_address'] ?? '';
+// }else{
+    $first_name        = $_POST['first_name'] ?? '';
+    $emp_code          = $_POST['emp_code'] ?? '';
+    $father_name       = $_POST['father_name'] ?? '';
+    $department_id     = $_POST['department_id'] ?? '';
+    $designation_id    = $_POST['designation_id'] ?? '';
+    $basic_salary      = $_POST['basic_salary'] ?? '';
+    $permanent_address = $_POST['permanent_address'] ?? '';
+    $join_date = $_POST['join_date'] ?? date('Y-m-d');
+ 
 $department_name = $obj->getvalfield("department_master","department_name","department_id='$department_id'");
 $designation = $obj->getvalfield("designation_master", "designation", "designation_id='$designation_id'");
  
@@ -163,10 +173,13 @@ ob_start();
                 <div style="font-size:10px; ">
                     CIN: <?=$cin_no?><br>
                     GSTIN: <?=$gstin_no?>
-                </div> 
+                </div>
             </td>
         </tr>
     </table>
+    <p style="text-align:right; margin-bottom:0;">
+        Date - <?= $join_date ?>
+    </p>
     <div class="title">
         TO WHOM IT MAY CONCERN
     </div>

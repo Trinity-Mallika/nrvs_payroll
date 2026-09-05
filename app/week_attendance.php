@@ -46,6 +46,8 @@ foreach ($holidayData as $h) {
                                 AND l.attendance_date BETWEEN '$startOfWeek' AND '$endOfWeek'
                                 ORDER BY l.emp_id, l.attendance_stamp
                             ");
+                            $punchMap=[];
+                            $lastOpen=[];
                             foreach ($punchData as $row) {
                                 $emp    = $row['emp_id'];
                                 $date   = $row['attendance_date'];

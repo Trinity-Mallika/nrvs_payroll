@@ -26,6 +26,7 @@ if (isset($_POST['submit'])) {
     $menuname = $obj->test_input($_POST['menuname']);
     $page_heading = $obj->test_input($_POST['page_heading']);
     $pagelink = $obj->test_input($_POST['pagelink']);
+    $enable = $obj->test_input($_POST['enable']);
 
     //check Duplicate
 
@@ -36,6 +37,7 @@ if (isset($_POST['submit'])) {
             $form_data = array(
                 'menuname' => $menuname,
                 'pagelink' => $pagelink,
+                'enable' => $enable,
                 'type' => 'mngmt',
                 'page_heading' => $page_heading,
                 'ipaddress' => $ipaddress,
@@ -48,7 +50,7 @@ if (isset($_POST['submit'])) {
             echo "<script>location='$pagename?action=$action'</script>";
         } else {
             //update
-            $form_data = array('menuname' => $menuname, 'pagelink' => $pagelink, 'page_heading' => $page_heading, 'ipaddress' => $ipaddress, 'lastupdated' => $createdate, 'createdby' => $loginid);
+            $form_data = array('menuname' => $menuname, 'pagelink' => $pagelink, 'enable' => $enable, 'page_heading' => $page_heading, 'ipaddress' => $ipaddress, 'lastupdated' => $createdate, 'createdby' => $loginid);
             $where = array($tblpkey => $keyvalue);
             $keyvalue = $obj->update_record($tblname, $where, $form_data);
             $action = 2;
@@ -67,10 +69,12 @@ if (isset($_GET[$tblpkey])) {
     $menuname =  $sqledit['menuname'];
     $page_heading =  $sqledit['page_heading'];
     $pagelink =  $sqledit['pagelink'];
+    $enable =  $sqledit['enable'];  
 } else {
     $menuname =  $obj->getvalfield($tblname, "menuname", "1=1 order by  $tblpkey desc");
     $page_heading =  "";
     $pagelink =  "";
+    $enable =  "";
 }
 
 ?>
@@ -125,6 +129,20 @@ if (isset($_GET[$tblpkey])) {
                                         <div class="col-md-3 mb-2">
                                             <strong> <label for="category">Page Link <span class="text-danger fw-bold">*</span></label></strong>
                                             <input type="text" class="form-control form-control-sm" name="pagelink" id="pagelink" value="<?php echo $pagelink; ?>" placeholder="Enter Page Link " autocomplete="off">
+                                        </div>
+
+                                         <div class="mb-3 col-12 col-lg-3">
+                                            <label for="enable" class="form-label">Status<span
+                                                    class="text-danger fw-bold">*</span></label>
+                                            <select class="form-control form-control-sm chosen-select" name="enable"
+                                                id="enable">
+                                                <option value="">Select Status</option>
+                                                <option value="1">Enable</option>
+                                                <option value="0">Disable</option>
+                                            </select>
+                                            <script>
+                                            document.getElementById('enable').value = '<?php echo $enable ?>';
+                                            </script>
                                         </div>
                                         <div class="col-md-3 mt-4">
                                             <input type="submit" onclick="return checkinputmaster('menuname,page_heading,pagelink')" name="submit" class="btn btn-primary btn-sm" value="<?php echo $btn_name; ?>">

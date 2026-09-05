@@ -26,12 +26,24 @@ if (isset($_GET['department_id'])) {
     $department_name = "All";
 };
 
+if (isset($_GET['search_emp_id'])) {
+    $search_emp_id = $_GET['search_emp_id'];
+    if ($search_emp_id != '') {
+        $crit2 .= " and  e.emp_id='$search_emp_id'";
+    }
+} else {
+    $search_emp_id = '';
+}
+
 if (isset($_GET['action'])) {
     $action = addslashes(trim($_GET['action']));
 } else {
     $action = "";
 }
 
+ 
+
+ 
 $month = date('n');
 $year = date('Y');
 $year_month = "";
@@ -98,6 +110,8 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
     echo $options;
     die;
 }
+
+ 
 
 ?>
 
@@ -170,6 +184,27 @@ table tr td.col-fixed:nth-child(3) {
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
+                                            <div class="col-lg-3 col-12">
+                                                <label for="search_emp_id" class="form-label">Employee Name<span
+                                                        class="text-danger fw-bold"> </span></label>
+                                                <select class="form-select form-select-sm chosen-select"
+                                                    name="search_emp_id" id="search_emp_id">
+                                                    <option value="">All</option>
+                                                    <?php
+                                                    //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
+                                                    $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
+                                                    foreach ($res as $key) { ?>
+                                                    <option value="<?= $key['emp_id']; ?>">
+                                                        <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?>
+                                                        <?= ucfirst($key['last_name'] ?? ''); ?></option>
+                                                    <?php } ?>
+                                                </select>
+                                                <script>
+                                                document.getElementById('search_emp_id').value =
+                                                    '<?= $search_emp_id; ?>';
+                                                </script>
+                                            </div>
+
                                             <div class="col-lg-3 mb-3">
                                                 <label for="department_id" class="form-label">Department Name<span
                                                         class="text-danger fw-bold"></span></label>
@@ -327,9 +362,9 @@ table tr td.col-fixed:nth-child(3) {
                                     HW = Half Weekly Leave
                                 </span>
 
-                                  <span class="badge" style="background:#f7b1f2;color:#000;">
-                                M = Miss Punch
-                            </span> 
+                                <span class="badge" style="background:#f7b1f2;color:#000;">
+                                    M = Miss Punch
+                                </span>
 
                                 <span class="badge" style="background:rgb(121, 246, 248);color:#000;">
                                     C = C Off
@@ -451,7 +486,7 @@ table tr td.col-fixed:nth-child(3) {
                                         AND (
                                             eas.active_id IS NULL
                                             OR eas.is_active = '1'
-                                        )
+                                        )  
 
                                         $crit2
 
@@ -506,7 +541,10 @@ table tr td.col-fixed:nth-child(3) {
                                                             SUM(attendance_status='Extra Off') AS extra_off, 
                                                             SUM(attendance_status='C Off') AS coff,
                                                             SUM(attendance_status='Half C Off') AS halfcoff,
-                                                            SUM(attendance_status='Public Holiday') AS publicho
+                                                            SUM(attendance_status='Public Holiday') AS publicho,
+                                                            SUM(attendance_status='National Holiday') AS nationalho,
+                                                            SUM(attendance_status='Religion Holiday') AS religionho,
+                                                            SUM(attendance_status='Seasonal Holiday') AS seasonalho
                                                         FROM attendance_entry
                                                         WHERE emp_id IN ($empIdsStr)
                                                         AND attendance_date BETWEEN '$fromDate' AND '$toDate' AND unit_id='$unitid'
@@ -565,789 +603,796 @@ table tr td.col-fixed:nth-child(3) {
                                     $salaryGenerated[$s['emp_id']] = $s['cnt'];
                                 }
 
-                               $earningLeaveRows = $obj->executequery("
-                                SELECT 
-                                    emp_id,
+                                $earningLeaveRows = $obj->earningLeaveRows($sessionid,$month,$year);
+                            
+                                $usedEarnMap = [];
 
-                                    SUM(
-                                        CASE
-                                            WHEN attendance_status IN ('Earning Leave', 'Leave') THEN 1
-                                            WHEN attendance_status IN ('Half Earning Leave', 'Half Leave') THEN 0.5
-                                            ELSE 0
-                                        END
-                                    ) used_leave
+                                foreach($earningLeaveRows as $r){
 
-                                FROM attendance_entry
+                                    $usedEarnMap[$r['emp_id']] = $r['used_leave'];
+                                }
+                                $earningUploadRows=$obj->earningUploadRows($sessionid,$month,$year); 
+                                $earningUploadMap = [];
 
-                                WHERE sessionid='$sessionid'
+                                foreach($earningUploadRows as $r){
 
-                                AND (
-                                    year < '$year'
-                                    OR (year='$year' AND month <= '$month')
-                                )
-
-                                GROUP BY emp_id
-
-                            ");
-
-                            $usedEarnMap = [];
-
-                            foreach($earningLeaveRows as $r){
-
-                                $usedEarnMap[$r['emp_id']] = $r['used_leave'];
-                            }
-
-                            $earningUploadRows = $obj->executequery("
-                            SELECT 
-                                emp_id,
-
-                                SUM(total_leave) total_leave
-
-                            FROM emp_monthly_leave
-
-                            WHERE leave_type='earning'
-                            AND sessionid='$sessionid'
-
-                            AND (
-                                year < '$year'
-                                OR (year='$year' AND month < '$month')
-                            )
-
-                            GROUP BY emp_id
-
-                        ");
-
-                        $earningUploadMap = [];
-
-                        foreach($earningUploadRows as $r){
-
-                            $earningUploadMap[$r['emp_id']] = $r['total_leave'];
-                        }
- 
-                        $current_date  = date("Y-m-d", strtotime("$year-$month-01"));
-
-                        $current_month = (int)date("m", strtotime($current_date));
-                        $current_year  = (int)date("Y", strtotime($current_date));
-
-                        $prev_month    = (int)date("m", strtotime("$current_date -1 month"));
-                        $prev_year     = (int)date("Y", strtotime("$current_date -1 month"));
-
-                        $extraUploadRows = $obj->executequery("
-                                SELECT 
-                                    emp_id,
-                                    COALESCE(SUM(total_leave),0) total_extra_off
-
-                                FROM emp_monthly_leave
-
-                                WHERE leave_type='eoff'
-
-                                AND (
-                                    (month='$current_month' AND year='$current_year')
-                                    OR
-                                    (month='$prev_month' AND year='$prev_year')
-                                )
-
-                                GROUP BY emp_id
-                            ");
-
-                            $extraUploadMap = [];
-
-                            foreach($extraUploadRows as $r){
-
-                                $extraUploadMap[$r['emp_id']] = $r['total_extra_off'];
-                            }
-                            /* ================= USED EXTRA OFF ================= */
-
-                            $extraUsedRows = $obj->executequery("
-                                SELECT 
-                                    emp_id,
-                                    COALESCE(SUM(
-                                        CASE 
-                                            WHEN attendance_status='Extra Off' THEN 1
-                                            WHEN attendance_status='Half Extra Off' THEN 0.5
-                                            ELSE 0
-                                        END
-                                    ),0) used_extra
-
-                                FROM attendance_entry
-
-                                WHERE (
-                                    (
-                                        MONTH(attendance_date) = '$current_month'
-                                        AND YEAR(attendance_date) = '$current_year'
-                                    )
-                                    OR
-                                    (
-                                        MONTH(attendance_date) = '$prev_month'
-                                        AND YEAR(attendance_date) = '$prev_year'
-                                    )
-                                )
-
-                                AND attendance_status IN ('Extra Off','Half Extra Off')
-
-                                GROUP BY emp_id
-                            ");
-
-                            $extraUsedMap = [];
-
-                            foreach($extraUsedRows as $r){
-
-                                $extraUsedMap[$r['emp_id']] = $r['used_extra'];
-                            } 
-                            $coffUsedRows = $obj->getEmpUsedCoff(
-                                $empIdsStr,
-                                $sessionid,
-                                $month,
-                                $year
-                            );
-
-                            $usedCoffMap = [];
-
-                            foreach ($coffUsedRows as $r) {
-
-                                $usedCoffMap[$r['emp_id']] = $r['used_coff'];
-                            } 
-                          
-                            $coffUploadRows = $obj->getEmpUploadedCoff(
-                                $empIdsStr,
-                                $sessionid,
-                                $month,
-                                $year
-                            ); 
-                            $coffUploadMap = []; 
-                            foreach ($coffUploadRows as $r) {
-
-                                $coffUploadMap[$r['emp_id']] = $r['total_leave'];
-                            } 
-
-
-                            $punchData = $obj->executequery("
-                                SELECT 
-                                    l.emp_id,
-                                    em.shift_id,
-                                    l.attendance_date,
-                                    l.attendance_stamp,
-                                    l.in_status
-                                FROM attendance_log l left join employee_master em on em.emp_id=l.emp_id
-                                WHERE l.emp_id IN ($empIdsStr)
-                                AND l.attendance_date BETWEEN '$fromDate' AND '$toDate'
-                                ORDER BY l.emp_id, l.attendance_stamp
-                            ");
-                            $punchMap = [];
-                            $lastOpen = [];
-                            foreach ($punchData as $row) {
-                                $emp    = $row['emp_id'];
-                                $date   = $row['attendance_date'];
-                                $status = $row['in_status'];
-                                $time   = date("H:i", strtotime($row['attendance_stamp']));
-                                $stamp  = strtotime($row['attendance_stamp']);
-
-                                if (!isset($punchMap[$emp])) {
-                                    $punchMap[$emp] = [];
+                                    $earningUploadMap[$r['emp_id']] = $r['total_leave'];
                                 }
 
-                                /* ================= GET SHIFT WINDOW ================= */
+                                $uploadArr = [];
 
-                                $working_hrs = $row['shift_id'] ?? '08:00:00';
-                            
-                                $shift_row = $obj->executequery("
-                                    SELECT in_time 
-                                    FROM shift_master 
-                                    WHERE working_hour='$working_hrs' 
-                                    ORDER BY in_time ASC 
-                                    LIMIT 1
+                                $res = $obj->executequery("
+                                    SELECT emp_id,
+                                        month,
+                                        SUM(total_leave) total_leave
+                                    FROM emp_monthly_leave
+                                    WHERE leave_type='eoff'
+                                    AND year='$year'
+                                    GROUP BY emp_id,month
                                 ");
 
-                                $morning_in = $shift_row[0]['in_time'] ?? '06:00:00';
-
-                                /* ================= IN LOGIC ================= */
-                                if ($status == 'IN') {
-
-                                    if (!isset($punchMap[$emp][$date])) {
-                                        $punchMap[$emp][$date] = [];
-                                    }
-
-                                    $punchMap[$emp][$date][] = [
-                                        'in'  => $time,
-                                        'in_stamp' => $stamp,
-                                        'out' => '',
-                                    
-                                    ];
-
-                                    $lastOpen[$emp] = [
-                                        'date'  => $date,
-                                        'index' => count($punchMap[$emp][$date]) - 1,
-                                        'stamp' => $stamp
-                                    ];
+                                foreach($res as $row){
+                                    $uploadArr[$row['emp_id']][(int)$row['month']] = (float)$row['total_leave'];
                                 }
 
-    
-                                if ($status == 'OUT') {
-                                    $matched = false;
-                                    foreach (array_reverse($punchMap[$emp], true) as $pDate => $entries) {
-                                        foreach (array_reverse($entries, true) as $idx => $entry) {
-                                            if (!empty($entry['in'])) {
-                                                $inStamp = $entry['in_stamp'];
-                                                $base_date = date('Y-m-d', strtotime($pDate . ' +1 day'));
-                                                $max_out = strtotime($base_date . ' ' . $morning_in) + (4 * 3600);
-                                                if (
-                                                    (
-                                                        $stamp > $inStamp ||
-                                                        date('Y-m-d', $stamp) > date('Y-m-d', $inStamp)
-                                                    )
-                                                    && $stamp <= $max_out
-                                                ) {
-                                                    // 🔥 ALWAYS overwrite
-                                                // agar already OUT hai → naya pair banao
-                                                if (!empty($punchMap[$emp][$pDate][$idx]['out'])) {
+                                $usedArr = [];
+                                $res = $obj->executequery("
+                                    SELECT emp_id,
+                                        month,
+                                        SUM(
+                                                CASE
+                                                    WHEN attendance_status='Extra Off' THEN 1
+                                                    WHEN attendance_status='Half Extra Off' THEN 0.5
+                                                    ELSE 0
+                                                END
+                                        ) total_used
+                                    FROM attendance_entry
+                                    WHERE year='$year'
+                                    AND attendance_status IN ('Extra Off','Half Extra Off')
+                                    GROUP BY emp_id,month
+                                ");
+                                foreach($res as $row){
+                                    $usedArr[$row['emp_id']][(int)$row['month']] = (float)$row['total_used'];
+                                } 
 
-                                                    $punchMap[$emp][$pDate][] = [
-                                                        'in' => '',
-                                                        'out' => $time
-                                                    ];
+                                $coffUsedRows = $obj->getEmpUsedCoff(
+                                    $empIdsStr,
+                                    $sessionid,
+                                    $month,
+                                    $year
+                                );
 
-                                                } else {
+                                $usedCoffMap = [];
 
-                                                    $punchMap[$emp][$pDate][$idx]['out'] = $time;
-                                                }
+                                foreach ($coffUsedRows as $r) {
 
-                                                    $matched = true;
-                                                    break 2;
-                                                }
-                                            }
-                                        }
+                                    $usedCoffMap[$r['emp_id']] = $r['used_coff'];
+                                } 
+                            
+                                $coffUploadRows = $obj->getEmpUploadedCoff(
+                                    $empIdsStr,
+                                    $sessionid,
+                                    $month,
+                                    $year
+                                ); 
+                                $coffUploadMap = []; 
+                                foreach ($coffUploadRows as $r) {
+
+                                    $coffUploadMap[$r['emp_id']] = $r['total_leave'];
+                                } 
+
+                                        $reportFromDate = "$year-$month-01";          // report start
+                                        $fromDate_att = date('Y-m-d', strtotime("$reportFromDate -1 day")); // fetch start
+                                        $toDate_att  = date("Y-m-t", strtotime($reportFromDate));  
+                                $punchData = $obj->executequery("
+                                    SELECT 
+                                        l.emp_id,
+                                        em.shift_id,
+                                        l.attendance_date,
+                                        l.attendance_stamp,
+                                        l.in_status
+                                    FROM attendance_log l left join employee_master em on em.emp_id=l.emp_id
+                                    WHERE l.emp_id IN ($empIdsStr)
+                                    AND l.attendance_date BETWEEN '$fromDate_att' AND '$toDate_att'
+                                    ORDER BY l.emp_id, l.attendance_stamp
+                                ");
+                                $punchMap = [];
+                                $lastOpen = [];
+                                foreach ($punchData as $row) {
+                                    $emp    = $row['emp_id'];
+                                    $date   = $row['attendance_date'];
+                                    $status = $row['in_status'];
+                                    $time   = date("H:i", strtotime($row['attendance_stamp']));
+                                    $stamp  = strtotime($row['attendance_stamp']);
+
+                                    if (!isset($punchMap[$emp])) {
+                                        $punchMap[$emp] = [];
                                     }
-                                    if (!$matched) {
 
-                                        // ✅ SAME DATE me hi show hoga
+                                    /* ================= GET SHIFT WINDOW ================= */
+
+                                    $working_hrs = $row['shift_id'] ?? '08:00:00';
+                                
+                                    $shift_row = $obj->executequery("
+                                        SELECT in_time 
+                                        FROM shift_master 
+                                        WHERE working_hour='$working_hrs' 
+                                        ORDER BY in_time ASC 
+                                        LIMIT 1
+                                    ");
+
+                                    $morning_in = $shift_row[0]['in_time'] ?? '06:00:00';
+
+                                    /* ================= IN LOGIC ================= */
+                                    if ($status == 'IN') {
+
                                         if (!isset($punchMap[$emp][$date])) {
                                             $punchMap[$emp][$date] = [];
                                         }
 
                                         $punchMap[$emp][$date][] = [
-                                            'in'  => '',
-                                            'out' => $time
+                                            'in'  => $time,
+                                            'in_stamp' => $stamp,
+                                            'out' => '',
+                                        
+                                        ];
+
+                                        $lastOpen[$emp] = [
+                                            'date'  => $date,
+                                            'index' => count($punchMap[$emp][$date]) - 1,
+                                            'stamp' => $stamp
                                         ];
                                     }
-                                }
-                            }
-                            $missPunchMap = [];
 
-                            foreach ($punchMap as $empId => $dates) {
+        
+                                    if ($status == 'OUT') {
+                                        $matched = false;
+                                        foreach (array_reverse($punchMap[$emp], true) as $pDate => $entries) {
+                                            foreach (array_reverse($entries, true) as $idx => $entry) {
+                                                if (!empty($entry['in'])) {
+                                                    $inStamp = $entry['in_stamp'];
+                                                    $base_date = date('Y-m-d', strtotime($pDate . ' +1 day'));
+                                                    $max_out = strtotime($base_date . ' ' . $morning_in) + (4 * 3600);
+                                                    if (
+                                                        (
+                                                            $stamp > $inStamp ||
+                                                            date('Y-m-d', $stamp) > date('Y-m-d', $inStamp)
+                                                        )
+                                                        && $stamp <= $max_out
+                                                    ) {
+                                                        // 🔥 ALWAYS overwrite
+                                                    // agar already OUT hai → naya pair banao
+                                                    if (!empty($punchMap[$emp][$pDate][$idx]['out'])) {
 
-                                foreach ($dates as $pDate => $entries) {
+                                                        $punchMap[$emp][$pDate][] = [
+                                                            'in' => '',
+                                                            'out' => $time
+                                                        ];
 
-                                    $hasIn = false;
+                                                    } else {
 
-                                    foreach ($entries as $p) {
-                                        if (!empty($p['in'])) {
-                                            $hasIn = true;
-                                            break;
+                                                        $punchMap[$emp][$pDate][$idx]['out'] = $time;
+                                                    }
+
+                                                        $matched = true;
+                                                        break 2;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        if (!$matched) {
+
+                                            // ✅ SAME DATE me hi show hoga
+                                            if (!isset($punchMap[$emp][$date])) {
+                                                $punchMap[$emp][$date] = [];
+                                            }
+
+                                            $punchMap[$emp][$date][] = [
+                                                'in'  => '',
+                                                'out' => $time
+                                            ];
                                         }
                                     }
+                                }
+                                $missPunchMap = [];
 
-                                    // ✅ ONLY OUT (no IN)
-                                    if (!$hasIn && !empty($entries)) {
-                                        $missPunchMap[$empId][$pDate] = 'Miss Punch';
+                                foreach ($punchMap as $empId => $dates) {
+
+                                    foreach ($dates as $pDate => $entries) {
+
+                                        $hasIn = false;
+
+                                        foreach ($entries as $p) {
+                                            if (!empty($p['in'])) {
+                                                $hasIn = true;
+                                                break;
+                                            }
+                                        }
+
+                                        // ✅ ONLY OUT (no IN)
+                                        if (!$hasIn && !empty($entries)) {
+                                            $missPunchMap[$empId][$pDate] = 'Miss Punch';
+                                        }
                                     }
                                 }
-                            }
                                 ?>
                             <!-- floating scrollbar -->
-                            <div class="auto-scroll-wrapper">
-                                <div class="table-responsive">
-                                    <table id="buttons-datatables"
-                                        class="table table-sm table-bordered table-hover align-middle display bg-white">
-                                        <thead class="table-primary">
-                                            <tr>
-                                                <th class="col-fixed">S.No.</th>
+                                <div class="auto-scroll-wrapper">
+                                    <div class="table-responsive">
+                                        <table id="buttons-datatables"
+                                            class="table table-sm table-bordered table-hover align-middle display bg-white">
+                                            <thead class="table-primary">
+                                                <tr>
+                                                    <th class="col-fixed">S.No.</th>
+                                                    <?php
+                                                            foreach ($showFields as $fid) {
+                                                                if (!isset($fieldMap[$fid])) continue;
+                                                                $class = isset($fieldMap[$fid]['class'])
+                                                                    ? ' class="' . $fieldMap[$fid]['class'] . '"'
+                                                                    : '';
+                                                                echo "<th {$class}>{$fieldMap[$fid]['label']}</th>";
+                                                            }
+                                                            ?>
+
+                                                    <th>Punch <br> All </th>
+                                                    <?php for ($i = 1; $i <= $length; $i++) { ?>
+                                                    <th class="text-center">D<?php echo $i; ?></th>
+                                                    <?php } ?>
+
+                                                    <th>Present <br> Days</th>
+                                                    <th>Half <br> Days</th>
+                                                    <th>Holiday</th>
+                                                    <th>Week <br> Off</th>
+                                                    <th>Used<br>Week <br> Off</th>
+                                                    <th>Curr.<br>Earn <br> Leave</th>
+                                                    <th>Availed + <br>Used Earn<br>Leave</th>
+                                                    <th>C-Off<br>Adj.</th>
+                                                    <th>Absent</th>
+                                                    <th>Total <br>Present <br>Day</th>
+                                                    <!-- <th>Prev.<br>Earn <br>Leave</th>  -->
+                                                    <th>Prev.<br>Earn<br>Leave</th>
+                                                    <th>Tot.<br>Earn <br> Leave</th>
+                                                    <th>Prev <br>C-<br>Off</th>
+                                                    <th>Curr.<br>C-OFF</th>
+                                                    <th>Tot.<br>C Off</th>
+                                                    <th>Extra Off</th>
+                                                    <!-- <th>Leave</th> -->
+                                                    <!-- <th>Public <br> Holiday</th>  -->
+                                                </tr>
+                                            </thead>
+                                            <tbody>
                                                 <?php
-                                                    foreach ($showFields as $fid) {
-                                                        if (!isset($fieldMap[$fid])) continue;
-                                                        $class = isset($fieldMap[$fid]['class'])
-                                                            ? ' class="' . $fieldMap[$fid]['class'] . '"'
-                                                            : '';
-                                                        echo "<th {$class}>{$fieldMap[$fid]['label']}</th>";
-                                                    }
-                                                    ?>
+                                                        $slno = 1;
+                                                        $currentDate = date("Y-m-d");
+                                                        $totalPresentDays = 0;
+                                                        $totalWeekOff = 0;
+                                                        $total_tpd = 0;
+                                                        $totalEarnLEave = 0; 
+                                                        $totalHoliday = 0;
+                                                        $totalAbsent = 0;
+                                                        $totalPrevCoff = 0;
+                                                        $totalExtraOff = 0;
+                                                        $totalPendingEL = 0;
+                                                        $totalOpeningLeave = 0;
+                                                        $totalPenCoff = 0;
+                                                        $total_final_earn_leave = 0;
+                                                        $total_final_coff = 0; 
+                                                        $total_availed_leave = 0; 
+                                                        $total_present_day= 0; 
+                                                        $total_half_day= 0; 
+                                                        $total_taken_coff= 0; 
+                                                        $total_used_weekly= 0; 
+                                                        $total_nh= 0; 
 
-                                                <th>Punch <br> All </th>
-                                                <?php for ($i = 1; $i <= $length; $i++) { ?>
-                                                <th class="text-center">D<?php echo $i; ?></th>
-                                                <?php } ?>
+                                                        $chkedit = $obj->check_editBtn($pagename, $loginid);
+                                                        foreach ($employees as $emp) {
+                                                            $empId = $emp['emp_id'];
+                                                            $department_id = $emp['department_id'];
+                                                            $date_of_joining = $emp['date_of_joining'];
+                                                            $allow_weekly_off = $emp['allow_weekly_off'];
+                                                            $is_allow_c_off = $emp['c_off_check'];
+                                                            $basic_salary = $emp['basic_salary'];
+                                                            $allow_earn_leave_carry = $emp['earn_leave_check']; 
+                                                            $uploaded_coff = $obj->getvalfield("emp_leave_allotment", "coff", "emp_id='$empId'");
 
-                                                <th>Present <br> Days</th>
-                                                <th>Half <br> Days</th>
-                                                <th>Week <br> Off</th>
-                                                <th>Curr.<br>Earn <br> Leave</th>
-                                                <th>Availed<br>Leave</th>
-                                                <th>C-Off<br>Adj.</th>
-                                                <th>Absent</th>
-                                                <th>Total <br>Present <br>Day</th>
-                                                <!-- <th>Prev.<br>Earn <br>Leave</th>  -->
-                                                <th>Prev.<br>Earn<br>Leave</th>
-                                                <th>Tot.<br>Earn <br> Leave</th>
-                                                <th>Prev <br>C-<br>Off</th>
-                                                <th>Curr.<br>C-OFF</th>
-                                                <th>Tot.<br>C Off</th>
-                                                <th>Extra Off</th>
-                                                <!-- <th>Leave</th> -->
-                                                <!-- <th>Public <br> Holiday</th>  -->
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php
-                                                $slno = 1;
-                                                $currentDate = date("Y-m-d");
-                                                $totalPresentDays = 0;
-                                                $totalWeekOff = 0;
-                                                $total_tpd = 0;
-                                                $totalEarnLEave = 0; 
-                                                $totalHoliday = 0;
-                                                $totalAbsent = 0;
-                                                $totalPrevCoff = 0;
-                                                $totalExtraOff = 0;
-                                                $totalPendingEL = 0;
-                                                $totalOpeningLeave = 0;
-                                                $totalPenCoff = 0;
-                                                $total_final_earn_leave = 0;
-                                                $total_final_coff = 0; 
-                                                $total_availed_leave = 0; 
-                                                $total_present_day= 0; 
-                                                $total_half_day= 0; 
-                                                $total_taken_coff= 0; 
+                                                            $is_esic = $emp['is_esic'];
+                                                            $setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
 
-                                                $chkedit = $obj->check_editBtn($pagename, $loginid);
-                                                foreach ($employees as $emp) {
-                                                    $empId = $emp['emp_id'];
-                                                    $department_id = $emp['department_id'];
-                                                    $date_of_joining = $emp['date_of_joining'];
-                                                    $allow_weekly_off = $emp['allow_weekly_off'];
-                                                    $is_allow_c_off = $emp['c_off_check'];
-                                                    $basic_salary = $emp['basic_salary'];
-                                                    $allow_earn_leave_carry = $emp['earn_leave_check']; 
-                                                    $uploaded_coff = $obj->getvalfield("emp_leave_allotment", "coff", "emp_id='$empId'");
+                                                            $sum   = $summary[$empId] ?? ['present' => 0, 'halfday' => 0, 'leavecnt' => 0, 'leavecnt2' => 0, 'halfearn' => 0, 'halfweek' => 0, 'coff' => 0, 'halfcoff' => 0, 'op_leave' => 0, 'halfopleave' => 0, 'half_extra_off' => 0, 'extra_off' => 0,'publicho'=>0,'nationalho'=>0,'religionho'=>0,'seasonalho'=>0]; 
 
-                                                    $is_esic = $emp['is_esic'];
-                                                    $setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
 
-                                                    $sum   = $summary[$empId] ?? ['present' => 0, 'halfday' => 0, 'leavecnt' => 0, 'leavecnt2' => 0, 'halfearn' => 0, 'halfweek' => 0, 'coff' => 0, 'halfcoff' => 0, 'op_leave' => 0, 'halfopleave' => 0, 'half_extra_off' => 0, 'extra_off' => 0,'publicho'=>0];
+                                                            $totalAttendance = $sum['present'] + ($sum['halfday'] / 2) + $sum['leavecnt'] + $sum['leavecnt2'] + ($sum['halfearn'] / 2) + ($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2) + ($sum['halfopleave'] / 2) + ($sum['half_extra_off'] / 2) + $sum['op_leave'] + $sum['extra_off']+ $sum['publicho']+ $sum['nationalho']+ $sum['religionho']+ $sum['seasonalho'];
 
-                                                    $totalAttendance = $sum['present'] + ($sum['halfday'] / 2) + $sum['leavecnt'] + $sum['leavecnt2'] + ($sum['halfearn'] / 2) + ($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2) + ($sum['halfopleave'] / 2) + ($sum['half_extra_off'] / 2) + $sum['op_leave'] + $sum['extra_off']+ $sum['publicho'];
+                                                            
+                                                            $present_day = $sum['present']; 
+                                                            $half_day = $sum['halfday'];
+                                                            $taken_coff = $sum['extra_off']+ ($sum['half_extra_off'] / 2)+ ($sum['halfcoff'] / 2) + $sum['coff'];
 
-                                                    $present_day = $sum['present']; 
-                                                    $half_day = $sum['halfday'];
-                                                    $taken_coff = $sum['extra_off']+ ($sum['half_extra_off'] / 2)+ ($sum['halfcoff'] / 2) + $sum['coff'];
+                                                            $total_present_day += $present_day;
+                                                            $total_half_day += $half_day;
+                                                            $total_taken_coff += $taken_coff;
+                                                            
 
-                                                    $total_present_day += $present_day;
-                                                    $total_half_day += $half_day;
-                                                    $total_taken_coff += $taken_coff;
+                                                            $show_leave = $sum['present'] + ($sum['halfday'] / 2) + $sum['leavecnt'] +($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2) + ($sum['half_extra_off'] / 2) + $sum['extra_off'];
 
-                                                    $show_leave = $sum['present'] + ($sum['halfday'] / 2) + $sum['leavecnt'] +($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2) + ($sum['half_extra_off'] / 2) + $sum['extra_off'];
-
-                                                    $availed_leave = $sum['leavecnt2'] + ($sum['halfearn'] / 2)+ $sum['op_leave']+ ($sum['halfopleave'] / 2);
-
-                                                    $total_availed_leave +=$availed_leave;
-
-                                                    $real_total_att = $sum['present'] + ($sum['halfday'] / 2);
-                                                  
-                                                    $salaryCount = $salaryGenerated[$empId] ?? 0;
-                                                    //$totalPresentDays +=  $totalAttendance;
-                                                    $totalPresentDays +=  $show_leave;
-                                                    $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_att, $empId,$month, $year);
-                                                    $earn_leave_present = $real_total_att + $week_leave;
-                                                    $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
-                                                    $holidayData = $obj->getHolidayCountWithSandwichRule2(
-                                                        $empId,
-                                                        $holidayRows,
-                                                        $holidayAttendanceMap
-                                                    );
-
-                                                    $holiday = $holidayData['total']; 
-                                                  
-                                                    $total_earning_leave =($earningUploadMap[$empId] ?? 0) -($usedEarnMap[$empId] ?? 0); 
-
-                                                    
-                                                    $extra_off = [ 
-                                                        'balance' =>
-                                                            ($extraUploadMap[$empId] ?? 0)
-                                                            -
-                                                            ($extraUsedMap[$empId] ?? 0)
-                                                    ];
- 
-                                                   //$opening_leave_balance =($openingMap[$empId] ?? 0)-($usedOpeningMap[$empId] ?? 0);
-
-                                                    $totalWeekOff += $week_leave;
-                                                    $totalEarnLEave += $monthly_leave;
-                                                    //$tpd = $totalAttendance + $holiday + $week_leave;
-                                                    $tpd = $totalAttendance + $week_leave;
-                                                    $prev_coff =  ($coffUploadMap[$empId] ?? 0)-($usedCoffMap[$empId] ?? 0);
-
-                                                    // $result = $obj->calculateWorkingDays([
-                                                    //     'daysInMonth' => $length,
-                                                    //     'present'     => $totalAttendance,
-                                                    //     'holiday'     =>0, 
-                                                    //     'weekly'      => $week_leave,
-                                                    //     'monthly'     => $monthly_leave, 
-                                                    //     'used_extra_off'    =>'0',
-                                                    //     'allow_c_off' => $is_allow_c_off,
-                                                    //     'add_all_leave' => $is_all_leave_add,
-                                                    //     'allow_earn_leave_carry' => $allow_earn_leave_carry,
-                                                    // ]);
-
-                                                    $result = $obj->calculateLeaveUsage(
-                                                        $length,
-                                                        $totalAttendance,
-                                                        $week_leave,
-                                                        $monthly_leave,
-                                                        // $three_month_leave,
-                                                        $is_allow_c_off,
-                                                        $is_all_leave_add,
-                                                        $allow_earn_leave_carry,0,0,$date_of_joining,$month,$year
-                                                    );
- 
-                                                    $used_monthly_leave  = $result['used_monthly']; 
-                                                    $used_weekly  = $result['used_weekly']; 
-                                                    $used_monthly_leave  = $result['used_monthly']; 
-                                                    $tpd  = $result['total_working_days']; 
-                                                    $absent  = $result['absent']; 
-                                                   
-                                                    $rem_month_leave = $monthly_leave-$used_monthly_leave;
-                                                    $pen_coff = $week_leave-$used_weekly;
-                                                      
-                                                    $total_tpd += $tpd;
- 
-                                                    $totalHoliday += $holiday;
-                                                    $totalAbsent += $absent;
-                                                    $totalPrevCoff += $prev_coff;
-                                                    $totalExtraOff += $extra_off['balance'];
-                                                    $totalPendingEL += $total_earning_leave;
-                                                   // $totalOpeningLeave += $opening_leave_balance;
-                                                    $totalPenCoff += $pen_coff;
-
-                                                    $final_earn_leave = $total_earning_leave + $rem_month_leave;
-
-                                                    $final_coff = $prev_coff + $pen_coff;
-                                                    $total_final_earn_leave += $final_earn_leave;
-                                                    $total_final_coff += $final_coff;
-                                                    echo "<tr>";
-                                                    echo "<td class='col-fixed'>" . $slno++ . "</td>";
-                                                    foreach ($showFields as $fid) {
-                                                        if (!isset($fieldMap[$fid])) continue;
-
-                                                        $key = $fieldMap[$fid]['key'];
-                                                        $class = isset($fieldMap[$fid]['class'])
-                                                            ? ' class="' . $fieldMap[$fid]['class'] . '"'
-                                                            : '';
-                                                        $value = $emp[$key] ?? '-';
-                                                        // special formatting
-                                                        if ($fid == 9 && !empty($value)) { // Date of Joining
-                                                            $value = $obj->dateformatindia($value);
-                                                        }
-                                                        echo "<td {$class}>{$value}</td>";
-                                                    }
-
-                                                    if ($chkedit == 1) {
-                                                        echo "<td class='text-center' style='cursor:pointer'
-                                                                onclick=\"add_all_att('{$emp['shift_id']}','','{$month}','{$year}','{$empId}','{$salaryCount}','{$extra_off['balance']}','{$total_earning_leave}','{$prev_coff}','{$length}','{$date_of_joining}')\">                                   
-                                                                <i class='ri-add-line text-primary'></i> 
-                                                            </td>";
-                                                    } else {
-                                                        echo "<td class='text-center'>
-                                                                <i class='ri-forbid-2-line text-danger'></i>
-                                                            </td>";
-                                                    }
-
-                                                    for ($d = 1; $d <= $length; $d++) {
-
-                                                       $date = sprintf('%04d-%02d-%02d', $year, $month, $d);
-
-                                                        if ($date > $currentDate) {
-                                                            echo "<td style='background:#ddd;text-align:center'>-</td>";
-                                                            continue;
-                                                        } 
-                                                        $rows = $attendanceMap[$empId][$date] ?? [];
-
-                                                        $intime = '';
-                                                        $remark = '';
-                                                        $shift  = $emp['shift_id'];
- 
-
-                                                        if (!empty($rows)) {
-
-                                                            $statuses = array_column($rows, 'attendance_status');
-
-                                                            $intime = $rows[0]['intime'] ?? ''; 
-                                                            $remark = $rows[0]['in_remark'] ?? '';
-                                                            $shift  = $rows[0]['shift_id'] ?? $emp['shift_id'];
                                                         
 
-                                                            $statusMap = [
-                                                                'Half Day'            => 'HD',
-                                                                'Half Leave'          => 'HL',
-                                                                'Half Earning Leave'  => 'HL',
-                                                                'Half Weekly Leave'   => 'HW',
-                                                                'Half C Off'          => 'HC',
-                                                                'Half Extra Off'      => 'HC2'
-                                                            ];
+                                                            
+                                                            $holidayData = $obj->getHolidayCountWithSandwichRule2(
+                                                                $empId,
+                                                                $holidayRows,
+                                                                $holidayAttendanceMap
+                                                            );
 
-                                                            if (count($statuses) == 2) {
+                                                            $holiday = $holidayData['total']; 
+                                                            $national_holiday = $holidayData['national'];  
+                                                            $religious_holiday = $holidayData['religious'];  
+                                                            $seasonal_holiday = $holidayData['seasonal'];
 
-                                                                $codes = [];
+                                                            $national_holiday_count =$sum['publicho']+ $sum['nationalho']+$sum['religionho']+$sum['seasonalho'] + $holiday;
 
-                                                                foreach ($statuses as $st) {
-                                                                    if (isset($statusMap[$st])) {
-                                                                        $codes[] = $statusMap[$st];
-                                                                    }
+                                                            $real_total_att = $sum['present'] + ($sum['halfday'] / 2)+$national_holiday_count;
+                                                        
+                                                            $salaryCount = $salaryGenerated[$empId] ?? 0;
+                                                            //$totalPresentDays +=  $totalAttendance;
+                                                            $totalPresentDays +=  $show_leave;
+                                                            $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_att, $empId,$month, $year);
+                                                            
+                                                            $earn_leave_present = $real_total_att + $week_leave;
+                                                            $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid); 
+                                                        
+                                                            $total_nh += $national_holiday_count;
+                                                            
+                                                            $total_earning_leave =($earningUploadMap[$empId] ?? 0) -($usedEarnMap[$empId] ?? 0); 
+
+                                                            $extraOff = $obj->getExtraOffBalance2(
+                                                                $empId,
+                                                                $month,
+                                                                $uploadArr,
+                                                                $usedArr
+                                                            );
+                                                            $extra_off['balance'] = $extraOff['balance'];
+                                            
+                                                            $totalWeekOff += $week_leave;
+                                                            $totalEarnLEave += $monthly_leave;
+                                                            //$tpd = $totalAttendance + $holiday + $week_leave;
+                                                            $tpd = $totalAttendance + $week_leave;
+                                                            $prev_coff =  ($coffUploadMap[$empId] ?? 0)-($usedCoffMap[$empId] ?? 0);
+    
+                                                            $result = $obj->calculateLeaveUsage(
+                                                                $length,
+                                                                $totalAttendance,
+                                                                $week_leave,
+                                                                $monthly_leave,
+                                                                // $three_month_leave,
+                                                                $is_allow_c_off,
+                                                                $is_all_leave_add,
+                                                                $allow_earn_leave_carry,0,$holiday,$date_of_joining,$month,$year
+                                                            );
+        
+                                                            $used_weekly  = $result['used_weekly']; 
+                                                            $used_monthly_leave  = $result['used_monthly']; 
+                                                            $tpd  = $result['total_working_days']; 
+                                                            $absent  = $result['absent']; 
+                                                        
+                                                            $rem_month_leave = $monthly_leave-$used_monthly_leave;
+                                                            $pen_coff = $week_leave-$used_weekly;
+
+                                                            $availed_leave = $sum['leavecnt2'] + ($sum['halfearn'] / 2)+ $sum['op_leave']+ ($sum['halfopleave'] / 2) + $used_monthly_leave;
+
+                                                            $total_availed_leave += $availed_leave;
+                                                            
+                                                            $total_tpd += $tpd;
+                                                            $total_used_weekly += $used_weekly;
+        
+                                                            $totalHoliday += $holiday;
+                                                            $totalAbsent += $absent;
+                                                            $totalPrevCoff += $prev_coff;
+                                                            $totalExtraOff += $extra_off['balance'];
+                                                            $totalPendingEL += $total_earning_leave; 
+                                                            $totalPenCoff += $pen_coff;
+
+                                                            $final_earn_leave = $total_earning_leave + $rem_month_leave;
+
+                                                            $final_coff = $prev_coff + $pen_coff;
+                                                            $total_final_earn_leave += $final_earn_leave;
+                                                            $total_final_coff += $final_coff;
+                                                            echo "<tr>";
+                                                            echo "<td class='col-fixed'>" . $slno++ . "</td>";
+                                                            foreach ($showFields as $fid) {
+                                                                if (!isset($fieldMap[$fid])) continue;
+
+                                                                $key = $fieldMap[$fid]['key'];
+                                                                $class = isset($fieldMap[$fid]['class'])
+                                                                    ? ' class="' . $fieldMap[$fid]['class'] . '"'
+                                                                    : '';
+                                                                $value = $emp[$key] ?? '-';
+                                                                // special formatting
+                                                                if ($fid == 9 && !empty($value)) { // Date of Joining
+                                                                    $value = $obj->dateformatindia($value);
                                                                 }
+                                                                echo "<td {$class}>{$value}</td>";
+                                                            }
 
-                                                                if (count($codes) == 2) {
-                                                                    $status = implode('_', $codes);
-                                                                } else {
-                                                                    $status = $statuses[0];
-                                                                }
-
+                                                            if ($chkedit == 1) {
+                                                                echo "<td class='text-center' style='cursor:pointer'
+                                                                        onclick=\"add_all_att('{$emp['shift_id']}','','{$month}','{$year}','{$empId}','{$salaryCount}','{$extra_off['balance']}','{$total_earning_leave}','{$prev_coff}','{$length}','{$date_of_joining}')\">                                   
+                                                                        <i class='ri-add-line text-primary'></i> 
+                                                                    </td>";
                                                             } else {
-                                                                $status = $statuses[0];
+                                                                echo "<td class='text-center'>
+                                                                        <i class='ri-forbid-2-line text-danger'></i>
+                                                                    </td>";
                                                             }
 
-                                                        } else {
-                                                            $searchDate = date('Y-m-d', strtotime($date . ' -1 day')); 
-                                                            $monthStart = date('Y-m-01', strtotime($date)); 
-                                                            while (strtotime($searchDate) >= strtotime($monthStart)) {
+                                                            $joiningDate = !empty($date_of_joining)
+                                                                ? date('Y-m-d', strtotime($date_of_joining))
+                                                                : '';
+
+                                                            $njStartDay = 1;
+                                                            $njEndDay   = 0;
+
+                                                            // Find last day before joining date in this month
+                                                            if (!empty($joiningDate)) {
+
+                                                                $joiningYear  = date('Y', strtotime($joiningDate));
+                                                                $joiningMonth = date('m', strtotime($joiningDate));
+                                                                $joiningDay   = date('d', strtotime($joiningDate));
+
                                                                 if (
-                                                                    isset($attendanceMap[$empId][$searchDate][0]['shift_id']) &&
-                                                                    !empty($attendanceMap[$empId][$searchDate][0]['shift_id'])
+                                                                    $joiningYear == $year &&
+                                                                    $joiningMonth == sprintf('%02d', $month)
                                                                 ) {
-                                                                    $shift = $attendanceMap[$empId][$searchDate][0]['shift_id'];
-                                                                    break;
+                                                                    $njEndDay = (int)$joiningDay - 1;
                                                                 }
-                                                                $searchDate = date('Y-m-d', strtotime($searchDate . ' -1 day'));
                                                             }
-                                                            $status = 'A';
-                                                        }
-                                                            $isHoliday = isset($holidays[$date]);
-                                                            if ($isHoliday && $holiday > 0 && $basic_salary <= 42000 && $status=='Present') {
-                                                                $txt = 'PH';
-                                                                $bg  = 'rgb(180,210,255)';
-                                                            }else {
-                                                            switch ($status) {
-                                                                case 'Present':
-                                                                    $txt = 'P';
-                                                                    $bg = 'rgb(173,233,179)';
-                                                                    break;
-                                                                case 'Absent':
-                                                                    $txt = 'A';
-                                                                    $bg = 'rgb(251,175,175)';
-                                                                    break;
-                                                                case 'Half Day':
-                                                                    $txt = 'HD';
-                                                                    $bg = 'rgb(255,246,163)';
-                                                                    break;
-                                                                case 'Incomplete':
-                                                                    $txt = 'I';
-                                                                    $bg = 'rgb(233,61,61)';
-                                                                    break;
-                                                                case 'Weekly Leave':
-                                                                    $txt = 'WL';
-                                                                    $bg = 'rgb(229,204,255)';
-                                                                    break;
-                                                                case 'Earning Leave':
-                                                                    $txt = 'L';
-                                                                    $bg = 'rgb(99, 236, 218)';
-                                                                    break;
-                                                                case 'Half Earning Leave':
-                                                                    $txt = 'HL';
-                                                                $bg = 'rgb(57, 233, 239)';
-                                                                    break;
-                                                                case 'Half Weekly Leave':
-                                                                    $txt = 'HW';
-                                                                    $bg = 'rgb(226, 237, 109)';
-                                                                    break;
-                                                                case 'C Off':
-                                                                    $txt = 'C';
-                                                                    $bg = 'rgb(121, 246, 248)';
-                                                                    break;
-                                                                case 'Half C Off':
-                                                                    $txt = 'HC';
-                                                                    $bg = 'rgb(226, 237, 109)';
-                                                                    break;
-                                                                case 'Leave':
-                                                                    $txt = 'L';
-                                                                    $bg = 'rgb(99, 236, 218)';
-                                                                    break;
-                                                                case 'Half Leave':
-                                                                    $txt = 'HL';
-                                                                    $bg = 'rgb(57, 233, 239)';
-                                                                    break;
-                                                                case 'Extra Off':
-                                                                    $txt = 'C2';
-                                                                    $bg = 'rgb(149, 121, 248)';
-                                                                    break;
-                                                                case 'Half Extra Off':
-                                                                    $txt = 'HC2';
-                                                                    $bg = 'rgb(149, 121, 248)';
-                                                                    break;
-                                                                case 'Public Holiday':
-                                                                    $txt = 'PH';
-                                                                    $bg = 'rgb(180,210,255)';
-                                                                    break;
+
+                                                            if ($njEndDay >= 1) {
+                                                                echo "
+                                                                <td colspan='{$njEndDay}'
+                                                                    style='background:#e5ccff;
+                                                                        padding:0;
+                                                                        border:1px solid #ddd;
+                                                                        vertical-align:middle;
+                                                                        text-align:center;'>
+                                                                    
+                                                                    <div style='
+                                                                        width:100%;
+                                                                        height:32px;
+                                                                        display:flex;
+                                                                        align-items:center;
+                                                                        justify-content:center;
+                                                                        font-weight:bold;
+                                                                        color:#000;
+                                                                        font-size:11px;
+                                                                        white-space:nowrap;
+                                                                    '>
+                                                                        - NJ/RJ -
+                                                                    </div>
+                                                                </td>";
+                                                            } 
+                                                            $startDay = max(1, $njEndDay + 1);  
+                                                            for ($d = $startDay; $d <= $length; $d++) {
+                                                            $date = sprintf('%04d-%02d-%02d', $year, $month, $d); 
+                                                                if ($date > $currentDate) {
+                                                                    echo "<td style='background:#ddd;text-align:center'>-</td>";
+                                                                    continue;
+                                                                } 
+                                                                $rows = $attendanceMap[$empId][$date] ?? [];
+
+                                                                $intime = '';
+                                                                $remark = '';
+                                                                $shift  = $emp['shift_id'];
+        
+
+                                                                if (!empty($rows)) {
+
+                                                                    $statuses = array_column($rows, 'attendance_status');
+
+                                                                    $intime = $rows[0]['intime'] ?? ''; 
+                                                                    $remark = $rows[0]['in_remark'] ?? '';
+                                                                    $shift  = $rows[0]['shift_id'] ?? $emp['shift_id'];
                                                                 
-                                                                default:
-                                                                    if (strpos($status, '_') !== false) {
-                                                                        $txt = str_replace('_', '/', $status);
-                                                                        $bg  = '#dfefff';
-                                                                    }else if (isset($missPunchMap[$empId][$date])) {
-                                                                        $status = 'Miss Punch';
-                                                                        $txt = 'M';
-                                                                        $bg = 'rgb(247, 177, 242)';
+
+                                                                    $statusMap = [
+                                                                        'Half Day'            => 'HD',
+                                                                        'Half Leave'          => 'HL',
+                                                                        'Half Earning Leave'  => 'HL',
+                                                                        'Half Weekly Leave'   => 'HW',
+                                                                        'Half C Off'          => 'HC',
+                                                                        'Half Extra Off'      => 'HC2'
+                                                                    ];
+
+                                                                    if (count($statuses) == 2) {
+
+                                                                        $codes = [];
+
+                                                                        foreach ($statuses as $st) {
+                                                                            if (isset($statusMap[$st])) {
+                                                                                $codes[] = $statusMap[$st];
+                                                                            }
+                                                                        }
+
+                                                                        if (count($codes) == 2) {
+                                                                            $status = implode('_', $codes);
+                                                                        } else {
+                                                                            $status = $statuses[0];
+                                                                        }
+
                                                                     } else {
-                                                                        $txt = 'A';
-                                                                    $bg = 'rgb(251,175,175)';
-                                                                        // $txt = $isHoliday && $holiday>0  && $basic_salary <= 42000 ? 'PH' : 'A';
-                                                                        // $bg  = $isHoliday  && $holiday>0   && $basic_salary <= 42000 ? 'rgb(180,210,255)' : 'rgb(251,175,175)';
+                                                                        $status = $statuses[0];
                                                                     }
-                                                            }
+
+                                                                } else {
+                                                                    $searchDate = date('Y-m-d', strtotime($date . ' -1 day')); 
+                                                                    $monthStart = date('Y-m-01', strtotime($date)); 
+                                                                    while (strtotime($searchDate) >= strtotime($monthStart)) {
+                                                                        if (
+                                                                            isset($attendanceMap[$empId][$searchDate][0]['shift_id']) &&
+                                                                            !empty($attendanceMap[$empId][$searchDate][0]['shift_id'])
+                                                                        ) {
+                                                                            $shift = $attendanceMap[$empId][$searchDate][0]['shift_id'];
+                                                                            break;
+                                                                        }
+                                                                        $searchDate = date('Y-m-d', strtotime($searchDate . ' -1 day'));
+                                                                    } 
+                                                                            $status = 'A';
+                                                                    
+                                                                }
+                                                                    $isHoliday = isset($holidays[$date]);
+                                                                    
+                                                                if ($isHoliday && $holiday > 0 && $basic_salary <= 42000 && $status=='Present' && $month=='5' && $year=='2026') {
+                                                                        $txt = 'PH';
+                                                                        $bg  = 'rgb(180,210,255)';
+                                                                    } else {
+                                                                    switch ($status) {
+                                                                        case 'Present':
+                                                                            $txt = 'P';
+                                                                            $bg = 'rgb(173,233,179)';
+                                                                            break;
+                                                                        case 'Absent':
+                                                                            $txt = 'A';
+                                                                            $bg = 'rgb(251,175,175)';
+                                                                            break;
+                                                                        case 'Half Day':
+                                                                            $txt = 'HD';
+                                                                            $bg = 'rgb(255,246,163)';
+                                                                            break;
+                                                                        case 'Incomplete':
+                                                                            $txt = 'I';
+                                                                            $bg = 'rgb(233,61,61)';
+                                                                            break;
+                                                                        
+                                                                        case 'Weekly Leave':
+                                                                            $txt = 'WL';
+                                                                            $bg = 'rgb(229,204,255)';
+                                                                            break;
+                                                                        case 'Earning Leave':
+                                                                            $txt = 'L';
+                                                                            $bg = 'rgb(99, 236, 218)';
+                                                                            break;
+                                                                        case 'Half Earning Leave':
+                                                                            $txt = 'HL';
+                                                                        $bg = 'rgb(57, 233, 239)';
+                                                                            break;
+                                                                        case 'Half Weekly Leave':
+                                                                            $txt = 'HW';
+                                                                            $bg = 'rgb(226, 237, 109)';
+                                                                            break;
+                                                                        case 'C Off':
+                                                                            $txt = 'C';
+                                                                            $bg = 'rgb(121, 246, 248)';
+                                                                            break;
+                                                                        case 'Half C Off':
+                                                                            $txt = 'HC';
+                                                                            $bg = 'rgb(226, 237, 109)';
+                                                                            break;
+                                                                        case 'Leave':
+                                                                            $txt = 'L';
+                                                                            $bg = 'rgb(99, 236, 218)';
+                                                                            break;
+                                                                        case 'Half Leave':
+                                                                            $txt = 'HL';
+                                                                            $bg = 'rgb(57, 233, 239)';
+                                                                            break;
+                                                                        case 'Extra Off':
+                                                                            $txt = 'C2';
+                                                                            $bg = 'rgb(149, 121, 248)';
+                                                                            break;
+                                                                        case 'Half Extra Off':
+                                                                            $txt = 'HC2';
+                                                                            $bg = 'rgb(149, 121, 248)';
+                                                                            break;
+                                                                        case 'Public Holiday':
+                                                                            $txt = 'PH';
+                                                                            $bg = 'rgb(180,210,255)';
+                                                                            break;
+                                                                        case 'National Holiday':
+                                                                            $txt = 'NH';
+                                                                            $bg = 'rgb(180,210,255)';
+                                                                            break;
+                                                                        case 'Religion Holiday':
+                                                                            $txt = 'RH';
+                                                                            $bg = 'rgb(180,210,255)';
+                                                                            break;
+                                                                        case 'Seasonal Holiday':
+                                                                            $txt = 'SH';
+                                                                            $bg = 'rgb(180,210,255)';
+                                                                            break;
+                                                                    
+                                                                        
+                                                                        default:
+                                                                            if (strpos($status, '_') !== false) {
+                                                                                $txt = str_replace('_', '/', $status);
+                                                                                $bg  = '#dfefff';
+                                                                            }elseif (isset($missPunchMap[$empId][$date])) {
+                                                                                $status = 'Miss Punch';
+                                                                                $txt = 'M';
+                                                                                $bg = 'rgb(247, 177, 242)';
+                                                                            } elseif ($isHoliday && $national_holiday > 0) {
+                                                                                $txt = 'NH';
+                                                                                $bg  = 'rgb(180,210,255)';
+
+                                                                            } elseif ($isHoliday && $religious_holiday > 0) {
+                                                                                $txt = 'RH';
+                                                                                $bg  = 'rgb(180,210,255)';
+
+                                                                            } elseif ($isHoliday && $seasonal_holiday > 0) {
+                                                                                $txt = 'SH';
+                                                                                $bg  = 'rgb(180,210,255)';
+                                                                            } else {
+                                                                                $txt = 'A';
+                                                                                $bg = 'rgb(251,175,175)';
+                                                                                // $txt = $isHoliday && $holiday>0  && $basic_salary <= 42000 ? 'PH' : 'A';
+                                                                                // $bg  = $isHoliday  && $holiday>0   && $basic_salary <= 42000 ? 'rgb(180,210,255)' : 'rgb(251,175,175)';
+                                                                            }
+                                                                    }
+                                                                }
+
+                                                                echo "<td style='background:$bg;text-align:center;padding:0' id='cell_{$empId}_{$date}'>
+                                                                                    <span style='display:block;padding:8px;cursor:pointer'
+                                                                                    onclick=\"openPunchModal('$date','$intime','$remark','{$emp['shift_id']}','$shift','$month','$year','$empId','$salaryCount','{$extra_off['balance']}','{$total_earning_leave}','{$prev_coff}','{$date_of_joining}','{$txt}')\">
+                                                                                    <b>$txt</b>
+                                                                                    </span>  
+                                                                                </td>";
+                                                            } 
+
+                                                            echo "<td class='text-center fw-bold'  >" . number_format($present_day, 1) . "</td>";
+
+                                                            echo "<td class='text-center fw-bold'  >" . number_format($half_day, 1) . "</td>";
+                                                        echo "<td class='text-center fw-bold'  >" . number_format($national_holiday_count, 1) . "</td>";
+                                                            echo "<td class='text-center fw-bold text-dark'  >" . number_format($week_leave, 1) . "</td>";
+                                                            echo "<td class='text-center fw-bold text-dark'  >" . number_format($used_weekly, 1) . "</td>";
+                                                            echo "<td class='text-center fw-bold text-dark'  >" . number_format($monthly_leave, 1) . "</td>";
+                                                            echo "<td class='text-center fw-bold text-dark'>" . number_format($availed_leave, 1) . "</td>";
+                                                            echo "<td class='text-center fw-bold text-dark'  >" . number_format($taken_coff, 1) . "</td>";
+                                                            echo "<td class='text-center fw-bold text-danger'  >" . number_format($absent, 1) . "</td>";
+                                                            echo "<td class='text-center fw-bold text-dark' style='background:#d4ede8'>" . number_format($tpd, 1) . "</td>";
+                                                            echo "<td class='text-center fw-bold text-dark' style='background:#e7f1ff' >" . number_format($total_earning_leave, 1) . "</td>";
+                                                            
+
+                                                        echo "<td class='text-center fw-bold text-dark'  >" 
+                                                                . number_format($final_earn_leave, 1) . 
+                                                            "</td>";
+                                                            
+                                                            echo "<td class='text-center fw-bold text-dark' style='background:#f3e8ff'>" . number_format($prev_coff, 1) . "</td>";
+                                                            echo "<td class='text-center fw-bold text-dark' >" . number_format($pen_coff, 1) . "</td>";
+
+                                                            echo "<td class='text-center fw-bold text-dark'  >" 
+                                                                . number_format($final_coff, 1) . 
+                                                            "</td>";
+
+                                                            echo "<td class='text-center fw-bold text-dark' style='background:#fce5c2'>" . number_format($extra_off['balance'], 1) . "</td>";
+        
+                                                            //echo "<td class='text-center fw-bold text-dark' style='background:#88bef7'>" . number_format($opening_leave_balance, 1) . "</td>";
+
+                                                            // echo "<td class='text-center fw-bold text-dark' >" . number_format($holiday, 1) . "</td>";
+
+                                                            echo "</tr>";
                                                         }
 
-                                                        echo "<td style='background:$bg;text-align:center;padding:0' id='cell_{$empId}_{$date}'>
-                                                                            <span style='display:block;padding:8px;cursor:pointer'
-                                                                            onclick=\"openPunchModal('$date','$intime','$remark','{$emp['shift_id']}','$shift','$month','$year','$empId','$salaryCount','{$extra_off['balance']}','{$total_earning_leave}','{$prev_coff}','{$date_of_joining}','{$txt}')\">
-                                                                            <b>$txt</b>
-                                                                            </span>  
-                                                                        </td>";
-                                                    } 
+                                                    ?>
+                                            </tbody>
+                                            <tfoot>
+                                                <tr style="background:#e9ecef;font-weight:bold">
+                                                    <!-- Punch All -->
+                                                    <td></td>
 
-                                                    echo "<td class='text-center fw-bold'  >" . number_format($present_day, 1) . "</td>";
+                                                    <!-- Remaining Day Columns -->
+                                                    <td colspan="<?= $length ?>"></td>
+                                                    <!-- Total Label -->
+                                                    <td colspan="<?= count($showFields) + 1; ?>" class="text-end">
+                                                        Total
+                                                    </td>
 
-                                                    echo "<td class='text-center fw-bold'  >" . number_format($half_day, 1) . "</td>";
-                                                   
-                                                    echo "<td class='text-center fw-bold text-dark'  >" . number_format($week_leave, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-dark'  >" . number_format($monthly_leave, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-dark'>" . number_format($availed_leave, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-dark'  >" . number_format($taken_coff, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-danger'  >" . number_format($absent, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#d4ede8'>" . number_format($tpd, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#e7f1ff' >" . number_format($total_earning_leave, 1) . "</td>";
-                                                       
+                                                    <!-- Present Days -->
+                                                    <td class="text-center fw-bold">
+                                                        <?= number_format($total_present_day,1) ?>
+                                                    </td>
+                                                    <td class="text-center fw-bold">
+                                                        <?= number_format($total_half_day,1) ?>
+                                                    </td>
 
-                                                   echo "<td class='text-center fw-bold text-dark'  >" 
-                                                        . number_format($final_earn_leave, 1) . 
-                                                    "</td>";
-                                                     
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#f3e8ff'>" . number_format($prev_coff, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-dark' >" . number_format($pen_coff, 1) . "</td>";
+                                                    <td class="text-center fw-bold">
+                                                        <?= number_format($total_nh,1) ?>
+                                                    </td>
+                                                    <!-- Week Off -->
+                                                    <td class="text-center fw-bold">
+                                                        <?= number_format($totalWeekOff,1) ?>
+                                                    </td>
+                                                    <td class="text-center fw-bold">
+                                                        <?= number_format($total_used_weekly,1) ?>
+                                                    </td>
+                                                    <!-- Curr Earn Leave -->
+                                                    <td class="text-center fw-bold">
+                                                        <?= number_format($totalEarnLEave,1) ?>
+                                                    </td>
 
-                                                    echo "<td class='text-center fw-bold text-dark'  >" 
-                                                        . number_format($final_coff, 1) . 
-                                                    "</td>";
+                                                    <!-- Total total_availed_leave Day -->
+                                                    <td class="text-center fw-bold">
+                                                        <?= number_format($total_availed_leave,1) ?>
+                                                    </td>
 
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#fce5c2'>" . number_format($extra_off['balance'], 1) . "</td>";
-  
-                                                    //echo "<td class='text-center fw-bold text-dark' style='background:#88bef7'>" . number_format($opening_leave_balance, 1) . "</td>";
+                                                    <!-- Prev availed coff Leave -->
+                                                    <td class="text-center fw-bold">
+                                                        <?= number_format($total_taken_coff,1) ?>
+                                                    </td>
+                                                    <!-- Absent -->
+                                                    <td class="text-center fw-bold text-danger">
+                                                        <?= number_format($totalAbsent,1) ?>
+                                                    </td>
 
-                                                    // echo "<td class='text-center fw-bold text-dark' >" . number_format($holiday, 1) . "</td>";
-
-                                                    echo "</tr>";
-                                                }
-
-                                            ?>
-                                        </tbody>
-                                        <tfoot>
-                                            <tr style="background:#e9ecef;font-weight:bold">
-                                                <!-- Punch All -->
-                                                <td></td>
-
-                                                <!-- Remaining Day Columns -->
-                                                <td colspan="<?= $length ?>"></td>
-                                                <!-- Total Label -->
-                                                <td colspan="<?= count($showFields) + 1; ?>" class="text-end">
-                                                    Total
-                                                </td>
-
-                                                <!-- Present Days -->
-                                                <td class="text-center fw-bold">
-                                                    <?= number_format($total_present_day,1) ?>
-                                                </td>
-                                                <td class="text-center fw-bold">
-                                                    <?= number_format($total_half_day,1) ?>
-                                                </td>
+                                                    <!-- Total Present Day -->
+                                                    <td class="text-center fw-bold" style="background:#d4ede8">
+                                                        <?= number_format($total_tpd,1) ?>
+                                                    </td>
 
 
-                                                <!-- Week Off -->
-                                                <td class="text-center fw-bold">
-                                                    <?= number_format($totalWeekOff,1) ?>
-                                                </td>
-                                                <!-- Curr Earn Leave -->
-                                                <td class="text-center fw-bold">
-                                                    <?= number_format($totalEarnLEave,1) ?>
-                                                </td>
+                                                    <!-- Prev Earn Leave -->
+                                                    <td class="text-center fw-bold" style="background:#e7f1ff">
+                                                        <?= number_format($totalPendingEL,1) ?>
+                                                    </td>
 
-                                                <!-- Total total_availed_leave Day -->
-                                                <td class="text-center fw-bold">
-                                                    <?= number_format($total_availed_leave,1) ?>
-                                                </td>
+                                                    <!-- Tot Earn Leave -->
+                                                    <td class="text-center fw-bold">
+                                                        <?= number_format($total_final_earn_leave,1) ?>
+                                                    </td>
+                                                    <!-- Prev C-Off -->
+                                                    <td class="text-center fw-bold" style="background:#f3e8ff">
+                                                        <?= number_format($totalPrevCoff,1) ?>
+                                                    </td>
 
-                                                <!-- Prev availed coff Leave -->
-                                                <td class="text-center fw-bold">
-                                                    <?= number_format($total_taken_coff,1) ?>
-                                                </td>
-                                                <!-- Absent -->
-                                                <td class="text-center fw-bold text-danger">
-                                                    <?= number_format($totalAbsent,1) ?>
-                                                </td>
+                                                    <!-- Curr C-Off -->
+                                                    <td class="text-center fw-bold">
+                                                        <?= number_format($totalPenCoff,1) ?>
+                                                    </td>
 
-                                                <!-- Total Present Day -->
-                                                <td class="text-center fw-bold" style="background:#d4ede8">
-                                                    <?= number_format($total_tpd,1) ?>
-                                                </td>
+                                                    <!-- Tot C-Off -->
+                                                    <td class="text-center fw-bold">
+                                                        <?= number_format($total_final_coff,1) ?>
+                                                    </td>
 
+                                                    <!-- Extra Off -->
+                                                    <td class="text-center fw-bold" style="background:#fce5c2">
+                                                        <?= number_format($totalExtraOff,1) ?>
+                                                    </td>
 
-                                                <!-- Prev Earn Leave -->
-                                                <td class="text-center fw-bold" style="background:#e7f1ff">
-                                                    <?= number_format($totalPendingEL,1) ?>
-                                                </td>
+                                                    <!-- Leave -->
+                                                    <!-- <td class="text-center fw-bold" style="background:#88bef7">
+                                                        < number_format($totalOpeningLeave,1) ?>
+                                                    </td> -->
 
-                                                <!-- Tot Earn Leave -->
-                                                <td class="text-center fw-bold">
-                                                    <?= number_format($total_final_earn_leave,1) ?>
-                                                </td>
-                                                <!-- Prev C-Off -->
-                                                <td class="text-center fw-bold" style="background:#f3e8ff">
-                                                    <?= number_format($totalPrevCoff,1) ?>
-                                                </td>
+                                                    <!-- Public Holiday -->
+                                                    <!-- <td class="text-center fw-bold"  >
+                                                        < number_format($totalHoliday,1) ?>
+                                                    </td> -->
 
-                                                <!-- Curr C-Off -->
-                                                <td class="text-center fw-bold">
-                                                    <?= number_format($totalPenCoff,1) ?>
-                                                </td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
 
-                                                <!-- Tot C-Off -->
-                                                <td class="text-center fw-bold">
-                                                    <?= number_format($total_final_coff,1) ?>
-                                                </td>
-
-                                                <!-- Extra Off -->
-                                                <td class="text-center fw-bold" style="background:#fce5c2">
-                                                    <?= number_format($totalExtraOff,1) ?>
-                                                </td>
-
-                                                <!-- Leave -->
-                                                <!-- <td class="text-center fw-bold" style="background:#88bef7">
-                                                    < number_format($totalOpeningLeave,1) ?>
-                                                </td> -->
-
-                                                <!-- Public Holiday -->
-                                                <!-- <td class="text-center fw-bold"  >
-                                                    < number_format($totalHoliday,1) ?>
-                                                </td> -->
-
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-
+                                    </div>
                                 </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1431,7 +1476,10 @@ table tr td.col-fixed:nth-child(3) {
                                 <option value="half_c_off">Half C-Off</option>
                                 <option value="eoff" class="extraOffOption2">Extra Off</option>
                                 <option value="half_eoff" class="extraOffOption2">Half Extra Off</option>
-                                <option value="public_holiday">Public Holiday</option> 
+                                <option value="public_holiday">Public Holiday</option>
+                                <option value="national_holiday">National Holiday</option>
+                                <option value="religion_holiday">Religion Holiday</option>
+                                <option value="seasonal_holiday">Seasonal Holiday</option>
                             </select>
                         </div>
                         <div class="col-lg-12 " id="punchShiftBox">
@@ -1499,6 +1547,9 @@ table tr td.col-fixed:nth-child(3) {
                                 <option value="eoff" class="extraOffOption2">Extra Off</option>
                                 <option value="half_eoff" class="extraOffOption2">Half Extra Off</option>
                                 <option value="public_holiday">Public Holiday</option>
+                                <option value="national_holiday">National Holiday</option>
+                                <option value="religion_holiday">Religion Holiday</option>
+                                <option value="seasonal_holiday">Seasonal Holiday</option>
                                 <!-- <option value="leave" class="leaveOption2">Leave</option>
                                 <option value="half_leave" class="leaveOption2">Half Leave</option> -->
                             </select>
@@ -1567,8 +1618,9 @@ table tr td.col-fixed:nth-child(3) {
                     extend: "excel",
                     footer: true,
                     title: "<?= strtoupper($unitname); ?>",
-                    messageTop: "ATTENDANCE DETAILS SHEET FOR MONTH  <?= strtoupper(date('F', mktime(0,0,0,$month,1))) . '-' . $year; ?>",
 
+                    filename: "<?= strtoupper($unitname); ?> ATTEN <?= strtoupper(date('F', mktime(0,0,0,$month,1))) . '-' . $year; ?>",
+                    messageTop: "ATTENDANCE DETAILS SHEET FOR MONTH  <?= strtoupper(date('F', mktime(0,0,0,$month,1))) . '-' . $year; ?>",
 
                     exportOptions: {
                         columns: ':not(.no-export)',
@@ -1666,6 +1718,18 @@ table tr td.col-fixed:nth-child(3) {
         "public_holiday": {
             txt: "PH",
             bg: 'rgb(180,210,255)'
+        },
+        "national_holiday": {
+            txt: "NH",
+            bg: 'rgb(180,210,255)'
+        },
+        "religion_holiday": {
+            txt: "RH",
+            bg: 'rgb(180,210,255)'
+        },
+        "seasonal_holiday": {
+            txt: "SH",
+            bg: 'rgb(180,210,255)'
         }
     };
 
@@ -1694,8 +1758,8 @@ table tr td.col-fixed:nth-child(3) {
 
 
     function openPunchModal(attdate, time, remark, emp_shift_hrs, empp_shift_id, month, year, emp_id,
-        salary_generate_count, extraOffBalance, total_earning_leave, coff_balance, date_of_joining,txt) {
- 
+        salary_generate_count, extraOffBalance, total_earning_leave, coff_balance, date_of_joining, txt) {
+
         document.getElementById('punch_attdate').value = attdate;
         document.getElementById('punch_txt').value = txt;
         document.getElementById('punch_date_of_joining').value = date_of_joining;
@@ -1814,7 +1878,10 @@ table tr td.col-fixed:nth-child(3) {
             'half_eoff',
             'leave',
             'half_leave',
-            'public_holiday'
+            'public_holiday',
+            'national_holiday',
+            'religion_holiday',
+            'seasonal_holiday'
         ];
 
         if (!noShiftRequired.includes(punch_status) && punch_shift_id == "") {
@@ -1825,12 +1892,8 @@ table tr td.col-fixed:nth-child(3) {
         if (!noShiftRequired.includes(punch_status) && punch_remark == "") {
             alert("Please Enter Remark");
             return false;
-        } 
+        }
 
-        // if (punch_shift_id == "") {
-        //     alert("Please Select Shift Name");
-        //     return false;
-        // }
         btn.disabled = true;
         btn.value = 'Saving...';
         jQuery.ajax({
@@ -1838,7 +1901,8 @@ table tr td.col-fixed:nth-child(3) {
             url: 'ajax_att_save_punch.php',
             data: 'punchtime=' + punchtime + '&emp_id=' + emp_id + '&attdate=' + attdate + '&currentYear=' +
                 currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark +
-                '&punch_status=' + punch_status + '&punch_shift_id=' + punch_shift_id + '&punch_txt=' + punch_txt,
+                '&punch_status=' + punch_status + '&punch_shift_id=' + punch_shift_id + '&punch_txt=' +
+                punch_txt,
             dataType: 'html',
             success: function(data) {
                 //alert(data);
@@ -1905,6 +1969,18 @@ table tr td.col-fixed:nth-child(3) {
                     bg = 'rgb(57, 233, 239)';
                 } else if (status == 'public_holiday') {
                     txt = 'PH';
+                    bg = 'rgb(180,210,255)';
+                } else if (status == 'public_holiday') {
+                    txt = 'PH';
+                    bg = 'rgb(180,210,255)';
+                } else if (status == 'national_holiday') {
+                    txt = 'NH';
+                    bg = 'rgb(180,210,255)';
+                } else if (status == 'religion_holiday') {
+                    txt = 'RH';
+                    bg = 'rgb(180,210,255)';
+                } else if (status == 'seasonal_holiday') {
+                    txt = 'SH';
                     bg = 'rgb(180,210,255)';
                 }
 
@@ -2043,7 +2119,10 @@ table tr td.col-fixed:nth-child(3) {
             'half_eoff',
             'leave',
             'half_leave',
-            'public_holiday'
+            'public_holiday',
+            'national_holiday',
+            'religion_holiday',
+            'seasonal_holiday'
         ];
 
         if (!noShiftRequired.includes(punch_all_status) && punch_shift_id == "") {

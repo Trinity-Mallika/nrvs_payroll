@@ -353,62 +353,15 @@ if (isset($_POST['department_idd'])) {
                                     $summary = [];
                                     foreach ($summaryRows as $row) {
                                         $summary[$row['emp_id']] = $row;
-                                    }
-
-                                    $earningLeaveRows = $obj->executequery("
-                                                SELECT
-                                                    emp_id,
-
-                                                    SUM(
-                                                        CASE
-                                                            WHEN attendance_status IN ('Earning Leave', 'Leave') THEN 1
-                                                            WHEN attendance_status IN ('Half Earning Leave', 'Half Leave') THEN 0.5
-                                                            ELSE 0
-                                                        END
-                                                    ) used_leave
-
-                                                FROM attendance_entry
-
-                                                WHERE sessionid='$sessionid'
-
-                                                AND (
-                                                    year < '$year'
-                                                    OR (year='$year' AND month <= '$month')
-                                                )
-
-                                                GROUP BY emp_id
-
-                                            ");
-
+                                    } 
+                                    $earningLeaveRows = $obj->earningLeaveRows($sessionid,$month,$year);
+                                    $earningUploadRows=$obj->earningUploadRows($sessionid,$month,$year);
                                     $usedEarnMap = [];
-
                                     foreach ($earningLeaveRows as $r) {
 
                                         $usedEarnMap[$r['emp_id']] = $r['used_leave'];
                                     }
-
-                                    $earningUploadRows = $obj->executequery("
-                                            SELECT
-                                                emp_id,
-
-                                                SUM(total_leave) total_leave
-
-                                            FROM emp_monthly_leave
-
-                                            WHERE leave_type='earning'
-                                            AND sessionid='$sessionid'
-
-                                            AND (
-                                                year < '$year'
-                                                OR (year='$year' AND month < '$month')
-                                            )
-
-                                            GROUP BY emp_id
-
-                                        ");
-
-
-
+                    
                                     $earningUploadMap = [];
 
                                     foreach ($earningUploadRows as $r) {
@@ -416,80 +369,18 @@ if (isset($_POST['department_idd'])) {
                                         $earningUploadMap[$r['emp_id']] = $r['total_leave'];
                                     }
 
-                                    $current_date  = date("Y-m-d", strtotime("$year-$month-01"));
-
-                                    $current_month = (int)date("m", strtotime($current_date));
-                                    $current_year  = (int)date("Y", strtotime($current_date));
-
-                                    $prev_month    = (int)date("m", strtotime("$current_date -1 month"));
-                                    $prev_year     = (int)date("Y", strtotime("$current_date -1 month"));
-
-                                    $extraUploadRows = $obj->executequery("
-                                            SELECT
-                                                emp_id,
-                                                COALESCE(SUM(total_leave),0) total_extra_off
-
-                                            FROM emp_monthly_leave
-
-                                            WHERE leave_type='eoff'
-
-                                            AND (
-                                                (month='$current_month' AND year='$current_year')
-                                                OR
-                                                (month='$prev_month' AND year='$prev_year')
-                                            )
-
-                                            GROUP BY emp_id
-                                        ");
-
-                                    $extraUploadMap = [];
-
-                                    foreach ($extraUploadRows as $r) {
-
-                                        $extraUploadMap[$r['emp_id']] = $r['total_extra_off'];
+                                    $extraOffUpload = $obj->extraOffUpload($sessionid,$year);
+                                    $extraOffUsed=$obj->extraOffUsed($sessionid,$year);
+                                    $uploadArr = [];
+                                    foreach($extraOffUpload as $row){
+                                        $uploadArr[$row['emp_id']][(int)$row['month']] = (float)$row['total_leave'];
                                     }
-                                    /* ================= USED EXTRA OFF ================= */
-
-                                    $extraUsedRows = $obj->executequery("
-                                            SELECT
-                                                emp_id,
-
-                                                COALESCE(SUM(
-                                                    CASE
-                                                        WHEN attendance_status='Extra Off' THEN 1
-                                                        WHEN attendance_status='Half Extra Off' THEN 0.5
-                                                        ELSE 0
-                                                    END
-                                                ),0) used_extra
-
-                                            FROM attendance_entry
-
-                                            WHERE (
-                                                (
-                                                    MONTH(attendance_date) = '$current_month'
-                                                    AND YEAR(attendance_date) = '$current_year'
-                                                )
-                                                OR
-                                                (
-                                                    MONTH(attendance_date) = '$prev_month'
-                                                    AND YEAR(attendance_date) = '$prev_year'
-                                                )
-                                            )
-
-                                            AND attendance_status IN ('Extra Off','Half Extra Off')
-
-                                            GROUP BY emp_id
-                                        ");
-
-                                    $extraUsedMap = [];
-
-                                    foreach ($extraUsedRows as $r) {
-
-                                        $extraUsedMap[$r['emp_id']] = $r['used_extra'];
+                                    $usedArr = []; 
+                                    foreach($extraOffUsed as $row){
+                                        $usedArr[$row['emp_id']][(int)$row['month']] = (float)$row['total_used'];
                                     }
 
                                     /* ================= USED C-OFF ================= */
-
                                     $coffUploadRows = $obj->getEmpUploadedCoff(
                                         $empIdsStr,
                                         $sessionid,
@@ -666,11 +557,14 @@ if (isset($_POST['department_idd'])) {
 
                                                         $final_earning_leave = $total_earning_leave + $current_earning;
 
-                                                        $extra_off = [
-                                                            'balance' => ($extraUploadMap[$empId] ?? 0)
-                                                                -
-                                                                ($extraUsedMap[$empId] ?? 0)
-                                                        ];
+                                                        $extraOff = $obj->getExtraOffBalance2(
+                                                            $empId,
+                                                            $month,
+                                                            $uploadArr,
+                                                            $usedArr
+                                                        );
+                                                        $extra_off['balance'] = $extraOff['balance'];
+
                                                         $total_present += $sum['present'];
                                                         $total_halfday += $sum['halfday'];
                                                         $total_leave += $availed_leave;

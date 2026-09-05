@@ -291,6 +291,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
                             </select>
                         </div>
                         <input type="hidden" id="punch_time">
+                        <input type="hidden" id="punch_txt">
                         <input type="hidden" id="punch_attdate">
                         <div class="col-lg-12 col-12">
                             <label for="">Remark</label>
@@ -583,9 +584,10 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
     } //fun close
 
     function openPunchModal(attdate, time, remark, emp_shift_hrs, empp_shift_id, extraOffBalance, total_earning_leave,
-        coff_balance) {
+        coff_balance,punch_txt) {
         document.getElementById('punch_attdate').value = attdate;
         document.getElementById('punching_remark').value = remark;
+        document.getElementById('punch_txt').value = punch_txt;
         $.ajax({
             type: "POST",
             url: "",
@@ -733,6 +735,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
         var punch_remark = document.getElementById('punching_remark').value;
         var punch_status = document.getElementById('punch_status').value;
         var punch_shift_id = document.getElementById('punch_att_shift_id').value;
+        var punch_txt = document.getElementById('punch_txt').value;
 
         var noShiftRequired = [
             'earn_leave',
@@ -756,6 +759,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
         //     alert("Please Select Shift Name");
         //     return false;
         // }
+
         if (punch_remark == '' && punch_status != 'Absent') {
             alert("Please Enter Remark");
             return false;
@@ -769,8 +773,8 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
             type: 'POST',
             url: 'ajax_att_save_punch.php',
             data: 'punchtime=' + punchtime + '&emp_id=' + emp_id + '&attdate=' + attdate + '&currentYear=' +
-                currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark +
-                '&punch_status=' + punch_status + '&punch_shift_id=' + punch_shift_id,
+                currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark + 
+                '&punch_status=' + punch_status + '&punch_shift_id=' + punch_shift_id  + '&punch_txt=' + punch_txt,
             dataType: 'html',
             success: function(data) {
                 console.log(data);

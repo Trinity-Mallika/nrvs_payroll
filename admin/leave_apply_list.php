@@ -11,21 +11,23 @@ $crit = '';
 $current_time = date('H:i:s');
 $od_date_to = $_GET['od_date_to'] ?? date('Y-m-d');
 $od_date_from = $_GET['od_date_from'] ?? date('Y-m-01');
+
 if ($od_date_from != '' && $od_date_to != '') {
-    $crit .= " AND od.application_date BETWEEN '$od_date_from' AND '$od_date_to'";
+    $crit .= " AND lpd.date BETWEEN '$od_date_from' AND '$od_date_to'";
 } elseif ($od_date_from != '') {
-    $crit .= " AND od.application_date >= '$od_date_from'";
+    $crit .= " AND lpd.date >= '$od_date_from'";
 } elseif ($od_date_to != '') {
-    $crit .= " AND od.application_date <= '$od_date_to'";
+    $crit .= " AND lpd.date <= '$od_date_to'";
 };
+
 
 if (isset($_GET['application_month'])) {
     $application_month = $obj->test_input($_GET['application_month']);
     if ($application_month != '') {
-        $crit .= " and MONTH(od.application_date)='$application_month'";
+        $crit .= " and MONTH(lpd.date)='$application_month'";
     }
 } else {
-    $application_month = date('n');
+    $application_month = '';
 };
 
 if (isset($_GET['emp_id'])) {
@@ -35,6 +37,14 @@ if (isset($_GET['emp_id'])) {
     }
 } else {
     $emp_id = "";
+};
+if (isset($_GET['department_id'])) {
+    $department_id = $obj->test_input($_GET['department_id']);
+    if ($department_id != '') {
+        $crit .= " and em.department_id='$department_id'";
+    }
+} else {
+    $department_id = "";
 };
 if (isset($_GET['status1'])) {
     $status1 = $obj->test_input($_GET['status1']);
@@ -46,15 +56,15 @@ if (isset($_GET['status1'])) {
 };
 
 if (isset($_GET['leave_type'])) {
-    $leave_type = $obj->test_input($_GET['leave_type']); 
+    $leave_type = $obj->test_input($_GET['leave_type']);
     if ($leave_type != '') {
         $crit .= " and lpd.leave_type='$leave_type'";
     }
 } else {
     $leave_type = "";
 };
- 
-  
+
+
 $approval_type = $_GET['approval_type'] ?? '';
 
 if ($approval_type == 'hod') {
@@ -120,11 +130,11 @@ if ($approval_type == 'e_hr') {
                             <div class="card-body">
                                 <form method="get">
                                     <div class="row">
-                                         <div class="col-lg-3 mb-3">
+                                        <div class="col-lg-3 mb-3">
                                             <label for="">Application Month</label>
                                             <select name="application_month" id="application_month"
                                                 class="form-select form-select-sm chosen-select">
-                                                <option value="">Select Month</option>
+                                                <option value="">All</option>
                                                 <option value="1">January</option>
                                                 <option value="2">February</option>
                                                 <option value="3">March</option>
@@ -138,8 +148,9 @@ if ($approval_type == 'e_hr') {
                                                 <option value="11">November</option>
                                                 <option value="12">December</option>
                                             </select>
-                                               <script>
-                                            document.getElementById('application_month').value = '<?= $application_month; ?>';
+                                            <script>
+                                            document.getElementById('application_month').value =
+                                                '<?= $application_month; ?>';
                                             </script>
                                         </div>
                                         <div class="col-lg-3">
@@ -175,7 +186,7 @@ if ($approval_type == 'e_hr') {
                                             <select class="form-select form-select-sm chosen-select" name="leave_type"
                                                 id="leave_type">
                                                 <option value="">All</option>
-                                                <option value="EL">EARNED LEAVE</option> 
+                                                <option value="EL">EARNED LEAVE</option>
                                                 <option value="EO">EXTRA OFF</option>
                                                 <option value="CO">C-OFF</option>
                                             </select>
@@ -186,10 +197,11 @@ if ($approval_type == 'e_hr') {
                                         <div class="col-lg-3 mb-2">
                                             <label for="leave_type" class="form-label">Show List<span
                                                     class="text-danger fw-bold"> </span></label>
-                                           <select class="form-select form-select-sm chosen-select" id="approval_type" name="approval_type">
+                                            <select class="form-select form-select-sm chosen-select" id="approval_type"
+                                                name="approval_type">
                                                 <option value="">All Records</option>
                                                 <option value="emp">Entry By Employee</option>
-                                                <option value="e_hr">Entry By HR</option> 
+                                                <option value="e_hr">Entry By HR</option>
                                                 <option value="hod">Show Only HOD Approved And HR Pending Data</option>
                                                 <option value="hr">Show Only HR Approved And Reject Data</option>
                                             </select>
@@ -197,6 +209,25 @@ if ($approval_type == 'e_hr') {
                                             document.getElementById('leave_type').value = '<?= $leave_type; ?>';
                                             </script>
                                         </div>
+                                        <div class="col-lg-3 mb-3">
+                                            <label for="emp_id" class="form-label">Department<span
+                                                    class="text-danger fw-bold"> </span></label>
+                                            <select class="form-select form-select-sm chosen-select"
+                                                name="department_id" id="department_id"
+                                                onchange="get_employee(this.value);">
+                                                <option value="">All</option>
+                                                <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_id asc");
+                                                foreach ($res as $key) { ?>
+                                                <option value="<?= $key['department_id']; ?>">
+                                                    <?= $key['department_name']; ?> </option>
+                                                <?php } ?>
+                                            </select>
+                                            <script>
+                                            document.getElementById('department_id').value =
+                                                '<?= $department_id; ?>';
+                                            </script>
+                                        </div>
+
                                         <div class="col-lg-3">
                                             <label for="">Employee Name</label>
                                             <select name="emp_id" id="emp_id"
@@ -211,10 +242,9 @@ if ($approval_type == 'e_hr') {
                                                 <?php } ?>
                                             </select>
                                         </div>
-                                        <div class="col-lg-3"> 
+                                        <div class="col-lg-3">
                                             <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn"
-                                                value="<?php echo $btn_name ?> "
-                                                onClick="return checkinputmaster('application_date,emp_id,on_duty_type')">
+                                                value="<?php echo $btn_name ?> " onclick="return validateSearch()">
                                             <a href=" <?php echo $pagename ?>" type="button"
                                                 class="btn btn-sm btn-danger add-btn">Reset</a>
                                         </div>
@@ -233,7 +263,8 @@ if ($approval_type == 'e_hr') {
                                         <div>
                                             <h5 class="card-title mb-0"> <?= $module; ?><a href="leave_apply_list.php"
                                                     class="float-end btn btn-primary btn-sm ms-2">Search Again</a> <a
-                                                    href="leave_apply.php" class="float-end btn btn-primary btn-sm">Add</a>
+                                                    href="leave_apply.php"
+                                                    class="float-end btn btn-primary btn-sm">Add</a>
                                             </h5>
                                         </div>
                                     </div>
@@ -242,7 +273,7 @@ if ($approval_type == 'e_hr') {
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-lg-12 mb-3">
-                                        <div class="auto-scroll-wrapper"> 
+                                        <div class="auto-scroll-wrapper">
                                             <div class="table-responsive">
                                                 <table id="buttons-datatables" class="table table-sm table-bordered">
                                                     <thead>
@@ -268,15 +299,17 @@ if ($approval_type == 'e_hr') {
                                                             <th>Print</th>
                                                             <th>Edit</th>
                                                             <th>Delete</th>
-                                                            <th>Status</th>
+                                                            <th>Status <input type="checkbox" id="checkAllLeaves"
+                                                                    class="form-check-input"></th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <?php
                                                             $slno = 1;
-                                                        $sql="SELECT 
+                                                            $sql = "SELECT 
                                                                 od.*,
                                                                 em.first_name,
+                                                                em.department_id,
                                                                 dm.department_name,
                                                                 desi.designation,
                                                                 sem.first_name as sub_emp_name,
@@ -285,8 +318,8 @@ if ($approval_type == 'e_hr') {
                                                                 em.emp_code,
                                                                 MIN(lpd.date) as from_date,
                                                                 MAX(lpd.date) as to_date,
-                                                                MONTH(od.application_date) as apply_month,
-                                                                YEAR(od.application_date) as apply_year,
+                                                                MONTH(MIN(lpd.date)) AS apply_month,
+                                                                YEAR(MIN(lpd.date)) AS apply_year,
                                                                 SUM(
                                                                 CASE 
                                                                     WHEN lpd.leave_day = 'FD' THEN 1
@@ -418,9 +451,8 @@ if ($approval_type == 'e_hr') {
                                                             GROUP BY od.on_duty_id
                                                             ORDER BY od.$tblpkey DESC
                                                         "; 
-    
-                                                    
-                                                        $res = $obj->executequery($sql);
+ 
+                                                            $res = $obj->executequery($sql);
                                                             foreach ($res as $row) {
                                                                 // $weekly_leave = $row['weekly_leave'];
                                                                 // $earn_leave = $row['earn_leave'];
@@ -429,6 +461,7 @@ if ($approval_type == 'e_hr') {
 
                                                                 $month = (int)$row['apply_month'];
                                                                 $year  = (int)$row['apply_year'];
+                                                                
                                                             ?>
                                                         <tr id="tr_<?= $row["on_duty_id"]; ?>" data-details="
                                             <div style='background:#dafced; padding:4px;'>
@@ -446,23 +479,24 @@ if ($approval_type == 'e_hr') {
                                             Date: <?= $row['lastupdated'] ?>) 
                                             <?php endif; ?>
                                             </div>
-                                        ">
-
-                                                            <td class="details-control text-center" style="cursor:pointer;">
+                                        "> 
+                                                            <td class="details-control text-center"
+                                                                style="cursor:pointer;">
                                                                 <?php echo $slno++; ?>
                                                                 <i class="ri-add-circle-fill text-primary"></i>
 
                                                             </td>
-                                                            <td><?= $obj->dateformatindia($row['application_date']) ?></td>
+                                                            <td><?= $obj->dateformatindia($row['application_date']) ?>
+                                                            </td>
                                                             <td><?= $row['emp_code'] ?></td>
                                                             <td>
-                                                                <b><?= $row['first_name']?> </b>
+                                                                <b><?= $row['first_name'] ?> </b>
                                                             </td>
                                                             <td>
-                                                                <b><?= $row['department_name']?> </b>
+                                                                <b><?= $row['department_name'] ?> </b>
                                                             </td>
                                                             <td>
-                                                                <b><?= $row['designation']?> </b>
+                                                                <b><?= $row['designation'] ?> </b>
                                                             </td>
                                                             <td><?= $row['sub_emp_name'] ?></td>
                                                             <td><?= $obj->dateformatindia($row['from_date']) ?></td>
@@ -481,19 +515,19 @@ if ($approval_type == 'e_hr') {
                                                             <td><?= $row['used_eo'] ?></td>
                                                             <td><?= $row['used_co'] ?></td>
                                                             <td class="cursor-pointer"
-                                                                onclick='openOnDutyModal("approved", <?= json_encode($row) ?>)'>
+                                                                onclick='openOnDutyModal("approved", <?= json_encode($row) ?>,<?= $month ?>,<?= $year ?>)'>
                                                                 <b><?= $row['approved_days'] ?></b>
                                                             </td>
 
                                                             <td class="cursor-pointer"
-                                                                onclick='openOnDutyModal("rejected", <?= json_encode($row) ?>)'>
+                                                                onclick='openOnDutyModal("rejected", <?= json_encode($row) ?>,<?= $month ?>,<?= $year ?>)'>
                                                                 <?= $row['rejected_days'] ?>
                                                             </td>
 
                                                             <td class="cursor-pointer"
-                                                                onclick='openOnDutyModal("pending", <?= json_encode($row) ?>)'>
+                                                                onclick='openOnDutyModal("pending", <?= json_encode($row) ?>,<?= $month ?>,<?= $year ?>)'>
                                                                 <?= $row['pending_days'] ?>
-                                                            </td>
+                                                            </td>  
 
                                                             <td>
                                                                 <?php if (!empty($row['doc_file'])) { ?>
@@ -502,7 +536,8 @@ if ($approval_type == 'e_hr') {
                                                                     <i class="ri-attachment-2 cursor-pointer"></i>
                                                                 </a>
                                                                 <?php } else { ?>
-                                                                <i class="ri-forbid-2-line cursor-pointer text-danger"></i>
+                                                                <i
+                                                                    class="ri-forbid-2-line cursor-pointer text-danger"></i>
                                                                 <?php } ?>
                                                             </td>
                                                             <!-- Icons -->
@@ -523,15 +558,16 @@ if ($approval_type == 'e_hr') {
                                                                         if ($chkedit == 1 && $row['pending_days'] > 0) { ?>
                                                                 <a href="leave_apply.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>"
                                                                     class="edit-item-btn">
-                                                                    <i class="ri-edit-fill cursor-pointer text-success"></i>
+                                                                    <i
+                                                                        class="ri-edit-fill cursor-pointer text-success"></i>
                                                                 </a>
                                                                 <?php } else { ?>
-                                                                <i class="ri-forbid-2-line cursor-pointer text-danger"></i>
+                                                                <i
+                                                                    class="ri-forbid-2-line cursor-pointer text-danger"></i>
                                                                 <?php } ?>
                                                             </td>
                                                             <td>
                                                                 <?php
-                                                                
                                                                         $chkdel = $obj->check_delBtn($pagename, $loginid);
                                                                         if ($chkdel == 1 && $row['approved_days'] == 0) { ?>
                                                                 <a class="remove-item-btn" type="button"
@@ -540,18 +576,36 @@ if ($approval_type == 'e_hr') {
                                                                         class="ri-delete-bin-fill cursor-pointer text-danger"></i>
                                                                 </a>
                                                                 <?php } else { ?>
-                                                                <i class="ri-forbid-2-line cursor-pointer text-danger"></i>
+                                                                <i
+                                                                    class="ri-forbid-2-line cursor-pointer text-danger"></i>
                                                                 <?php } ?>
                                                             </td>
-                                                            <td class="cursor-pointer"
-                                                                onclick='openOnDutyModal("all", <?= json_encode($row) ?>)'>
-                                                                <i class="ri-checkbox-fill text-success fs-5"></i>
+                                                            <td class="cursor-pointer">
+                                                                <i class="ri-checkbox-fill text-success fs-5"
+                                                                    onclick='openOnDutyModal("all", <?= json_encode($row) ?> ,<?= $month ?>,<?= $year ?>)'></i>
+
+                                                                <input type="checkbox"
+                                                                    class="form-check-input bulk_leave_chk"
+                                                                    value="<?= $row['on_duty_id'] ?>"
+                                                                    data-department="<?= $row['department_id'] ?>">
                                                             </td>
 
                                                         </tr>
                                                         <?php } ?>
                                                     </tbody>
                                                 </table>
+                                            </div>
+                                            <div class="text-end mt-3">
+                                                <button class="btn btn-sm btn-success"
+                                                    onclick="approveSelectedLeaves(1)">
+                                                    <i class="ri-check-double-line"></i>
+                                                    Approve Selected
+                                                </button>
+                                                <button class="btn btn-sm btn-warning"
+                                                    onclick="approveSelectedLeaves(0)">
+                                                    <i class="ri-check-double-line"></i>
+                                                    Pending Selected
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -582,36 +636,7 @@ if ($approval_type == 'e_hr') {
                 <!-- Body -->
                 <div class="modal-body">
                     <!-- Top Info -->
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <table class="table table-borderless table-sm mb-0">
-                                <tr>
-                                    <td class="fw-semibold">Application Date</td>
-                                    <td id="modalApplicationDate"></td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-semibold">Total Days</td>
-                                    <td id="modalTotalDays"></td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <table class="table table-borderless table-sm mb-0">
-                                <tr>
-                                    <td class="fw-semibold">Employee Name</td>
-                                    <input type="hidden" id="modalEmpId">
-                                    <td>
-                                        <strong id="modalEmpName"> </strong>
-                                        <span class="text-muted" id="modalEmpCode"></span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-semibold">Attachment</td>
-                                    <td id="modalAttachment"></td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
+                   
 
                     <div id="modalBodyContent">
                         <!-- AJAX content yaha load hoga -->
@@ -652,24 +677,13 @@ if ($approval_type == 'e_hr') {
         });
     });
 
-    function openOnDutyModal(type, data) {
+    function openOnDutyModal(type, data, month, year) {
         let imgpath = '<?= $imgpath1 ?>';
         let appDate = new Date(data.application_date);
-
-        let formattedDate = String(appDate.getDate()).padStart(2, '0') + '-' +
-            String(appDate.getMonth() + 1).padStart(2, '0') + '-' +
-            appDate.getFullYear();
-
-        $("#modalApplicationDate").text(formattedDate);
-        $("#modalTotalDays").text(data.total_day);
-        $("#modalEmpId").val(data.emp_id);
-        $("#modalOpeningLeave").text(data.opening_leave_balance);
-        $("#modalExtraLeave").text(data.extra_off);
-        $("#modalEarnLeave").text(data.earn_leave);
-
+ 
         // $("#modalOnDutyType").text(data.on_duty_type.toUpperCase());
         $("#modalEmpName").text(data.first_name + " " + data.last_name);
-        $("#modalEmpCode").text("(" + data.emp_code + ")");
+        $("#modalEmpCode").text(data.emp_code);
         if (data.doc_file && data.doc_file !== '') {
             $("#modalAttachment").html(
                 `<a href="${imgpath}${data.doc_file}" target="_blank">
@@ -682,23 +696,51 @@ if ($approval_type == 'e_hr') {
             );
         }
 
+        Swal.fire({
+            title: 'Loading...',
+            html: 'Please wait while fetching leave details.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         $.ajax({
             url: "get_leave_details.php",
             type: "POST",
             data: {
                 type: type,
-                on_duty_id: data.on_duty_id
+                on_duty_id: data.on_duty_id,
+                total_days: data.total_day, 
+                month: month,
+                year: year
             },
             success: function(response) {
-
+                Swal.close();
                 $("#modalBodyContent").html(response);
                 $("#staticBackdrop").modal('show');
-
-
+            },
+            error: function() {
+                Swal.close();
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "Unable to load leave details."
+                });
             }
         });
 
     }
+
+    $(document).on("change", "#checkAllLeaves", function() {
+
+        $(".bulk_leave_chk").prop(
+            "checked",
+            $(this).is(":checked")
+        );
+
+    });
 
     $(document).on('change', '.approve_chk', function() {
         let row = $(this).closest('tr');
@@ -840,7 +882,6 @@ if ($approval_type == 'e_hr') {
                 emp_id: emp_id
             },
             success: function(response) {
-
                 let res = JSON.parse(response);
                 let message = '';
                 if (res.pendingCount > 0) {
@@ -891,9 +932,220 @@ if ($approval_type == 'e_hr') {
             }
         });
     }
+function approveSelectedLeaves(status) {
 
+    let ids = [];
+    let departments = [];
 
+    $(".bulk_leave_chk:checked").each(function () {
+        ids.push($(this).val());
+        departments.push($(this).data("department"));
+    });
 
+    if (ids.length == 0) {
+        Swal.fire("Please select at least one leave.");
+        return;
+    }
+
+    let actionLabel = "";
+    let processingText = "";
+
+    if (status == 1) {
+        actionLabel = "Approve";
+        processingText = "Please wait while approving selected leaves.";
+    } else if (status == 0) {
+        actionLabel = "Pending";
+        processingText = "Please wait while updating selected leaves.";
+    } else {
+        actionLabel = "Reject";
+        processingText = "Please wait while rejecting selected leaves.";
+    }
+
+    Swal.fire({
+        title: `${actionLabel} selected leaves?`,
+        text: "This may take some time.",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: `Yes, ${actionLabel}`
+    }).then((result) => {
+
+        if (!result.isConfirmed)
+            return;
+
+        Swal.fire({
+            title: "Processing...",
+            html: processingText,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        //-------------------------------------------------------
+        // Batch Settings
+        //-------------------------------------------------------
+
+        const batchSize = 20;
+        let currentBatch = 0;
+
+        //-------------------------------------------------------
+        // Summary Variables
+        //-------------------------------------------------------
+
+        let totalApplication = 0;
+        let totalLeaves = 0;
+        let approvedCount = 0;
+        let pendingCount = 0;
+        let rejectedCount = 0;
+        let failedCount = 0;
+
+        let allErrors = [];
+
+        //-------------------------------------------------------
+        // Process Batch
+        //-------------------------------------------------------
+
+        function processBatch() {
+
+            let batchIds = ids.slice(currentBatch, currentBatch + batchSize);
+
+            if (batchIds.length == 0) {
+
+                let errorHtml = "";
+
+                if (allErrors.length > 0) {
+
+                    errorHtml = `
+                    <br><br>
+                    <div style="max-height:250px;overflow:auto">
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Employee</th>
+                                <th>Date</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                    $.each(allErrors, function (i, row) {
+
+                        errorHtml += `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${row.employee}</td>
+                            <td>${row.date}</td>
+                            <td>${row.reason}</td>
+                        </tr>`;
+
+                    });
+
+                    errorHtml += `
+                        </tbody>
+                    </table>
+                    </div>`;
+                }
+
+                let countLine = "";
+
+                if (status == 1)
+                    countLine = `<b class="text-success">Approved :</b> ${approvedCount}<br>`;
+
+                if (status == 0)
+                    countLine = `<b class="text-warning">Pending :</b> ${pendingCount}<br>`;
+
+                if (status == 2)
+                    countLine = `<b class="text-danger">Rejected :</b> ${rejectedCount}<br>`;
+
+                Swal.fire({
+                    icon: failedCount > 0 ? "warning" : "success",
+                    title: `Bulk ${actionLabel} Completed`,
+                    width: 900,
+                    html: `
+                    <div class="text-start">
+                        <b>Total Applications :</b> ${totalApplication}<br>
+                        <b>Total Leave Dates :</b> ${totalLeaves}<br>
+                        ${countLine}
+                        <b class="text-danger">Skipped :</b> ${failedCount}
+                        ${errorHtml}
+                    </div>`
+                }).then(() => {
+                    location.reload();
+                });
+
+                return;
+            }
+
+            //---------------------------------------------------
+            // Update Progress
+            //---------------------------------------------------
+
+            Swal.update({
+                html: `
+                    ${processingText}
+                    <br><br>
+                    <b>Processing ${Math.min(currentBatch + batchIds.length, ids.length)} of ${ids.length}</b>
+                `
+            });
+
+            //---------------------------------------------------
+            // AJAX
+            //---------------------------------------------------
+
+            $.ajax({
+
+                url: "leave_approve_bulk.php",
+                type: "POST",
+                dataType: "json",
+                timeout: 600000,
+
+                data: {
+                    bulkApprove: 1,
+                    status: status,
+                    ids: batchIds
+                },
+
+                success: function (res) {
+
+                    totalApplication += parseInt(res.totalApplication);
+                    totalLeaves += parseInt(res.totalLeaves);
+
+                    approvedCount += parseFloat(res.approvedCount);
+                    pendingCount += parseFloat(res.pendingCount);
+                    rejectedCount += parseFloat(res.rejectedCount);
+                    failedCount += parseFloat(res.failedCount);
+
+                    if (res.errors && res.errors.length > 0) {
+                        allErrors.push(...res.errors);
+                    }
+
+                    currentBatch += batchSize;
+
+                    processBatch();
+
+                },
+
+                error: function () {
+
+                    Swal.fire(
+                        "Error",
+                        "One batch failed.",
+                        "error"
+                    );
+
+                }
+
+            });
+
+        }
+
+        processBatch();
+
+    });
+
+}
     function funDel(id, imgname) {
         $('#deleteRecordModal').modal('show');
         tblname = 'on_duty_master';
@@ -978,7 +1230,7 @@ if ($approval_type == 'e_hr') {
         });
     }
 
-      $(document).ready(function() {
+    $(document).ready(function() {
 
         $('#application_month').on('change', function() {
 
@@ -1013,7 +1265,57 @@ if ($approval_type == 'e_hr') {
         });
 
     });
+
+    function get_employee(department_id, emp_id = 0) {
+        $.ajax({
+            type: "POST",
+            url: 'get_dep_wise_emp.php',
+            data: {
+                department_id: department_id,
+                emp_id: emp_id
+            },
+
+            success: function(data) {
+                $('#emp_id').html(data).trigger("change.select2");
+            }
+        });
+
+    }
+
+    function validateSearch() {
+
+        let department = $('#department_id').val();
+        let employee = $('#emp_id').val();
+        let fromDate = $('#od_date_from').val();
+        let toDate = $('#od_date_to').val();
+
+        // if (department == '' && employee == '') {
+        //     alert("Please select at least Department or Employee.");
+        //     $('#department_id').focus();
+        //     return false;
+        // }
+
+        if (fromDate != '' && toDate == '') {
+            alert("Please select To Date.");
+            $('#od_date_to').focus();
+            return false;
+        }
+
+        if (fromDate == '' && toDate != '') {
+            alert("Please select From Date.");
+            $('#od_date_from').focus();
+            return false;
+        }
+
+        if (fromDate != '' && toDate != '' && fromDate > toDate) {
+            alert("From Date cannot be greater than To Date.");
+            $('#od_date_from').focus();
+            return false;
+        }
+
+        return true;
+    }
     </script>
 </body>
 
-</html> 
+</html>

@@ -72,10 +72,35 @@ if (isset($_POST['transfer_emp_id'])) {
         $new_emp_code =  $obj->getcode("employee_master", "emp_code",  "1=1");
         $new_bio_id = $obj->getcode("employee_master", "emp_code",  "1=1");
     }
+
+    $res = $obj->executequery("
+        SELECT 
+          
+            SUM(CASE 
+                WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave') THEN 1 
+                ELSE 0 
+            END) AS total_present,
+
+            SUM(CASE 
+                WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave') THEN 1 
+                ELSE 0 
+            END) AS total_half
+
+        FROM attendance_entry
+        WHERE emp_id = '$emp_id' 
+        AND month = '$prev_month' 
+        AND year = '$prev_year' AND unit_id='$unitid'
+    ");
+
+    $row = $res[0] ?? []; 
+    $total_present  = $row['total_present'] ?? 0;
+    $total_half     = $row['total_half'] ?? 0;
+ 
+    $total_attandence      = $total_present + ($total_half / 2);
     
     $salary_count = $obj->getvalfield("salary_structure","count(*)","emp_id='$emp_id' AND month='$prev_month' AND year='$prev_year' and unit_id='$unitid'");
     
-    if ($salary_count == 0) {
+    if ($salary_count == 0 && $total_attandence > 0) {
         echo 'salary_pending';
         die;
     }
@@ -190,7 +215,7 @@ if (isset($_POST['department_iddd'])) {
                                             <select class="form-select form-select-sm chosen-select" name="emp_id" id="emp_id" onchange="get_url(this.value);">
                                                 <option value="0">Select Employee</option>
                                                 <?php
-                                                $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' AND (resign_status != '1' OR (resign_status = '1' AND last_working_date >= CURDATE())) ORDER BY first_name ASC");
+                                                $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' ORDER BY first_name ASC");
                                                 foreach ($res as $key) { ?>
                                                     <option value="<?= $key['emp_id']; ?>">
                                                         <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?> <?= ucfirst($key['last_name'] ?? ''); ?> </option>

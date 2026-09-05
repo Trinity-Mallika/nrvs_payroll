@@ -7,6 +7,7 @@ $title = "Leave List";
 // $data = $obj->executequery("SELECT * FROM on_duty_master 
 //     WHERE emp_id='$emp_id' AND unit_id='$unitid' and type='leave'
 //     ORDER BY on_duty_id DESC");
+$type = $obj->test_input($_GET['type']??'');
 
 $data = $obj->executequery("
     SELECT m.*, 
@@ -33,7 +34,7 @@ $imgpath = "../admin/uploaded/on_duty/";
     <title><?= $title ?></title>
     <?php include("inc/css-file.php"); ?>
     <link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css">
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/bootstrap-datepicker.min.css">
 </head>
 
 <body class="dashboard">
@@ -54,17 +55,26 @@ href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/boo
                 <div class="card">
                     <div class="col-12">
                         <label class="form-label small">From Date</label>
-                        <input type="text" id="from_date"
-                        class="form-control form-control-sm datepicker"
-                        value="<?= date('01-m-Y'); ?>">
+                        <input type="text" id="from_date" class="form-control form-control-sm datepicker"
+                            value="<?= date('01-m-Y'); ?>">
                     </div>
 
                     <div class="col-12">
                         <label class="form-label small">To Date</label>
-                        <input type="text" id="to_date"
-                    class="form-control form-control-sm datepicker"
-                    value="<?= date('d-m-Y'); ?>">
+                        <input type="text" id="to_date" class="form-control form-control-sm datepicker"
+                            value="<?= date('d-m-Y'); ?>">
                     </div>
+                    <div class="col-12">
+                        <label for="" class="form-label">Leave Type</label>
+                        <select class="form-control" id="leave_type">
+                            <option value="">All</option> 
+                            <option value="EL">EARNED LEAVE</option> 
+                            <option value="EO">EXTRA OFF</option>
+                            <option value="CO">C Off</option>  
+                        </select>
+                        <script> document.getElementById('leave_type').value = '<?= $type; ?>'; </script>
+                    </div>
+
 
                     <div class="col-12 mt-2">
                         <button class="btn btn-primary btn-sm w-100" onclick="filterByDate()">
@@ -100,131 +110,135 @@ href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/css/boo
     <?php include("inc/js-file.php"); ?>
 
 </body>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/js/bootstrap-datepicker.min.js">
+</script>
 <script>
-    $(document).ready(function() {
-        $('.datepicker').datepicker({
-    format: 'dd-mm-yyyy',
-    autoclose: true,
-    todayHighlight: true
-});
-        let from_date = $('#from_date').val();
-        let to_date = $('#to_date').val();
+$(document).ready(function() {
+    $('.datepicker').datepicker({
+        format: 'dd-mm-yyyy',
+        autoclose: true,
+        todayHighlight: true
+    });
+    let from_date = $('#from_date').val();
+    let to_date = $('#to_date').val();
+    let leave_type = $('#leave_type').val();
 
-        loadLeaveData(from_date, to_date);
+    loadLeaveData(from_date, to_date, leave_type);
+});
+
+function filterByDate() {
+
+    let from = $('#from_date').val();
+    let to = $('#to_date').val();
+    let leave_type = $('#leave_type').val();
+
+    if (!from || !to) {
+        alert("Please select both dates");
+        return;
+    }
+
+    loadLeaveData(from, to, leave_type);
+}
+
+function loadLeaveData(from, to, leave_type) {
+
+    Swal.fire({
+        title: "Loading...",
+        text: "Fetching leave data",
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
     });
 
-    function filterByDate() {
-
-        let from = $('#from_date').val();
-        let to = $('#to_date').val();
-
-        if (!from || !to) {
-            alert("Please select both dates");
-            return;
+    $.ajax({
+        url: "ajax_emp_leave_list.php",
+        type: "POST",
+        data: {
+            from_date: from,
+            to_date: to,
+            leave_type: leave_type
+        },
+        success: function(res) {
+            Swal.close();
+            $("#leaveDataContainer").html(res);
         }
+    });
+}
 
-        loadLeaveData(from, to);
-    }
+function openDutyModal(id) {
 
-    function loadLeaveData(from, to) {
+    $("#dutyModal").modal('show');
+    $("#modalContent").html("Loading...");
 
-        Swal.fire({
-            title: "Loading...",
-            text: "Fetching leave data",
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-        $.ajax({
-            url: "ajax_emp_leave_list.php",
-            type: "POST",
-            data: {
-                from_date: from,
-                to_date: to
-            },
-            success: function(res) {
-                Swal.close();
-                $("#leaveDataContainer").html(res);
-            }
-        });
-    }
-
-    function openDutyModal(id) {
-
-        $("#dutyModal").modal('show');
-        $("#modalContent").html("Loading...");
-
-        $.ajax({
-            url: 'ajax_leave_view.php',
-            type: 'POST',
-            data: {
-                id: id
-            },
-            success: function(data) {
-                $("#modalContent").html(data);
-            }
-        });
-    }
+    $.ajax({
+        url: 'ajax_leave_view.php',
+        type: 'POST',
+        data: {
+            id: id
+        },
+        success: function(data) {
+            $("#modalContent").html(data);
+        }
+    });
+}
 </script>
 
 <script>
-    function deleteLeave(id) {
+function deleteLeave(id) {
 
-        Swal.fire({
-            title: "Are you sure?",
-            text: "This will delete full leave record!",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#d33",
-            cancelButtonColor: "#3085d6",
-            confirmButtonText: "Yes, delete it!"
-        }).then((result) => {
+    Swal.fire({
+        title: "Are you sure?",
+        text: "This will delete full leave record!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, delete it!"
+    }).then((result) => {
 
-            if (result.isConfirmed) {
+        if (result.isConfirmed) {
 
-                // 🔴 STEP 1: Delete child table (leave_apply_detail)
-                $.ajax({
-                    type: 'POST',
-                    url: 'delete_master.php',
-                    data: {
-                        id: id,
-                        tblname: 'leave_apply_detail',
-                        tblpkey: 'on_duty_id',
-                        pagename: 'leave_apply_list.php'
-                    },
-                    success: function() {
+            // 🔴 STEP 1: Delete child table (leave_apply_detail)
+            $.ajax({
+                type: 'POST',
+                url: 'delete_master.php',
+                data: {
+                    id: id,
+                    tblname: 'leave_apply_detail',
+                    tblpkey: 'on_duty_id',
+                    pagename: 'leave_apply_list.php'
+                },
+                success: function() {
 
-                        // 🔴 STEP 2: Delete main table (on_duty_master)
-                        $.ajax({
-                            type: 'POST',
-                            url: 'delete_master.php',
-                            data: {
-                                id: id,
-                                tblname: 'on_duty_master',
-                                tblpkey: 'on_duty_id',
-                                pagename: 'leave_apply_list.php'
-                            },
-                            success: function() {
+                    // 🔴 STEP 2: Delete main table (on_duty_master)
+                    $.ajax({
+                        type: 'POST',
+                        url: 'delete_master.php',
+                        data: {
+                            id: id,
+                            tblname: 'on_duty_master',
+                            tblpkey: 'on_duty_id',
+                            pagename: 'leave_apply_list.php'
+                        },
+                        success: function() {
 
-                                Swal.fire({
-                                    icon: "success",
-                                    title: "Deleted!",
-                                    text: "Leave deleted successfully",
-                                    timer: 1500,
-                                    showConfirmButton: false
-                                }).then(() => location.reload());
-                            }
-                        });
+                            Swal.fire({
+                                icon: "success",
+                                title: "Deleted!",
+                                text: "Leave deleted successfully",
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => location.reload());
+                        }
+                    });
 
-                    }
-                });
+                }
+            });
 
-            }
-        });
-    }
+        }
+    });
+}
 </script>
 
 </html>

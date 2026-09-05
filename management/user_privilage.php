@@ -328,7 +328,7 @@ if (isset($_GET[$tblpkey])) {
                                                            $sql_get = $obj->executequery("
                                                                 SELECT *
                                                                 FROM m_userprivilege
-                                                                WHERE type='hrms'
+                                                                WHERE type='hrms' and enable=1
                                                                 ORDER BY menuname,page_type,page_heading
                                                             ");
                                                             $current_menu = '';

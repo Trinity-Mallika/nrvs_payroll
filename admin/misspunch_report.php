@@ -178,32 +178,37 @@ table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
                                                     '<?= $department_id; ?>';
                                                 </script>
                                             </div>
-                                              <div class="col-lg-3 mb-3">
-                                                <label for="emp_id" class="form-label">Attendence Date<span class="text-danger fw-bold">*</span></label>
-                                                <input type="date" name="attendance_date" id="attendance_date" class="form-control form-control-sm" value="<?= $attendance_date ?>">
+                                            <div class="col-lg-3 mb-3">
+                                                <label for="emp_id" class="form-label">Attendence Date<span
+                                                        class="text-danger fw-bold">*</span></label>
+                                                <input type="date" name="attendance_date" id="attendance_date"
+                                                    class="form-control form-control-sm"
+                                                    value="<?= $attendance_date ?>">
                                             </div>
-                                            
-                                             <div class="col-lg-3 mb-3">
-                                            <label for="att_action" class="form-label">Action<span class="text-danger fw-bold"></span></label>
-                                            <select class="form-select form-select-sm chosen-select" name="att_action" id="att_action">
-                                                <option value="misspunch">Misspunch</option>
-                                                <option value="Incomplete">Incomplete</option>
-                                                <option value="Present">Present</option>
-                                                <option value="Earning Leave">Earning Leave</option>
-                                                <option value="Weekly Leave">Weekly Leave</option>
-                                                <option value="Half Day">Half Day</option>
-                                                 
-                                            </select>
-                                            <script>
+
+                                            <div class="col-lg-3 mb-3">
+                                                <label for="att_action" class="form-label">Action<span
+                                                        class="text-danger fw-bold"></span></label>
+                                                <select class="form-select form-select-sm chosen-select"
+                                                    name="att_action" id="att_action">
+                                                    <option value="misspunch">Misspunch</option>
+                                                    <option value="Incomplete">Incomplete</option>
+                                                    <option value="Present">Present</option>
+                                                    <option value="Earning Leave">Earning Leave</option>
+                                                    <option value="Weekly Leave">Weekly Leave</option>
+                                                    <option value="Half Day">Half Day</option>
+
+                                                </select>
+                                                <script>
                                                 document.getElementById('att_action').value =
                                                     '<?= $att_action; ?>';
-                                            </script>
-                                        </div>
+                                                </script>
+                                            </div>
 
                                             <div class="col-md-3 mt-4 ">
                                                 <input type="submit" class="btn btn-primary add-btn"
-                                                    onclick="return checkinputmaster('year,month')"
-                                                    name="search" value="Search">
+                                                    onclick="return checkinputmaster('year,month')" name="search"
+                                                    value="Search">
                                                 <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset"
                                                     id="reset">Reset</a>
                                             </div>
@@ -215,7 +220,6 @@ table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
                     </div>
                 </div>
                 <?php if (isset($_GET['search'])) { ?>
-
                 <div class="row mt-4 mb-4">
                     <div class="col-lg-12">
                         <div class="card">
@@ -228,8 +232,10 @@ table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
 
                                 <?php
 
-                                    $fromDate = "$year-$month-01";
-                                    $toDate   = date("Y-m-t", strtotime($fromDate));
+                                   $reportFromDate = "$year-$month-01";          // report start
+                                    $fromDate = date('Y-m-d', strtotime("$reportFromDate -1 day")); // fetch start
+                                    //$toDate   = date("Y-m-t", strtotime($reportFromDate));  
+                                    $toDate = date('Y-m-d', strtotime(date('Y-m-t', strtotime($reportFromDate)).' +1 day'));
 
                                     /* ---------------- EMPLOYEES ---------------- */
 
@@ -310,7 +316,7 @@ table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
         l.attendance_stamp,
         l.in_status
     FROM attendance_log l left join employee_master em on em.emp_id=l.emp_id
-    WHERE l.emp_id IN ($empIdsStr)
+    WHERE l.emp_id IN ($empIdsStr) AND is_deleted=0
     AND l.attendance_date BETWEEN '$fromDate' AND '$toDate'
     ORDER BY l.emp_id, l.attendance_stamp
 ");
@@ -428,11 +434,10 @@ if (!empty($punchMap[$emp][$pDate][$idx]['out'])) {
     ];
 }
 }
-}
-                                    }
+}  }
 
 
-                                    $missPunchMap = [];
+ $missPunchMap = [];
 
 foreach ($punchMap as $empId => $dates) {
 
@@ -454,48 +459,47 @@ foreach ($punchMap as $empId => $dates) {
     }
 }
                                     ?>
+                                <div class="auto-scroll-wrapper">
+                                    <div class="table-responsive">
+                                        <table id="buttons-datatables"
+                                            class="table table-sm table-bordered table-hover align-middle display">
 
-                                <div class="table-responsive">
+                                            <thead class="table-light">
 
-                                    <table id="buttons-datatables"
-                                        class="table table-sm table-bordered table-hover align-middle display">
+                                                <tr>
 
-                                        <thead class="table-light">
+                                                    <th>Unit Name</th>
 
-                                            <tr>
-
-                                                <th>Unit Name</th>
-
-                                                  <th>Emp Code</th>
+                                                    <th>Emp Code</th>
                                                     <th>Emp Name</th>
                                                     <th>Department</th>
                                                     <th>Designation</th>
                                                     <th>Attendance Date</th>
-  <th>Status</th>
+                                                    <th>Status</th>
 
-                                                <th>In1</th>
-                                                <th>Out1</th>
-                                                <th>In2</th>
-                                                <th>Out2</th>
-                                                <th>In3</th>
-                                                <th>Out3</th>
-                                                <th>In4</th>
-                                                <th>Out4</th>
-                                                <th>In5</th>
-                                                <th>Out5</th>
-                                                <th>In6</th>
-                                                <th>Out6</th>
-                                               
-                                                <th>WH</th>
-                                                <th>OT</th>
-                                              
-                                            </tr>
+                                                    <th>In1</th>
+                                                    <th>Out1</th>
+                                                    <th>In2</th>
+                                                    <th>Out2</th>
+                                                    <th>In3</th>
+                                                    <th>Out3</th>
+                                                    <th>In4</th>
+                                                    <th>Out4</th>
+                                                    <th>In5</th>
+                                                    <th>Out5</th>
+                                                    <th>In6</th>
+                                                    <th>Out6</th>
 
-                                        </thead>
+                                                    <th>WH</th>
+                                                    <th>OT</th>
 
-                                        <tbody>
+                                                </tr>
 
-                                            <?php
+                                            </thead>
+
+                                            <tbody>
+
+                                                <?php
 
                                                 $daysInMonth = date('t', strtotime($fromDate));
 
@@ -557,12 +561,11 @@ $ot     = $entryMap[$empId][$date]['overtime'] ?? '';
 
                                                 ?>
 
-                                        </tbody>
+                                            </tbody>
 
-                                    </table>
-
+                                        </table>
+                                    </div>
                                 </div>
-
                             </div>
                         </div>
                     </div>
@@ -582,13 +585,13 @@ $ot     = $entryMap[$empId][$date]['overtime'] ?? '';
     <!-- script tag -->
 
     <script>
-     $(document).ready(function() {
-            // $('#example').DataTable();
-            $(".chosen-select").select2({
-                width: '100%',
-                search_contains: true
-            });
+    $(document).ready(function() {
+        // $('#example').DataTable();
+        $(".chosen-select").select2({
+            width: '100%',
+            search_contains: true
         });
+    });
 
     function get_department(emp_id) {
         $.ajax({

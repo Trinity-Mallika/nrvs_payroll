@@ -1,1910 +1,495 @@
-<?php include("../adminsession.php");
-$title = "Month Wise Attendance Report"; // purana sahi wala hai
-$pagename = "month_wise_attendance_report.php";
-$module = "Search Attendance";
-$submodule = "Month Wise Attendance List";
-$btn_name = "Search";
-$keyvalue = 0;
-$tblname = "attendance_entry";
-$tblpkey = "attendance_id";
-$is_all_leave_add = $obj->getvalfield("unit_master", "add_leave", "unit_id='$unitid'");
-$crit2 = " and 1=1";
+<?php
+include("../adminsession.php");
+set_time_limit(600);   
+ini_set('max_execution_time', 600);
+$current_time = date('H:i:s');
+if(isset($_POST['bulkApprove'])){
+    $ids=$_POST['ids'];
+    $status=$_POST['status'];
+    $skipMessages = [];
+    $approvedCount = 0;
+    $rejectedCount = 0;
+    $pendingCount  = 0;
+    $totalLeaves  = 0;
+    $totalApplication = count($ids); 
 
+    // ---- Caches (per emp_id-month-year) so we hit the DB once instead of per leave-date row ----
+    $attendanceMapCache   = []; // [cacheKey] => [ 'YYYY-MM-DD' => attendance_status, ... ]
+    $attendanceAggCache   = []; // [cacheKey] => [ total_present1, total_half1, total_present, total_half ]
+    $attendanceLogCache   = []; // [cacheKey] => [ 'YYYY-MM-DD' => true, ... ]
+    $workingDaysCache     = []; // [cacheKey] => totalWorkingDays
+    $debug     = []; // [cacheKey] => totalWorkingDays
 
-if (isset($_GET['department_id'])) {
-    $department_id = $obj->test_input($_GET['department_id']);
-    if ($department_id != '') {
-        $crit2 .= " and e.department_id = '$department_id'";
-    }
-    $department_name = $obj->getvalfield(
-        "department_master",
-        "department_name",
-        "department_id='$department_id'"
-    );
-} else {
-    $department_id = "";
-    $department_name = "All";
-};
+    foreach($ids as $on_duty_id){
+        $details=$obj->executequery("
+            SELECT *
+            FROM leave_apply_detail
+            WHERE on_duty_id='$on_duty_id'
+            ORDER BY date
+        ");
+        if(empty($details))
+            continue;
 
-if (isset($_GET['action'])) {
-    $action = addslashes(trim($_GET['action']));
-} else {
-    $action = "";
-}
-
-$month = date('n');
-$year = date('Y');
-$year_month = "";
-if (isset($_GET['month']) && isset($_GET['year'])) {
-    $month = (int)$obj->test_input($_GET['month']);
-
-    $year = $obj->test_input($_GET['year']);
-    $month_name = date("F", mktime(0, 0, 0, $_GET['month'], 10));
-} else {
-    $month_name = '';
-}
-
-$get_days = $obj->getDaysArray($month, $year);
-$length = count($get_days);
-
-$showFields = [];
-
-if (isset($_REQUEST['show_field_encoded'])) {
-
-    if ($_REQUEST['show_field_encoded'] !== '') {
-        $showFields = array_map(
-            'intval',
-            explode(',', $_REQUEST['show_field_encoded'])
+        $emp_id=$obj->getvalfield(
+            "on_duty_master",
+            "emp_id",
+            "on_duty_id='$on_duty_id'"
         );
-    } else {
-        $showFields = [];
-    }
-} else {
-    $showFields = [2, 3, 7, 8, 9];
-}
-
-
-$fieldMap = [
-    // 1 => ['label' => 'Mobile Number',     'key' => 'mobile_no'],
-    2 => ['label' => 'Emp Code',         'key' => 'emp_code'],
-    3 => ['label' => 'Emp Name',         'key' => 'first_name'],
-    4 => ['label' => 'Aadhaar No',         'key' => 'aadhar_no'],
-    5 => ['label' => 'Present Salary',    'key' => 'basic_salary'],
-    6 => ['label' => 'Grade',             'key' => 'grade_name'],
-    7 => ['label' => 'Department',        'key' => 'department_name'],
-    8 => ['label' => 'Designation',       'key' => 'designation'],
-    9 => ['label' => 'Date of Joining',   'key' => 'date_of_joining'],
-    10 => ['label' => 'Job Location',       'key' => 'job_location'],
-    11 => ['label' => 'Shift Hours',        'key' => 'shift_hours'],
-];
-
-
-if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
-    $ajax_emp_shift_hrs = $_REQUEST['ajax_emp_shift_hrs'];
-    $empp_shift_id = $_REQUEST['empp_shift_id'] ?? 0;
-
-    $options = "<option value=''>Please Select</option>";
-    // die;
-    $selected = "";
-    if ($ajax_emp_shift_hrs != "" || $ajax_emp_shift_hrs > 0) {
-        $res = $obj->executequery("Select * from shift_master where unit_id='$unitid' AND HOUR(working_hour) = '$ajax_emp_shift_hrs' order by shift_id asc");
-
-        foreach ($res as $row) {
-            $selected = ($empp_shift_id == $row['shift_id']) ? 'selected' : '';
-            $options .= "<option value='" . $row['shift_id'] . "' $selected>" . $row['shift_name'] . " / " . $row['working_hour'] . " Hrs" . "</option>";
-        }
-    }
-
-    echo $options;
-    die;
-}
-
-?>
-
-<!doctype html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
-    data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
-
-<head>
-    <meta charset="utf-8" />
-    <title><?php echo $title; ?></title>
-    <?php include('inc/css.php') ?>
-
-
-</head>
-<style>
-    table.dataTable>thead>tr>th:not(.sorting_disabled),
-    table.dataTable>thead>tr>td:not(.sorting_disabled) {
-        padding-right: 5px !important;
-    }
-
-    table.dataTable>thead>tr>th:last-child:not(.sorting_disabled),
-    table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
-        padding-right: 20px !important;
-    }
-</style>
-
-<body>
-    <?php include('inc/header.php') ?>
-    <?php include('inc/sidebar.php') ?>
-    <!-- end auth-page-wrapper -->
-    <div class="main-content">
-        <div class="page-content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-lg-12">
-                        <fieldset class="mt-2">
-                            <?php if (!isset($_GET['search'])) { ?>
-                                <form action="<?php echo $pagename; ?>" method="get">
-                                    <div class="card">
-                                        <div class="card-header border-bottom-dashed">
-                                            <div class="row g-4 align-items-center">
-                                                <div class="col-sm">
-                                                    <div>
-                                                        <h5 class="card-title mb-0"> <?= $module; ?></h5>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="row">
-                                                <div class="col-lg-3 mb-3">
-                                                    <label for="department_id" class="form-label">Department Name<span
-                                                            class="text-danger fw-bold"></span></label>
-                                                    <select class="form-select chosen-select" name="department_id"
-                                                        id="department_id">
-                                                        <option value="">All</option>
-                                                        <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_name asc");
-                                                        foreach ($res as $key) {
-                                                            echo "<option value='" . $key['department_id'] . "'>" . $key['department_name'] . "</option>";
-                                                        } ?>
-                                                    </select>
-                                                    <script>
-                                                        document.getElementById('department_id').value =
-                                                            '<?= $department_id; ?>';
-                                                    </script>
-                                                </div>
-                                                <div class="col-lg-3 col-12">
-                                                    <label for="year" class="form-label">Year<span
-                                                            class="text-danger fw-bold">*</span></label>
-                                                    <select class="form-select chosen-select" name="year" id="year">
-                                                        <option value="">Select</option>
-                                                        <?php
-                                                        $startYear = 2025;
-                                                        $endYear = 2100;
-                                                        for ($year1 = $startYear; $year1 <= $endYear; $year1++) {
-                                                            echo "<option value=\"$year1\">$year1</option>";
-                                                        } ?>
-                                                    </select>
-                                                    <script>
-                                                        document.getElementById('year').value = '<?php echo $year ?>'
-                                                    </script>
-                                                </div>
-                                                <div class="col-md-3 md-2">
-                                                    <strong><label for="Month">Month<span
-                                                                class="text-danger fw-bold">*</span></label></strong></br>
-                                                    <select name="month" class="chosen-select form-control form-control"
-                                                        id="month">
-                                                        <option value="">--Select Month--</option>
-                                                        <?php for ($iM = 1; $iM <= 12; $iM++) {
-                                                        ?>
-                                                            <option value="<?php echo str_pad($iM, 2, '0', STR_PAD_LEFT); ?>">
-                                                                <?php echo date("F", strtotime(str_pad($iM, 2, '0', STR_PAD_LEFT) . "/12/10")); ?>
-                                                            </option>
-
-                                                        <?php
-                                                        } ?>
-                                                    </select>
-                                                    <script>
-                                                        document.getElementById('month').value =
-                                                            '<?php echo str_pad($month, 2, "0", STR_PAD_LEFT); ?>';
-                                                    </script>
-                                                </div>
-                                                <div class="col-md-3 md-2">
-                                                    <strong><label for="Fields">Fields<span
-                                                                class="text-danger fw-bold"></span></label></strong>
-                                                    <select id="show_field" class="form-control" multiple>
-                                                        <!-- <option value="1">Mobile Number</option> -->
-                                                        <option value="2">Emp Code</option>
-                                                        <option value="3">Emp Name</option>
-                                                        <option value="4">Aadhaar No</option>
-                                                        <option value="5">Present Salary</option>
-                                                        <option value="6">Grade</option>
-                                                        <option value="7">Department</option>
-                                                        <option value="8">Designation</option>
-                                                        <option value="9">Date of Joining</option>
-                                                        <option value="10">Job Location</option>
-                                                        <option value="11">Shift Hours</option>
-                                                    </select>
-                                                </div>
-                                                <input type="hidden" name="show_field_encoded" id="show_field_encoded">
-
-                                                <div class="col-md-3 mt-4 ">
-                                                    <input type="submit" class="btn btn-primary add-btn"
-                                                        onclick="return checkinputmaster('year,month')" name="search"
-                                                        value="Search">
-                                                    <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset"
-                                                        id="reset">Reset</a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </form>
-                            <?php } ?>
-                        </fieldset>
-                    </div>
-                </div>
-                <?php if (isset($_GET['search'])) {   ?>
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <div class="card mb-1">
-                                <div class="card-header border-bottom-dashed"
-                                    style="margin-bottom: 0px; padding-bottom: 0px;">
-                                    <div class="row g-4 align-items-center">
-                                        <div class="col-sm" style="margin-top: 8px;">
-                                            <div class="d-flex justify-content-between align-items-center flex-wrap">
-                                                <h5 class="card-title mb-0">
-                                                    <?= $submodule; ?>
-                                                </h5>
-                                                <div class="ms-2 card-title mb-0"><b>
-                                                        <?php if (!empty($_GET['year'])) { ?>
-                                                            Year: <?= $_GET['year']; ?>
-                                                        <?php } ?>
-                                                        <?php if (!empty($month_name)) { ?>
-                                                            | Month: <?= $month_name; ?>
-                                                        <?php } ?>
-
-                                                        <?php if (!empty($department_name)) { ?>
-                                                            | Dept: <?= $department_name; ?>
-                                                        <?php } ?></b>
-                                                </div>
-                                                <div>
-                                                    <a href="<?php echo $pagename; ?>" class="btn btn-sm btn-primary">
-                                                        Search Again
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-header border-bottom">
-                                <div class="d-flex flex-wrap gap-3 align-items-center">
-
-                                    <span class="badge bg-success">
-                                        P = Present
-                                    </span>
-
-                                    <span class="badge bg-danger">
-                                        A = Absent
-                                    </span>
-
-                                    <span class="badge bg-warning text-dark">
-                                        HD = Half Day
-                                    </span>
-
-                                    <span class="badge" style="background:rgb(229,204,255);color:#000;">
-                                        WL = Weekly Leave
-                                    </span>
-
-                                    <span class="badge" style="background:rgb(121,170,248);">
-                                        EL = Earn Leave
-                                    </span>
-
-                                    <span class="badge" style="background:rgb(121, 246, 248);color:#000;">
-                                        HEL = Half Earn Leave
-                                    </span>
-
-                                    <span class="badge" style="background:rgb(226, 237, 109);color:#000;">
-                                        HW = Half Weekly Leave
-                                    </span>
-
-                                    <!-- <span class="badge" style="background:#f7b1f2;color:#000;">
-                                M = Miss Punch
-                            </span> -->
-
-                                    <span class="badge" style="background:rgb(121, 246, 248);color:#000;">
-                                        C = C Off
-                                    </span>
-
-                                    <span class="badge" style="background:rgb(226, 237, 109);color:#000;">
-                                        HC = Half C Off
-                                    </span>
-
-                                    <span class="badge" style="background:rgb(180,210,255);color:#000;">
-                                        PL = Paid Holiday
-                                    </span>
-
-                                    <span class="badge" style="background:rgb(233,61,61);">
-                                        I = Incomplete
-                                    </span>
-
-                                    <span class="badge" style="background:rgb(99, 236, 218);color:#000;">
-                                        L = Leave
-                                    </span>
-
-                                    <span class="badge" style="background:rgb(57, 233, 239);color:#000;">
-                                        HL = Half Leave
-                                    </span>
-
-                                    <span class="badge" style="background:rgb(149, 121, 248);color:#000;">
-                                        C2= Extra Off
-                                    </span>
-
-                                    <span class="badge" style="background:rgb(149, 121, 248);">
-                                        HC2 = Half Extra Off
-                                    </span>
-
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <?php
-                                $firstDateOfMonth = date("Y-m-01", strtotime("$year-$month-01"));
-                                $lastDateOfMonth = date("Y-m-t", strtotime("$year-$month-01"));
-
-                                $employees = $obj->executequery("
-                                    SELECT 
-                                        e.emp_id,
-                                        e.allow_weekly_off,
-                                        e.department_id,
-                                        e.is_esic,
-                                        e.emp_code,
-                                        e.first_name,
-                                        e.last_name,
-                                        e.mobile_no,
-                                        e.aadhar_no,
-                                        e.shift_id,
-                                        e.basic_salary,
-                                        e.date_of_joining,
-                                        e.job_location,
-                                        g.grade_name,
-                                        d.department_name,
-                                        d.c_off_check,
-                                        des.designation,
-                                        s.working_hour AS shift_hours
-
-                                    FROM employee_master e
-
-                                    LEFT JOIN grade_master g 
-                                        ON g.grade_id = e.grade_id
-
-                                    LEFT JOIN department_master d 
-                                        ON d.department_id = e.department_id
-
-                                    LEFT JOIN designation_master des 
-                                        ON des.designation_id = e.designation_id
-
-                                    LEFT JOIN shift_master s 
-                                        ON s.shift_id = e.shift_id
-                                
-                                    LEFT JOIN (
-                                        SELECT a1.*
-                                        FROM emp_active_status a1
-                                        INNER JOIN (
-                                            SELECT 
-                                                emp_id,
-                                                MAX(active_id) AS last_id
-                                            FROM emp_active_status
-                                            WHERE (
-                                                    YEAR(last_inactive_date) < '$year'
-                                                    OR (
-                                                        YEAR(last_inactive_date) = '$year'
-                                                        AND MONTH(last_inactive_date) <= '$month'
-                                                    )
-                                                )
-                                            GROUP BY emp_id
-                                        ) a2 
-                                        ON a1.active_id = a2.last_id
-                                    ) eas 
-                                        ON eas.emp_id = e.emp_id
-
-                                    WHERE 
-                                        e.unit_id = '$unitid'   
-                                        AND e.is_active = '1'
-                                        AND e.date_of_joining <= '$lastDateOfMonth'
-
-                                        AND (
-                                            e.resign_status != '1' 
-                                            OR (
-                                                e.resign_status = '1' 
-                                                AND e.last_working_date >= '$firstDateOfMonth'
-                                            )
-                                        )
-
-                                        /* Show employee if:
-                                        1. No record in emp_active_status => Active
-                                        2. Last record is active
-                                        */
-                                        AND (
-                                            eas.active_id IS NULL
-                                            OR eas.is_active = '1'
-                                        )
-
-                                        $crit2
-
-                                    GROUP BY e.emp_id
-                                    ORDER BY e.emp_code
-                                ");
-
-                                // $employees = $obj->executequery("SELECT e.emp_id,e.allow_weekly_off,e.department_id,e.is_esic,e.emp_code,e.first_name,e.last_name,e.mobile_no,e.aadhar_no,e.shift_id,
-                                //                         e.basic_salary,e.date_of_joining,e.job_location,g.grade_name,d.department_name,d.c_off_check,des.designation,s.working_hour AS shift_hours  FROM employee_master e
-
-                                //                     LEFT JOIN grade_master g 
-                                //                         ON g.grade_id = e.grade_id
-
-                                //                     LEFT JOIN department_master d 
-                                //                         ON d.department_id = e.department_id
-
-                                //                     LEFT JOIN designation_master des 
-                                //                         ON des.designation_id = e.designation_id
-
-                                //                     LEFT JOIN shift_master s 
-                                //                         ON s.working_hour = e.shift_id 
-
-                                //                     LEFT JOIN emp_active_status eas
-                                //                         ON eas.emp_id = e.emp_id
-                                //                         AND eas.last_inactive_month = '$month'
-                                //                         AND YEAR(eas.last_inactive_date) = '$year'
-                                //                         AND eas.is_active = '0'
-
-                                //                     WHERE e.unit_id = '$unitid' AND e.date_of_joining <= '$lastDateOfMonth' AND (e.resign_status != '1' OR (e.resign_status = '1' AND e.last_working_date >= '$firstDateOfMonth')) AND eas.active_id IS NULL $crit2 group by e.emp_id order by e.emp_code
-                                //                 ");
-
-                                if (empty($employees)) {
-                                    $employees = [];
-                                }
-                                $empIds = array_column($employees, 'emp_id');
-                                $empIdsStr = implode(',', $empIds);
-                                $fromDate  = date("Y-m-d", strtotime("$year-$month-01"));
-
-                                $toDate   = date("Y-m-t", strtotime($fromDate));
-
-                                $prevStart = date('Y-m-01', strtotime("$fromDate -1 month"));
-                                $prevEnd = date('Y-m-t', strtotime("$fromDate -1 month"));
-
-                                $attendanceRows = $obj->executequery("
-                                                SELECT emp_id, attendance_date, attendance_status, intime, in_remark, shift_id
-                                                FROM attendance_entry
-                                                WHERE emp_id IN ($empIdsStr)
-                                                AND attendance_date BETWEEN '$fromDate' AND '$toDate' AND unit_id='$unitid'
-                                            ");
-
-                                $attendanceMap = [];
-                                foreach ($attendanceRows as $row) {
-                                    $attendanceMap[$row['emp_id']][$row['attendance_date']] = $row;
-                                }
-
-                                $currentDate = date("Y-m-d");
-
-                                $summaryRows = $obj->executequery("
-                                                        SELECT emp_id,
-                                                            SUM(attendance_status='Present') AS present,
-                                                            SUM(attendance_status='Half Day') AS halfday,
-                                                            SUM(attendance_status='Weekly Leave') AS leavecnt,
-                                                            SUM(attendance_status='Earning Leave') AS leavecnt2,
-                                                            SUM(attendance_status='Half Earning Leave') AS halfearn,
-                                                            SUM(attendance_status='Half Weekly Leave') AS halfweek,
-                                                            SUM(attendance_status='Leave') AS op_leave,
-                                                            SUM(attendance_status='Half Leave') AS halfopleave,
-                                                            SUM(attendance_status='Half Extra Off') AS half_extra_off,
-                                                            SUM(attendance_status='Extra Off') AS extra_off, 
-                                                            SUM(attendance_status='C Off') AS coff,
-                                                            SUM(attendance_status='Half C Off') AS halfcoff
-                                                        FROM attendance_entry
-                                                        WHERE emp_id IN ($empIdsStr)
-                                                        AND attendance_date BETWEEN '$fromDate' AND '$toDate' AND unit_id='$unitid'
-                                                        GROUP BY emp_id
-                                                    ");
-
-                                $summary = [];
-                                foreach ($summaryRows as $row) {
-                                    $summary[$row['emp_id']] = $row;
-                                }
-
-                                $holidayAttendanceStart = date('Y-m-d', strtotime($fromDate . ' -1 day'));
-                                $holidayAttendanceEnd   = date('Y-m-d', strtotime($toDate . ' +1 day'));
-                                $holidayAttendanceRows = $obj->executequery("
-                                                            SELECT 
-                                                                emp_id,
-                                                                attendance_date,
-                                                                attendance_status
-
-                                                            FROM attendance_entry
-
-                                                            WHERE emp_id IN ($empIdsStr)
-
-                                                            AND attendance_date BETWEEN '$holidayAttendanceStart' 
-                                                            AND '$holidayAttendanceEnd'
-
-                                                            AND unit_id='$unitid'
-                                                        ");
-                                $holidayAttendanceMap = [];
-
-                                foreach ($holidayAttendanceRows as $row) {
-
-                                    $holidayAttendanceMap[$row['emp_id']][$row['attendance_date']]
-                                        = $row['attendance_status'];
-                                }
-                                $holidayRows = $obj->executequery("
-                                                                SELECT date , holiday_type
-                                                                FROM holiday_entry
-                                                                WHERE FIND_IN_SET('$unitid', unit_id)
-                                                                AND date BETWEEN '$fromDate' AND '$toDate'
-                                                            ");
-
-                                $holidays = [];
-                                foreach ($holidayRows as $h) {
-                                    $holidays[$h['date']] = true;
-                                }
-                                $salaryRows = $obj->executequery("
-                                                                    SELECT emp_id, COUNT(*) cnt
-                                                                    FROM salary_structure
-                                                                    WHERE emp_id IN ($empIdsStr)
-                                                                    AND month='$month' AND year='$year' AND unit_id='$unitid'
-                                                                    GROUP BY emp_id
-                                                                ");
-                                $salaryGenerated = [];
-                                foreach ($salaryRows as $s) {
-                                    $salaryGenerated[$s['emp_id']] = $s['cnt'];
-                                }
-
-                                $earningLeaveRows = $obj->executequery("
-                                SELECT 
-                                    emp_id,
-
-                                    SUM(
-                                        CASE
-                                            WHEN attendance_status='Earning Leave' THEN 1
-                                            WHEN attendance_status='Half Earning Leave' THEN 0.5
-                                            ELSE 0
-                                        END
-                                    ) used_leave
-
-                                FROM attendance_entry
-
-                                WHERE sessionid='$sessionid'
-
-                                AND (
-                                    year < '$year'
-                                    OR (year='$year' AND month <= '$month')
-                                )
-
-                                GROUP BY emp_id
-
-                            ");
-
-                                $usedEarnMap = [];
-
-                                foreach ($earningLeaveRows as $r) {
-
-                                    $usedEarnMap[$r['emp_id']] = $r['used_leave'];
-                                }
-
-                                $earningUploadRows = $obj->executequery("
-                            SELECT 
-                                emp_id,
-
-                                SUM(total_leave) total_leave
-
-                            FROM emp_monthly_leave
-
-                            WHERE leave_type='earning'
-                            AND sessionid='$sessionid'
-
-                            AND (
-                                year < '$year'
-                                OR (year='$year' AND month < '$month')
-                            )
-
-                            GROUP BY emp_id
-
-                        ");
-
-                                $earningUploadMap = [];
-
-                                foreach ($earningUploadRows as $r) {
-
-                                    $earningUploadMap[$r['emp_id']] = $r['total_leave'];
-                                }
-
-                                $usedOpeningRows = $obj->executequery("
-
-                            SELECT 
-                                emp_id,
-
-                                SUM(
-                                    CASE
-                                        WHEN attendance_status='Leave' THEN 1
-                                        WHEN attendance_status='Half Leave' THEN 0.5
-                                        ELSE 0
-                                    END
-                                ) used_opening
-
-                            FROM attendance_entry
-
-                            WHERE sessionid='$sessionid'
-
-                            AND (
-                                year < '$year'
-                                OR (year='$year' AND month <= '$month')
-                            )
-
-                            GROUP BY emp_id
-
-                        ");
-
-                                $usedOpeningMap = [];
-
-                                foreach ($usedOpeningRows as $r) {
-
-                                    $usedOpeningMap[$r['emp_id']] = $r['used_opening'];
-                                }
-
-                                $openingRows = $obj->executequery("
-
-                            SELECT 
-                                emp_id,
-
-                                SUM(opening_leave) total_opening
-
-                            FROM emp_leave_allotment
-
-                            WHERE sessionid='$sessionid'
-
-                            GROUP BY emp_id
-
-                        ");
-
-                                $openingMap = [];
-
-                                foreach ($openingRows as $r) {
-
-                                    $openingMap[$r['emp_id']] = $r['total_opening'];
-                                }
-
-                                $current_date  = date("Y-m-d", strtotime("$year-$month-01"));
-
-                                $current_month = (int)date("m", strtotime($current_date));
-                                $current_year  = (int)date("Y", strtotime($current_date));
-
-                                $prev_month    = (int)date("m", strtotime("$current_date -1 month"));
-                                $prev_year     = (int)date("Y", strtotime("$current_date -1 month"));
-
-                                $extraUploadRows = $obj->executequery("
-                                SELECT 
-                                    emp_id,
-                                    COALESCE(SUM(total_leave),0) total_extra_off
-
-                                FROM emp_monthly_leave
-
-                                WHERE leave_type='eoff'
-
-                                AND (
-                                    (month='$current_month' AND year='$current_year')
-                                    OR
-                                    (month='$prev_month' AND year='$prev_year')
-                                )
-
-                                GROUP BY emp_id
-                            ");
-
-                                $extraUploadMap = [];
-
-                                foreach ($extraUploadRows as $r) {
-
-                                    $extraUploadMap[$r['emp_id']] = $r['total_extra_off'];
-                                }
-                                /* ================= USED EXTRA OFF ================= */
-
-                                $extraUsedRows = $obj->executequery("
-                                SELECT 
-                                    emp_id,
-
-                                    COALESCE(SUM(
-                                        CASE 
-                                            WHEN attendance_status='Extra Off' THEN 1
-                                            WHEN attendance_status='Half Extra Off' THEN 0.5
-                                            ELSE 0
-                                        END
-                                    ),0) used_extra
-
-                                FROM attendance_entry
-
-                                WHERE (
-                                    (
-                                        MONTH(attendance_date) = '$current_month'
-                                        AND YEAR(attendance_date) = '$current_year'
-                                    )
-                                    OR
-                                    (
-                                        MONTH(attendance_date) = '$prev_month'
-                                        AND YEAR(attendance_date) = '$prev_year'
-                                    )
-                                )
-
-                                AND attendance_status IN ('Extra Off','Half Extra Off')
-
-                                GROUP BY emp_id
-                            ");
-
-                                $extraUsedMap = [];
-
-                                foreach ($extraUsedRows as $r) {
-
-                                    $extraUsedMap[$r['emp_id']] = $r['used_extra'];
-                                }
-
-                                /* ================= USED C-OFF ================= */
-
-                                $coffUsedRows = $obj->executequery("
-                                SELECT 
-                                    emp_id,
-                                    SUM(
-                                        CASE
-                                            WHEN attendance_status='C Off' THEN 1
-                                            WHEN attendance_status='Half C Off' THEN 0.5
-                                            ELSE 0
-                                        END
-                                    ) used_coff
-
-                                FROM attendance_entry
-
-                                WHERE sessionid='$sessionid'
-
-                                AND (
-                                    year < '$year'
-                                    OR (year='$year' AND month <= '$month')
-                                )
-
-                                GROUP BY emp_id
-                            ");
-
-                                $usedCoffMap = [];
-
-                                foreach ($coffUsedRows as $r) {
-
-                                    $usedCoffMap[$r['emp_id']] = $r['used_coff'];
-                                }
-
-
-                                $coffUploadRows = $obj->executequery("
-                                SELECT 
-                                    emp_id,
-
-                                    SUM(total_leave) total_leave
-
-                                FROM emp_monthly_leave
-
-                                WHERE leave_type='weekly'
-                                AND sessionid='$sessionid'
-
-                                AND (
-                                    year < '$year'
-                                    OR (year='$year' AND month <= '$month')
-                                )
-
-                                GROUP BY emp_id
-                            ");
-
-
-                                $coffUploadMap = [];
-
-                                foreach ($coffUploadRows as $r) {
-
-                                    $coffUploadMap[$r['emp_id']] = $r['total_leave'];
-                                }
-
-
-
-                                ?>
-                                <!-- floating scrollbar -->
-                                <div class="auto-scroll-wrapper">
-                                    <div class="table-responsive">
-                                        <table id="buttons-datatables"
-                                            class="table table-sm table-bordered table-hover align-middle display bg-white">
-                                            <thead class="table-primary">
-                                                <tr>
-                                                    <th>S.No.</th>
-                                                    <?php
-                                                    foreach ($showFields as $fid) {
-                                                        if (!isset($fieldMap[$fid])) continue;
-                                                        echo "<th>{$fieldMap[$fid]['label']}</th>";
-                                                    }
-                                                    ?>
-
-                                                    <th>Punch <br> All</th>
-                                                    <?php for ($i = 1; $i <= $length; $i++) { ?>
-                                                        <th class="text-center">D<?php echo $i; ?></th>
-                                                    <?php } ?>
-
-                                                    <th>Present <br> Days</th>
-                                                    <th>Half <br> Days</th>
-                                                    <th>Week <br> Off</th>
-                                                    <th>Curr.<br>Earn <br> Leave</th>
-                                                    <th>Availed<br>Leave</th>
-                                                    <th>C-Off<br>Adj.</th>
-                                                    <th>Absent</th>
-                                                    <th>Total <br>Present <br>Day</th>
-                                                    <th>Prev.<br>Earn <br>Leave</th>
-                                                    <th>Tot.<br>Earn <br> Leave</th>
-                                                    <th>Prev <br>C-<br>Off</th>
-                                                    <th>Curr.<br>C-OFF</th>
-                                                    <th>Tot.<br>C Off</th>
-                                                    <th>Extra Off</th>
-                                                    <th>Leave</th>
-                                                    <th>Public <br> Holiday</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php
-                                                $slno = 1;
-                                                $currentDate = date("Y-m-d");
-                                                $totalPresentDays = 0;
-                                                $totalWeekOff = 0;
-                                                $total_tpd = 0;
-                                                $totalEarnLEave = 0;
-                                                $totalHoliday = 0;
-                                                $totalAbsent = 0;
-                                                $totalPrevCoff = 0;
-                                                $totalExtraOff = 0;
-                                                $totalPendingEL = 0;
-                                                $totalOpeningLeave = 0;
-                                                $totalPenCoff = 0;
-                                                $total_final_earn_leave = 0;
-                                                $total_final_coff = 0;
-                                                $total_availed_leave = 0;
-                                                $total_present_day = 0;
-                                                $total_half_day = 0;
-                                                $total_taken_coff = 0;
-
-                                                $chkedit = $obj->check_editBtn($pagename, $loginid);
-                                                foreach ($employees as $emp) {
-                                                    $empId = $emp['emp_id'];
-                                                    $department_id = $emp['department_id'];
-                                                    $allow_weekly_off = $emp['allow_weekly_off'];
-                                                    $is_allow_c_off = $emp['c_off_check'];
-
-                                                    $uploaded_coff = $obj->getvalfield("emp_leave_allotment", "coff", "emp_id='$empId'");
-
-                                                    $is_esic = $emp['is_esic'];
-                                                    $setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
-
-                                                    $sum   = $summary[$empId] ?? ['present' => 0, 'halfday' => 0, 'leavecnt' => 0, 'leavecnt2' => 0, 'halfearn' => 0, 'halfweek' => 0, 'coff' => 0, 'halfcoff' => 0, 'op_leave' => 0, 'halfopleave' => 0, 'half_extra_off' => 0, 'extra_off' => 0];
-
-                                                    $totalAttendance = $sum['present'] + ($sum['halfday'] / 2) + $sum['leavecnt'] + $sum['leavecnt2'] + ($sum['halfearn'] / 2) + ($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2) + ($sum['halfopleave'] / 2) + ($sum['half_extra_off'] / 2) + $sum['op_leave'] + $sum['extra_off'];
-
-                                                    $present_day = $sum['present'];
-                                                    $half_day = $sum['halfday'];
-                                                    $taken_coff = $sum['extra_off'] + ($sum['half_extra_off'] / 2) + ($sum['halfcoff'] / 2) + $sum['coff'];
-
-                                                    $total_present_day += $present_day;
-                                                    $total_half_day += $half_day;
-                                                    $total_taken_coff += $taken_coff;
-
-                                                    $show_leave = $sum['present'] + ($sum['halfday'] / 2) + $sum['leavecnt'] + ($sum['halfweek'] / 2) + $sum['coff'] + ($sum['halfcoff'] / 2) + ($sum['half_extra_off'] / 2) + $sum['extra_off'];
-
-                                                    $availed_leave = $sum['leavecnt2'] + ($sum['halfearn'] / 2) + $sum['op_leave'] + ($sum['halfopleave'] / 2);
-
-                                                    $total_availed_leave += $availed_leave;
-
-                                                    $real_total_att = $sum['present'] + ($sum['halfday'] / 2);
-
-                                                    $salaryCount = $salaryGenerated[$empId] ?? 0;
-                                                    //$totalPresentDays +=  $totalAttendance;
-                                                    $totalPresentDays +=  $show_leave;
-                                                    $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_att, $allow_weekly_off);
-                                                    $earn_leave_present = $real_total_att + $week_leave;
-                                                    $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
-                                                    $holidayData = $obj->getHolidayCountWithSandwichRule2(
-                                                        $empId,
-                                                        $holidayRows,
-                                                        $holidayAttendanceMap
-                                                    );
-
-                                                    $holiday = $holidayData['total'];
-
-                                                    // $total_earning_leave = $obj->getEarningLeave($empId, $sessionid);
-                                                    $total_earning_leave = ($earningUploadMap[$empId] ?? 0) - ($usedEarnMap[$empId] ?? 0);
-
-                                                    // $extra_off = $obj->getExtraOffBalance($empId, $month, $year);
-
-                                                    $extra_off = [
-                                                        'balance' => ($extraUploadMap[$empId] ?? 0)
-                                                            -
-                                                            ($extraUsedMap[$empId] ?? 0)
-                                                    ];
-
-                                                    // $opening_leave_balance = $obj->get_opening_leave_balance($empId, $sessionid,$month,$year);
-
-                                                    $opening_leave_balance = ($openingMap[$empId] ?? 0) - ($usedOpeningMap[$empId] ?? 0);
-
-                                                    $totalWeekOff += $week_leave;
-                                                    $totalEarnLEave += $monthly_leave;
-                                                    $tpd = $totalAttendance + $holiday + $week_leave;
-                                                    $prev_coff =  ($coffUploadMap[$empId] ?? 0) - ($usedCoffMap[$empId] ?? 0);
-
-                                                    $result = $obj->calculateLeaveUsage(
-                                                        $length,
-                                                        $totalAttendance,
-                                                        $week_leave,
-                                                        $monthly_leave,
-                                                        // $three_month_leave,
-                                                        $is_allow_c_off,
-                                                        $is_all_leave_add
-                                                    );
-
-                                                    $used_monthly_leave = $result['used_monthly'];
-                                                    $rem_month_leave = $monthly_leave - $used_monthly_leave;
-
-                                                    if ($tpd > $length) {
-                                                        $pen_coff = $tpd - $length;
-                                                    } else {
-                                                        $pen_coff = 0;
-                                                    }
-
-                                                    if ($is_all_leave_add == 1) {
-                                                        $tpd += $monthly_leave;
-                                                    }
-
-                                                    //if ($is_allow_c_off == 1) {
-                                                    $tpd = min($tpd, $length);
-                                                    //}
-
-                                                    $total_tpd += $tpd;
-
-                                                    $absent = $length - $tpd;
-                                                    if ($absent < 0) {
-                                                        $absent = 0;
-                                                    }
-
-
-                                                    $totalHoliday += $holiday;
-                                                    $totalAbsent += $absent;
-                                                    $totalPrevCoff += $prev_coff;
-                                                    $totalExtraOff += $extra_off['balance'];
-                                                    $totalPendingEL += $total_earning_leave;
-                                                    $totalOpeningLeave += $opening_leave_balance;
-                                                    $totalPenCoff += $pen_coff;
-
-                                                    $final_earn_leave = $total_earning_leave + $rem_month_leave;
-
-                                                    $final_coff = $prev_coff + $pen_coff;
-                                                    $total_final_earn_leave += $final_earn_leave;
-                                                    $total_final_coff += $final_coff;
-                                                    echo "<tr>";
-                                                    echo "<td>" . $slno++ . "</td>";
-                                                    foreach ($showFields as $fid) {
-                                                        if (!isset($fieldMap[$fid])) continue;
-
-                                                        $key = $fieldMap[$fid]['key'];
-                                                        $value = $emp[$key] ?? '-';
-
-                                                        // special formatting
-                                                        if ($fid == 9 && !empty($value)) { // Date of Joining
-                                                            $value = $obj->dateformatindia($value);
-                                                        }
-
-                                                        echo "<td>{$value}</td>";
-                                                    }
-
-
-
-                                                    if ($chkedit == 1) {
-                                                        echo "<td class='text-center' style='cursor:pointer'
-                                                                onclick=\"add_all_att('{$emp['shift_id']}','','{$month}','{$year}','{$empId}','{$salaryCount}','{$extra_off['balance']}','{$opening_leave_balance}','{$total_earning_leave}','{$prev_coff}')\">                                   
-                                                                <i class='ri-add-line text-primary'></i> 
-                                                            </td>";
-                                                    } else {
-                                                        echo "<td class='text-center'>
-                                                                <i class='ri-forbid-2-line text-danger'></i>
-                                                            </td>";
-                                                    }
-
-                                                    for ($d = 1; $d <= $length; $d++) {
-
-                                                        $date = sprintf('%04d-%02d-%02d', $year, $month, $d);
-
-                                                        if ($date > $currentDate) {
-                                                            echo "<td style='background:#ddd;text-align:center'>-</td>";
-                                                            continue;
-                                                        }
-
-                                                        $row = $attendanceMap[$empId][$date] ?? null;
-                                                        $status = $row['attendance_status'] ?? 'A';
-                                                        $intime = $row['intime'] ?? '';
-                                                        $remark = $row['in_remark'] ?? '';
-                                                        $shift  = $row['shift_id'] ?? $emp['shift_id'];
-
-                                                        $isHoliday = isset($holidays[$date]);
-
-                                                        switch ($status) {
-                                                            case 'Present':
-                                                                $txt = 'P';
-                                                                $bg = 'rgb(173,233,179)';
-                                                                break;
-                                                            case 'Half Day':
-                                                                $txt = 'HD';
-                                                                $bg = 'rgb(255,246,163)';
-                                                                break;
-                                                            case 'Incomplete':
-                                                                $txt = 'I';
-                                                                $bg = 'rgb(233,61,61)';
-                                                                break;
-                                                            case 'Weekly Leave':
-                                                                $txt = 'WL';
-                                                                $bg = 'rgb(229,204,255)';
-                                                                break;
-                                                            case 'Earning Leave':
-                                                                $txt = 'EL';
-                                                                $bg = 'rgb(121,170,248)';
-                                                                break;
-                                                            case 'Half Earning Leave':
-                                                                $txt = 'HEL';
-                                                                $bg = 'rgb(121, 246, 248)';
-                                                                break;
-                                                            case 'Half Weekly Leave':
-                                                                $txt = 'HW';
-                                                                $bg = 'rgb(226, 237, 109)';
-                                                                break;
-                                                            case 'C Off':
-                                                                $txt = 'C';
-                                                                $bg = 'rgb(121, 246, 248)';
-                                                                break;
-                                                            case 'Half C Off':
-                                                                $txt = 'HC';
-                                                                $bg = 'rgb(226, 237, 109)';
-                                                                break;
-                                                            case 'Leave':
-                                                                $txt = 'L';
-                                                                $bg = 'rgb(99, 236, 218)';
-                                                                break;
-                                                            case 'Half Leave':
-                                                                $txt = 'HL';
-                                                                $bg = 'rgb(57, 233, 239)';
-                                                                break;
-                                                            case 'Extra Off':
-                                                                $txt = 'C2';
-                                                                $bg = 'rgb(149, 121, 248)';
-                                                                break;
-                                                            case 'Half Extra Off':
-                                                                $txt = 'HC2';
-                                                                $bg = 'rgb(149, 121, 248)';
-                                                                break;
-
-                                                            default:
-                                                                $txt = $isHoliday ? 'PL' : 'A';
-                                                                $bg  = $isHoliday ? 'rgb(180,210,255)' : 'rgb(251,175,175)';
-                                                        }
-
-                                                        echo "<td style='background:$bg;text-align:center;padding:0' id='cell_{$empId}_{$date}'>
-                                                                            <span style='display:block;padding:8px;cursor:pointer'
-                                                                            onclick=\"openPunchModal('$date','$intime','$remark','{$emp['shift_id']}','$shift','$month','$year','$empId','$salaryCount','{$extra_off['balance']}','{$opening_leave_balance}','{$total_earning_leave}','{$prev_coff}')\">
-                                                                            <b>$txt</b>
-                                                                            </span>
-                                                                        </td>";
-                                                    }
-
-                                                    echo "<td class='text-center fw-bold' style='background:#f3e8ff'>" . number_format($present_day, 1) . "</td>";
-
-                                                    echo "<td class='text-center fw-bold' style='background:#f3e8ff'>" . number_format($half_day, 1) . "</td>";
-
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#fff3cd'>" . number_format($week_leave, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#e7f1ff'>" . number_format($monthly_leave, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#98defa'>" . number_format($availed_leave, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#97f0ab'>" . number_format($taken_coff, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-danger' style='background:#ffd6d6'>" . number_format($absent, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#98defa'>" . number_format($tpd, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#97f0ab'>" . number_format($total_earning_leave, 1) . "</td>";
-
-
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#97f0ab'>"
-                                                        . number_format($final_earn_leave, 1) .
-                                                        "</td>";
-
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#d4ede8'>" . number_format($prev_coff, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-danger' style='background:#ffe5e5'>" . number_format($pen_coff, 1) . "</td>";
-
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#d4ede8'>"
-                                                        . number_format($final_coff, 1) .
-                                                        "</td>";
-
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#fce5c2'>" . number_format($extra_off['balance'], 1) . "</td>";
-
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#88bef7'>" . number_format($opening_leave_balance, 1) . "</td>";
-                                                    echo "<td class='text-center fw-bold text-dark' style='background:#fdcdff'>" . number_format($holiday, 1) . "</td>";
-
-                                                    echo "</tr>";
-                                                }
-
-                                                ?>
-                                            </tbody>
-                                            <tfoot>
-                                                <tr style="background:#e9ecef;font-weight:bold">
-                                                    <!-- Punch All -->
-                                                    <td></td>
-
-                                                    <!-- Remaining Day Columns -->
-                                                    <td colspan="<?= $length ?>"></td>
-                                                    <!-- Total Label -->
-                                                    <td colspan="<?= count($showFields) + 1; ?>" class="text-end">
-                                                        Total
-                                                    </td>
-
-                                                    <!-- Present Days -->
-                                                    <td class="text-center fw-bold" style="background:#f3e8ff">
-                                                        <?= number_format($total_present_day, 1) ?>
-                                                    </td>
-                                                    <td class="text-center fw-bold" style="background:#f3e8ff">
-                                                        <?= number_format($total_half_day, 1) ?>
-                                                    </td>
-
-
-                                                    <!-- Week Off -->
-                                                    <td class="text-center fw-bold" style="background:#fff3cd">
-                                                        <?= number_format($totalWeekOff, 1) ?>
-                                                    </td>
-                                                    <!-- Curr Earn Leave -->
-                                                    <td class="text-center fw-bold" style="background:#e7f1ff">
-                                                        <?= number_format($totalEarnLEave, 1) ?>
-                                                    </td>
-
-                                                    <!-- Total total_availed_leave Day -->
-                                                    <td class="text-center fw-bold" style="background:#98defa">
-                                                        <?= number_format($total_availed_leave, 1) ?>
-                                                    </td>
-
-                                                    <!-- Prev availed coff Leave -->
-                                                    <td class="text-center fw-bold" style="background:#97f0ab">
-                                                        <?= number_format($total_taken_coff, 1) ?>
-                                                    </td>
-                                                    <!-- Absent -->
-                                                    <td class="text-center fw-bold text-danger" style="background:#ffd6d6">
-                                                        <?= number_format($totalAbsent, 1) ?>
-                                                    </td>
-
-                                                    <!-- Total Present Day -->
-                                                    <td class="text-center fw-bold" style="background:#98defa">
-                                                        <?= number_format($total_tpd, 1) ?>
-                                                    </td>
-
-
-                                                    <!-- Prev Earn Leave -->
-                                                    <td class="text-center fw-bold" style="background:#97f0ab">
-                                                        <?= number_format($totalPendingEL, 1) ?>
-                                                    </td>
-
-                                                    <!-- Tot Earn Leave -->
-                                                    <td class="text-center fw-bold" style="background:#97f0ab">
-                                                        <?= number_format($total_final_earn_leave, 1) ?>
-                                                    </td>
-                                                    <!-- Prev C-Off -->
-                                                    <td class="text-center fw-bold" style="background:#d4ede8">
-                                                        <?= number_format($totalPrevCoff, 1) ?>
-                                                    </td>
-
-                                                    <!-- Curr C-Off -->
-                                                    <td class="text-center fw-bold" style="background:#ffe5e5">
-                                                        <?= number_format($totalPenCoff, 1) ?>
-                                                    </td>
-
-                                                    <!-- Tot C-Off -->
-                                                    <td class="text-center fw-bold" style="background:#d4ede8">
-                                                        <?= number_format($total_final_coff, 1) ?>
-                                                    </td>
-
-                                                    <!-- Extra Off -->
-                                                    <td class="text-center fw-bold" style="background:#fce5c2">
-                                                        <?= number_format($totalExtraOff, 1) ?>
-                                                    </td>
-
-                                                    <!-- Leave -->
-                                                    <td class="text-center fw-bold" style="background:#88bef7">
-                                                        <?= number_format($totalOpeningLeave, 1) ?>
-                                                    </td>
-
-                                                    <!-- Public Holiday -->
-                                                    <td class="text-center fw-bold" style="background:#fdcdff">
-                                                        <?= number_format($totalHoliday, 1) ?>
-                                                    </td>
-
-
-
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-            </div>
-        <?php } ?>
-        </div>
-        <!-- Content close-->
-    </div>
-    </div>
-    <div class="modal fade" id="salaryGeneratedModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content border-0 rounded-4 shadow">
-
-                <!-- Header -->
-                <div class="modal-header border-0 justify-content-end pb-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-
-                <!-- Body -->
-                <div class="modal-body text-center px-4 pb-4">
-
-                    <!-- Icon -->
-                    <div class="mb-3">
-                        <i class="ri-error-warning-fill fs-1 text-danger"></i>
-                    </div>
-
-                    <!-- Message -->
-                    <h6 class="fw-bold text-danger mb-2">
-                        Salary Already Generated
-                    </h6>
-
-                    <p class="small mb-3">
-                        Salary for this month has already been generated.
-                        Please delete the salary first before modifying attendance.
-                    </p>
-
-                    <!-- Action Button -->
-                    <a href="#" id="salaryReportLink" class="btn btn-primary btn-sm px-3">
-                        <i class="ri-money-rupee-circle-line me-1"></i>
-                        View Salary Report
-                    </a>
-
-                </div>
-
-                <!-- Footer -->
-                <div class="modal-footer border-0 pt-0 justify-content-center">
-                    <button type="button" class="btn btn-outline-secondary btn-sm px-4" data-bs-dismiss="modal">
-                        Close
-                    </button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="exampleModalLabel">Attendance Punch &nbsp;&nbsp;<a
-                            id="show_att_details" class="float-end" target="_blank" title="View">
-                            <i class="ri-eye-line align-bottom text-primary fs-4"></i>
-                        </a></h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <hr class="mb-0 mt-2">
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-lg-12 col-12 mb-2">
-                            <label for="">Attandance</label>
-                            <select name="punch_status" id="punch_status" class="form-select form-select-sm">
-                                <option value="Present">Present</option>
-                                <option value="Absent">Absent</option>
-                                <option value="first_half">Half Day (1st Half)</option>
-                                <option value="second_half">Half Day (2nd Half)</option>
-                                <!-- <option value="weekly_leave">Weekly Leave</option> -->
-                                <option value="earn_leave">Earn Leave</option>
-                                <option value="half_earn_leave">Half Earn Leave</option>
-                                <!-- <option value="half_weekly_leave">Half Weekly Leave</option> -->
-                                <option value="c_off">C-Off</option>
-                                <option value="half_c_off">Half C-Off</option>
-                                <option value="eoff" class="extraOffOption2">Extra Off</option>
-                                <option value="half_eoff" class="extraOffOption2">Half Extra Off</option>
-                                <option value="leave" class="leaveOption2">Leave</option>
-                                <option value="half_leave" class="leaveOption2">Half Leave</option>
-                            </select>
-                        </div>
-                        <div class="col-lg-12 " id="punchShiftBox">
-                            <label for="punch_att_shift_id" class="form-label ">Shift<span class="text-danger fw-bold">
-                                </span></label>
-                            <select class="form-select form-select-sm chosen-select" name="punch_att_shift_id"
-                                id="punch_att_shift_id">
-                                <option value="">Select</option>
-
-                            </select>
-                        </div>
-                        <input type="hidden" id="punch_time">
-                        <input type="hidden" id="punch_attdate">
-                        <input type="hidden" id="current_month">
-                        <input type="hidden" id="current_year">
-                        <input type="hidden" id="employee_id">
-                        <div class="col-lg-12 col-12">
-                            <label for="">Remark</label>
-                            <textarea name="punching_remark" id="punching_remark" class="form-control"></textarea>
-                        </div>
-                    </div>
-                </div>
-                <hr class="mb-0 mt-2">
-                <?php
-                $chkedit = $obj->check_editBtn($pagename, $loginid);
-                if ($chkedit == 1) { ?>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" id="savebutton" onclick="savePunch()">Punch</button>
-                    </div>
-                <?php } ?>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="AllAttendenceModal" tabindex="-1" aria-labelledby="AllAttendenceModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="AllAttendenceModalLabel">Attendance Punch &nbsp;&nbsp;<a
-                            id="show_attAll_details" class="float-end" target="_blank" title="View">
-                            <i class="ri-eye-line align-bottom text-primary fs-4"></i>
-                        </a></h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <hr class="mb-0 mt-2">
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-lg-12 col-12 mb-2">
-                            <label for="">Attandance</label>
-                            <select name="punch_all_status" id="punch_all_status" class="form-select form-select-sm">
-                                <option value="Present">Present</option>
-                                <option value="Absent">Absent</option>
-                                <option value="first_half">Half Day (1st Half)</option>
-                                <option value="second_half">Half Day (2nd Half)</option>
-                                <!-- <option value="weekly_leave">Weekly Leave</option> -->
-                                <option value="earn_leave">Earn Leave</option>
-                                <option value="half_earn_leave">Half Earn Leave</option>
-                                <!-- <option value="half_weekly_leave">Half Weekly Leave</option>-->
-                                <option value="c_off">C-Off</option>
-                                <option value="half_c_off">Half C-Off</option>
-                                <option value="eoff" class="extraOffOption2">Extra Off</option>
-                                <option value="half_eoff" class="extraOffOption2">Half Extra Off</option>
-                                <option value="leave" class="leaveOption2">Leave</option>
-                                <option value="half_leave" class="leaveOption2">Half Leave</option>
-                            </select>
-                        </div>
-                        <div class="col-lg-12 col-12 mb-2">
-                            <label for="">Attandance Type</label>
-                            <select name="punch_all_type" id="punch_all_type" class="form-select form-select-sm">
-                                <option value="1">With Weekly Off</option>
-                                <option value="0">Without Weekly Off</option>
-                            </select>
-                        </div>
-                        <div class="col-lg-12 " id="punchShiftBox">
-                            <label for="all_att_shift_id" class="form-label ">Shift<span class="text-danger fw-bold">
-                                </span></label>
-                            <select class="form-select form-select-sm chosen-select" name="all_att_shift_id"
-                                id="all_att_shift_id">
-                                <option value="">Select</option>
-
-                            </select>
-                        </div>
-                        <input type="hidden" id="punch_all_month">
-                        <input type="hidden" id="punch_all_year">
-                        <input type="hidden" id="punch_all_employee_id">
-                        <div class="col-lg-12 col-12">
-                            <label for="">Remark</label>
-                            <textarea name="punching_all_remark" id="punching_all_remark"
-                                class="form-control"></textarea>
-                        </div>
-                    </div>
-                </div>
-                <hr class="mb-0 mt-2">
-                <?php
-                $chkedit = $obj->check_editBtn($pagename, $loginid);
-                if ($chkedit == 1) { ?>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" id="saveAllbutton" onclick="saveAllPunch()">Punch
-                            All</button>
-                    </div>
-                <?php } ?>
-            </div>
-        </div>
-    </div>
-
-    <?php include('inc/footer.php') ?>
-
-    <!-- script tag -->
-    <?php include('inc/delete.php') ?>
-    <?php include('inc/js.php') ?>
-
-    <!-- script tag -->
-
-    <script>
-        const statusMap = {
-            "Present": {
-                txt: "P",
-                bg: "rgb(173,233,179)"
-            },
-            "Absent": {
-                txt: "A",
-                bg: "rgb(251,175,175)"
-            },
-            "first_half": {
-                txt: "HD",
-                bg: "rgb(255,246,163)"
-            },
-            "second_half": {
-                txt: "HD",
-                bg: "rgb(255,246,163)"
-            },
-            "weekly_leave": {
-                txt: "WL",
-                bg: "rgb(229,204,255)"
-            },
-            "earn_leave": {
-                txt: "EL",
-                bg: "rgb(121,170,248)"
-            },
-            "half_earn_leave": {
-                txt: "HEL",
-                bg: "rgb(121,246,248)"
-            },
-            "half_weekly_leave": {
-                txt: "HW",
-                bg: "rgb(226,237,109)"
-            },
-            "c_off": {
-                txt: "C",
-                bg: "rgb(121,246,248)"
-            },
-            "half_c_off": {
-                txt: "HC",
-                bg: "rgb(226,237,109)"
-            },
-            "eoff": {
-                txt: 'C2',
-                bg: 'rgb(149, 121, 248)'
-            },
-            "half_eoff": {
-                txt: 'HC2',
-                bg: 'rgb(149, 121, 248)'
-            },
-            "leave": {
-                txt: 'L',
-                bg: 'rgb(99, 236, 218)'
-            },
-            "half_leave": {
-                txt: 'HL',
-                bg: 'rgb(57, 233, 239)'
-            }
-        };
-
-        var s = statusMap[punch_all_status] || statusMap["Absent"];
-        $(document).ready(function() {
-            $(".chosen-select").select2();
-
-            const $select = $("#show_field").select2({
-                placeholder: "Select Fields",
-                width: "100%",
-                closeOnSelect: false
-            });
-
-            const selectedFields = <?= json_encode($showFields) ?> || [];
-            if (selectedFields.length) {
-                $select.val(selectedFields.map(String)).trigger("change");
-            }
-
-            $("form").on("submit", function() {
-                const selected = $select.val() || [];
-                $("#show_field_encoded").val(selected.join(","));
-                $select.removeAttr("name");
-            });
-
-
-            // $('#buttons-datatables').DataTable().destroy();
-            // $('#buttons-datatables').DataTable({
-            //     autoWidth: false,
-            //     dom: "lBfrtip",
-            //     buttons: [
-            //         "csv",
-            //         {
-            //             extend: "excel",
-            //             pageSize: "LEGAL",
-            //             footer: true
-            //         }
-            //     ],
-            // });
-
-
-
-
-        });
-
-
-        function openPunchModal(attdate, time, remark, emp_shift_hrs, empp_shift_id, month, year, emp_id,
-            salary_generate_count, extraOffBalance, openingLeaveBalance, total_earning_leave, coff_balance) {
-            document.getElementById('punch_attdate').value = attdate;
-            document.getElementById('punching_remark').value = remark;
-            document.getElementById('current_month').value = month;
-            document.getElementById('current_year').value = year;
-            document.getElementById('employee_id').value = emp_id;
-            month2 = parseInt(month);
-            if (salary_generate_count > 0) {
-                $('#salaryReportLink').attr(
-                    'href',
-                    'salary_generate_report.php?emp_id=' + emp_id + '&month=' + month2 + '&year=' + year +
-                    '&submit=Search'
+        $emp_data = $obj->select_record("employee_master", ['emp_id' => $emp_id]);
+        $department_id = $emp_data['department_id']??'';
+        $shift_hrs = $emp_data['shift_id']??'';
+        $unit_id = $emp_data['unit_id']??'';
+        $basic_salary = $emp_data['basic_salary']??'';
+        $date_of_joining = $emp_data['date_of_joining']??''; 
+        $is_esic = $emp_data['is_esic']??'';
+        $setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
+        $is_allow_c_off = $obj->getvalfield("department_master", "c_off_check", "department_id='$department_id'");
+        $allow_earn_leave_carry = $obj->getvalfield("department_master", "earn_leave_check", "department_id='$department_id'");
+        $is_all_leave_add = $obj->getvalfield("unit_master", "add_leave", "unit_id='$emp_data[unit_id]'");
+        
+        foreach($details as $row){
+            $totalLeaves++;
+            $id=$row['leave_details_id'];
+            $date=$row['date'];
+            $leave_day=$row['leave_day'];
+            $leave_type=$row['leave_type'];
+            $remark=$row['appr_remark'];
+            $employee = $emp_data['emp_code']." - ".$emp_data['first_name'];
+            $month = (int)date('m', strtotime($date));
+            $year  = date('Y', strtotime($date));
+            $currentMonth = (int)$month;
+            $currentYear  = (int)$year;
+            $totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
+            $cacheKey = $emp_id.'-'.$currentMonth.'-'.$currentYear;
+
+            if ($status == 0) {
+                $already_appr = $row['status'];
+                if($already_appr==0){
+                    continue;
+                }
+
+                $attendance_id = $row['attendance_id'];
+                $obj->update_record(
+                    "leave_apply_detail",
+                    ['leave_details_id' => $id],
+                    [
+                        'status' => 0,
+                        'updatedby' => $loginid,
+                        'appr_remark' => $remark,
+                        'lastupdated' => $createdate,
+                        'approve_date' => null,
+                        'approve_by' => 0
+                    ]
                 );
-                $('#salaryGeneratedModal').modal('show');
-            } else {
-                $.ajax({
-                    type: "POST",
-                    url: "",
-                    data: {
-                        ajax_emp_shift_hrs: emp_shift_hrs,
-                        empp_shift_id: empp_shift_id
-                    },
-                    success: function(data) {
-                        $("#punch_att_shift_id").html(data).trigger("change.select2");
-                    }
-                });
-                extraOffBalance = parseFloat(extraOffBalance);
 
-                if (extraOffBalance >= 1) {
-                    // Full + Half  enable
-                    $("option[value='eoff']").prop("disabled", false);
-                    $("option[value='half_eoff']").prop("disabled", false);
-                } else if (extraOffBalance >= 0.5) {
-                    // only Half enable
-                    $("option[value='eoff']").prop("disabled", true);
-                    $("option[value='half_eoff']").prop("disabled", false);
-                } else {
-                    // both disable
-                    $("option[value='eoff']").prop("disabled", true);
-                    $("option[value='half_eoff']").prop("disabled", true);
-                }
-                /* ================= LEAVE ================= */
-                openingLeaveBalance = parseFloat(openingLeaveBalance);
-                if (openingLeaveBalance >= 1) {
-                    $("option[value='leave']").prop("disabled", false);
-                    $("option[value='half_leave']").prop("disabled", false);
+                // Remove attendance if leave was previously approved
+                $obj->delete_record("attendance_entry", [
+                    'emp_id' => $emp_id,
+                    'attendance_id' => $attendance_id,
+                    'unit_id' => $unit_id
+                ]);
 
-                } else if (openingLeaveBalance >= 0.5) {
-                    $("option[value='leave']").prop("disabled", true);
-                    $("option[value='half_leave']").prop("disabled", false);
-                } else {
-                    $("option[value='leave']").prop("disabled", true);
-                    $("option[value='half_leave']").prop("disabled", true);
-                }
-
-                total_earning_leave = parseFloat(total_earning_leave);
-
-                if (total_earning_leave >= 1) {
-
-                    $("option[value='earn_leave']").prop("disabled", false);
-                    $("option[value='half_earn_leave']").prop("disabled", false);
-
-                } else if (total_earning_leave >= 0.5) {
-
-                    // Only Half Earn Leave enable
-                    $("option[value='earn_leave']").prop("disabled", true);
-                    $("option[value='half_earn_leave']").prop("disabled", false);
-
-                } else {
-
-                    $("option[value='earn_leave']").prop("disabled", true);
-                    $("option[value='half_earn_leave']").prop("disabled", true);
-                }
-
-                coff_balance = parseFloat(coff_balance);
-                if (coff_balance >= 1) {
-                    $("option[value='c_off']").prop("disabled", false);
-                    $("option[value='half_c_off']").prop("disabled", false);
-                } else if (coff_balance >= 0.5) {
-                    // Only Half Earn Leave enable
-                    $("option[value='c_off']").prop("disabled", true);
-                    $("option[value='half_c_off']").prop("disabled", false);
-                } else {
-                    $("option[value='c_off']").prop("disabled", true);
-                    $("option[value='half_c_off']").prop("disabled", true);
-                }
-
-                $("#punch_status").trigger("chosen:updated");
-                $('#exampleModal').modal('show');
+                $pendingCount++;
+                continue;
             }
 
-            $('#show_att_details').attr(
-                'href',
-                'employee_wise_attendance.php?emp_id=' + emp_id + '&currentYear=' + year + '&currentMonth=' + month +
-                '&date=' + attdate
-            );
-
-        };
-
-        function savePunch() {
-            var btn = document.getElementById('savebutton');
-            var punchtime = document.getElementById('punch_time').value;
-            var attdate = document.getElementById('punch_attdate').value;
-            var punch_remark = document.getElementById('punching_remark').value;
-            var punch_status = document.getElementById('punch_status').value;
-            var punch_shift_id = document.getElementById('punch_att_shift_id').value;
-            var currentMonth = document.getElementById('current_month').value;
-            var currentYear = document.getElementById('current_year').value;
-            var emp_id = document.getElementById('employee_id').value;
-
-
-
-            if (punch_shift_id == "") {
-                alert("Please Select Shift Name");
-                return false;
-            }
-            btn.disabled = true;
-            btn.value = 'Saving...';
-            jQuery.ajax({
-                type: 'POST',
-                url: 'ajax_att_save_punch.php',
-                data: 'punchtime=' + punchtime + '&emp_id=' + emp_id + '&attdate=' + attdate + '&currentYear=' +
-                    currentYear + '&currentMonth=' + currentMonth + '&punch_remark=' + punch_remark +
-                    '&punch_status=' + punch_status + '&punch_shift_id=' + punch_shift_id,
-                dataType: 'html',
-                success: function(data) {
-                    //alert(data);
-                    // showatttype();
-                    $('#exampleModal').modal('hide');
-                    var emp_id = document.getElementById('employee_id').value;
-                    var attdate = document.getElementById('punch_attdate').value;
-                    var status = document.getElementById('punch_status').value;
-
-                    var txt = 'A';
-                    var bg = 'rgb(251,175,175)';
-
-                    if (status == 'Present') {
-                        txt = 'P';
-                        bg = 'rgb(173,233,179)';
-                    } else if (status == 'first_half' || status == 'second_half') {
-                        txt = 'HD';
-                        bg = 'rgb(255,246,163)';
-                    } else if (status == 'Incomplete') {
-                        txt = 'I';
-                        bg = 'rgb(233,61,61)';
-                    } else if (status == 'weekly_leave') {
-                        txt = 'WL';
-                        bg = 'rgb(229,204,255)';
-                    } else if (status == 'earn_leave') {
-                        txt = 'EL';
-                        bg = 'rgb(121,170,248)';
-                    } else if (status == 'half_earn_leave') {
-                        txt = 'HEL';
-                        bg = 'rgb(121,246,248)';
-                    } else if (status == 'half_weekly_leave') {
-                        txt = 'HW';
-                        bg = 'rgb(226,237,109)';
-                    } else if (status == 'c_off') {
-                        txt = 'C';
-                        bg = 'rgb(121,246,248)';
-                    } else if (status == 'half_c_off') {
-                        txt = 'HC';
-                        bg = 'rgb(226,237,109)';
-                    } else if (status == 'half_earn_leave') {
-                        txt = 'HL';
-                        bg = 'rgb(121,246,248)';
-                    } else if (status == 'eoff') {
-                        txt = 'C2';
-                        bg = 'rgb(149, 121, 248)';
-                    } else if (status == 'half_eoff') {
-                        txt = 'HC2';
-                        bg = 'rgb(149, 121, 248)';
-                    } else if (status == 'leave') {
-                        txt = 'L';
-                        bg = 'rgb(99, 236, 218)';
-                    } else if (status == 'half_leave') {
-                        txt = 'HL';
-                        bg = 'rgb(57, 233, 239)';
-                    }
-
-                    // 🔥 update only that cell
-                    var cellId = "#cell_" + emp_id + "_" + attdate;
-
-                    $(cellId).css("background", bg);
-                    $(cellId).find("b").text(txt);
-
-
-                    document.getElementById('punching_remark').value = '';
-                    $('#punch_status').val('Present').trigger('chosen:updated').trigger('change');
-
-                    btn.disabled = false;
-                    btn.value = 'Save change';
-                    // total(emp_id, currentMonth, currentYear);
-                    //  location.reload();
-                },
-                error: function() {
-                    btn.disabled = false;
-                    btn.value = 'Punch In';
-                    Swal.fire("Error", "Error while uploading. Try again.");
+            if ($status == 2) { 
+                $already_appr = $row['status'];
+                if($already_appr==2){
+                    continue;
                 }
 
-            }); //ajax close
-
-        }
-
-        function add_all_att(emp_shift_hrs, empp_shift_id, month, year, emp_id, salary_generate_count, extraOffBalance,
-            openingLeaveBalance, total_earning_leave, coff_balance) {
-            document.getElementById('punch_all_month').value = month;
-            document.getElementById('punch_all_year').value = year;
-            document.getElementById('punch_all_employee_id').value = emp_id;
-            if (salary_generate_count > 0) {
-                $('#salaryReportLink').attr(
-                    'href',
-                    'salary_generate_report.php?emp_id=' + emp_id
+                $obj->update_record(
+                    "leave_apply_detail",
+                    ['leave_details_id' => $id],
+                    [
+                        'status' => 2,
+                        'updatedby' => $loginid,
+                        'appr_remark' => $remark,
+                        'lastupdated' => $createdate,
+                        'approve_date' => $createdate,
+                        'approve_by' => $loginid
+                    ]
                 );
-                $('#salaryGeneratedModal').modal('show');
-            } else {
+                $attendance_id = $row['attendance_id'];
+                $obj->delete_record("attendance_entry", [
+                    'emp_id' => $emp_id,
+                    'attendance_id' => $attendance_id,
+                    'unit_id' => $unit_id
+                ]);
 
+                $rejectedCount++;
+                continue;
+            }
 
-                $.ajax({
-                    type: "POST",
-                    url: "",
-                    data: {
-                        ajax_emp_shift_hrs: emp_shift_hrs,
-                        empp_shift_id: empp_shift_id
-                    },
-                    success: function(data) {
-                        $("#all_att_shift_id").html(data).trigger("change.select2");
+            $leaveApproved = false;
+            if ($status == 1) {
+                $date_of_joining = date('Y-m-d', strtotime($emp_data['date_of_joining']));
+                $leave_date = date('Y-m-d', strtotime($date));
+              
+                $already_appr = $row['status'];
+                if($already_appr==1){
+                    $skipMessages[] = [
+                        "employee" => $employee,
+                        "application" => $on_duty_id,
+                        "date" => date('d-m-Y', strtotime($date)),
+                        "reason" => "Already Approved"
+                    ];
+                    continue;
+                }
+
+                   if ($leave_type == 'LWP') {
+                    $skipMessages[] = [
+                        "employee" => $employee,
+                        "application" => $on_duty_id,
+                        "date" => date('d-m-Y', strtotime($date)),
+                        "reason" => "LWP cannot be approved"
+                    ];
+                    continue;
+                }
+
+                // ---- Build (or reuse) this employee's month-level attendance data ONCE ----
+                if (!isset($attendanceMapCache[$cacheKey])) {
+                    $monthRows = $obj->executequery("
+                        SELECT attendance_date, attendance_status
+                        FROM attendance_entry
+                        WHERE emp_id='$emp_id'
+                        AND month='$currentMonth'
+                        AND year='$currentYear'
+                        AND unit_id='$unit_id'
+                    ");
+
+                    $map = [];
+                    $total_present1 = 0;
+                    $total_half1    = 0;
+                    $total_present  = 0;
+                    $total_half     = 0;
+
+                    $fullPresentSet = ['Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave'];
+                    $halfPresentSet = ['Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave'];
+
+                    foreach ($monthRows as $mr) {
+                        $mDate = $mr['attendance_date'];
+                        $mStatus = $mr['attendance_status'];
+
+                        // date -> status map, used later for per-date lookups
+                        $map[$mDate] = $mStatus;
+
+                        if ($mStatus === 'Present') $total_present1++;
+                        if ($mStatus === 'Half Day') $total_half1++;
+                        if (in_array($mStatus, $fullPresentSet)) $total_present++;
+                        if (in_array($mStatus, $halfPresentSet)) $total_half++;
                     }
-                });
-                extraOffBalance = parseFloat(extraOffBalance);
 
-                if (extraOffBalance >= 1) {
-                    // Full + Half  enable
-                    $("option[value='eoff']").prop("disabled", false);
-                    $("option[value='half_eoff']").prop("disabled", false);
+                    $attendanceMapCache[$cacheKey] = $map;
+                    $attendanceAggCache[$cacheKey] = [
+                        'total_present1' => $total_present1,
+                        'total_half1'    => $total_half1,
+                        'total_present'  => $total_present,
+                        'total_half'     => $total_half,
+                    ];
 
-                } else if (extraOffBalance >= 0.5) {
-                    // only Half enable
-                    $("option[value='eoff']").prop("disabled", true);
-                    $("option[value='half_eoff']").prop("disabled", false);
-
-                } else {
-                    // both disable
-                    $("option[value='eoff']").prop("disabled", true);
-                    $("option[value='half_eoff']").prop("disabled", true);
+                    // Attendance log dates for the month, fetched once
+                    $firstDay = "$currentYear-".str_pad($currentMonth,2,'0',STR_PAD_LEFT)."-01";
+                    $logRows = $obj->executequery("
+                        SELECT DISTINCT attendance_date
+                        FROM attendance_log
+                        WHERE emp_id='$emp_id'
+                        AND unit_id='$unit_id'
+                        AND attendance_date BETWEEN '$firstDay' AND LAST_DAY('$firstDay')
+                    ");
+                    $logSet = [];
+                    foreach ($logRows as $lr) {
+                        $logSet[$lr['attendance_date']] = true;
+                    }
+                    $attendanceLogCache[$cacheKey] = $logSet;
                 }
 
+                // ---- Compute working-days-used ONCE per employee/month, reuse after ----
+                if (!isset($workingDaysCache[$cacheKey])) {
+                    $agg = $attendanceAggCache[$cacheKey];
+                    $real_total_attandence = $agg['total_present1'] + ($agg['total_half1'] / 2);
+                    $totalAttendance       = $agg['total_present'] + ($agg['total_half'] / 2);
 
-                /* ================= LEAVE ================= */
-                openingLeaveBalance = parseFloat(openingLeaveBalance);
+                    $week_leave = $obj->totalWeeklyLeave($unit_id, $real_total_attandence, $emp_id, $currentMonth, $currentYear);
+                    $earn_leave_present = $real_total_attandence + $week_leave;
+                    $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unit_id);
 
-                if (openingLeaveBalance >= 1) {
+                    $result = $obj->calculateLeaveUsage(
+                        $totalDaysInMonth,
+                        $totalAttendance,
+                        $week_leave,
+                        $monthly_leave,
+                        $is_allow_c_off,
+                        $is_all_leave_add,
+                        $allow_earn_leave_carry,
+                        0,
+                        0,
+                        $date_of_joining,
+                        $currentMonth,
+                        $currentYear
+                    );
 
-                    $("option[value='leave']").prop("disabled", false);
-                    $("option[value='half_leave']").prop("disabled", false);
-
-                } else if (openingLeaveBalance >= 0.5) {
-
-                    $("option[value='leave']").prop("disabled", true);
-                    $("option[value='half_leave']").prop("disabled", false);
-
-                } else {
-
-                    $("option[value='leave']").prop("disabled", true);
-                    $("option[value='half_leave']").prop("disabled", true);
+                    $workingDaysCache[$cacheKey] = $result['total_working_days'] ?? 0;
                 }
 
+                $totalWorkingDays = $workingDaysCache[$cacheKey];
 
-                /* ================= EARN LEAVE ================= */
-                total_earning_leave = parseFloat(total_earning_leave);
-
-                if (total_earning_leave >= 1) {
-
-                    $("option[value='earn_leave']").prop("disabled", false);
-                    $("option[value='half_earn_leave']").prop("disabled", false);
-
-                } else if (total_earning_leave >= 0.5) {
-
-                    // सिर्फ Half Earn Leave enable
-                    $("option[value='earn_leave']").prop("disabled", true);
-                    $("option[value='half_earn_leave']").prop("disabled", false);
-
-                } else {
-
-                    $("option[value='earn_leave']").prop("disabled", true);
-                    $("option[value='half_earn_leave']").prop("disabled", true);
+                  if ($leave_date < $date_of_joining) {
+                    $skipMessages[] = [
+                        "employee" => $employee,
+                        "application" => $on_duty_id,
+                        "date" => date('d-m-Y', strtotime($date)),
+                        "reason" => "Leave cannot be approved before employee joining date (" . date('d-m-Y', strtotime($date_of_joining)) . ")"
+                    ];
+                    continue;
                 }
 
-                coff_balance = parseFloat(coff_balance);
-                if (coff_balance >= 1) {
-                    $("option[value='c_off']").prop("disabled", false);
-                    $("option[value='half_c_off']").prop("disabled", false);
-                } else if (coff_balance >= 0.5) {
-                    // Only Half Earn Leave enable
-                    $("option[value='c_off']").prop("disabled", true);
-                    $("option[value='half_c_off']").prop("disabled", false);
-                } else {
-                    $("option[value='c_off']").prop("disabled", true);
-                    $("option[value='half_c_off']").prop("disabled", true);
+                if ($totalDaysInMonth <= $totalWorkingDays) {
+                    $skipMessages[] = [
+                        "employee"    => $emp_data['emp_code']." - ".$emp_data['first_name'],
+                        "date"        => date('d-m-Y', strtotime($date)),
+                        "reason"      => "Leave cannot be approved because the employee has already completed all working days ($totalWorkingDays) for ".date('F Y', strtotime($date))
+                    ];
+                    continue;
                 }
-                $("#punch_all_status").trigger("chosen:updated");
-                $('#AllAttendenceModal').modal('show');
+
+               
+
+                $month = (int)date('m', strtotime($date));
+                $year  = date('Y', strtotime($date));
+                $leave_balance = 0;
+                if ($leave_type == 'EL') {
+                    $leave_balance = $obj->getEarningLeave($emp_id,$sessionid,$month,$year);
+                } elseif ($leave_type == 'EO') {
+                    $extra_off = $obj->getExtraOffBalance($emp_id,$month,$year);
+                    $leave_balance = $extra_off['balance'] ?? 0;
+                } elseif ($leave_type == 'L') {
+                    $leave_balance = 0;
+                } elseif ($leave_type == 'CO') {
+                    $leave_balance = $obj->getEmpCoffLeave($emp_id, $sessionid,$month,$year);
+                } 
+
+                // ---- Read from cached arrays instead of querying per date ----
+                $attendance_status  = $attendanceMapCache[$cacheKey][$date] ?? '';
+                
+                $fullLeaveStatuses = [
+                    'Weekly Leave',
+                    'Earning Leave',
+                    'Leave',
+                    'C Off',
+                    'Extra Off'
+                ];
+
+                if (in_array(trim($attendance_status), $fullLeaveStatuses)) {
+                    $skipMessages[] = [
+                        "employee" => $employee,
+                        "application" => $on_duty_id,
+                        "date" => date('d-m-Y', strtotime($date)),
+                        "reason" => "Attendance already exists ($attendance_status)"
+                    ];
+                    continue;
+                }
+
+                $halfStatuses = [
+                    'Half Day',
+                    'Half Extra Off',
+                    'Half Weekly Leave',
+                    'Half Earning Leave',
+                    'Half Leave',
+                    'Half C Off'
+                ];
+                $isHalfAttendance = in_array(trim($attendance_status), $halfStatuses);
+                if ($isHalfAttendance) { 
+                    if ($leave_day == 'FD') {
+                        $skipMessages[] = [
+                            "employee" => $employee,
+                            "application" => $on_duty_id,
+                            "date" => date('d-m-Y', strtotime($date)),
+                            "reason" => "Full Day leave not allowed because Half Day attendance already exists"
+                        ];
+                        continue;
+                    } 
+                }
+
+               // $attendanceLogExists = isset($attendanceLogCache[$cacheKey][$date]) ? 1 : 0;
+                // if ($attendanceLogExists > 0 && !$isHalfAttendance) {
+                //     $skipMessages[] = [
+                //         "employee" => $employee,
+                //         "application" => $on_duty_id,
+                //         "date" => date('d-m-Y', strtotime($date)),
+                //         "reason" => "Attendance punch already exists for this date."
+                //     ];
+                //     continue;
+                // }
+
+
+                $required_balance = ($leave_day == 'FHD' || $leave_day == 'SHD') ? 0.5 : 1;
+
+                if ($leave_balance <= 0) {
+                    $skipMessages[] = [
+                        "employee" => $employee,
+                        "application" => $on_duty_id,
+                        "date" => date('d-m-Y', strtotime($date)),
+                        "reason" => "Insufficient Leave Balance"
+                    ]; 
+                    continue; 
+                }
+
+                if ($required_balance == 1 && $leave_balance < 1) {
+                    $skipMessages[] = [
+                        "employee" => $employee,
+                        "application" => $on_duty_id,
+                        "date" => date('d-m-Y', strtotime($date)),
+                        "reason" => "Full day leave balance not available"
+                    ];
+                    continue;
+                }
+
+                if ($required_balance == 0.5 && $leave_balance < 0.5) {
+                    $skipMessages[] = [
+                        "employee" => $employee,
+                        "application" => $on_duty_id,
+                        "date" => date('d-m-Y', strtotime($date)),
+                        "reason" => "Half day leave balance not available"
+                    ];
+                    continue;
+                }
+               
+
+                $punch_status = '';
+                if ($leave_day == 'FD' || $leave_day == 'SL') {
+                    if ($leave_type == 'WL') {
+                        $punch_status = 'weekly_leave';
+                    } elseif ($leave_type == 'EL') {
+                        $punch_status = 'earn_leave';
+                    }elseif ($leave_type == 'CO') {
+                        $punch_status = 'c_off';
+                    } elseif ($leave_type == 'EO') {
+                        $punch_status = 'extra_off';
+                    } elseif ($leave_type == 'L') {
+                        $punch_status = 'leave';
+                    }
+                } elseif ($leave_day == 'FHD' || $leave_day == 'SHD') {
+
+                    if ($leave_type == 'WL') {
+                        $punch_status = 'half_weekly_leave';
+                    } elseif ($leave_type == 'EL') {
+                        $punch_status = 'half_earn_leave';
+                    } elseif ($leave_type == 'EO') {
+                        $punch_status = 'half_extra_off';
+                    } elseif ($leave_type == 'L') {
+                        $punch_status = 'half_leave';
+                    }elseif ($leave_type == 'CO') {
+                        $punch_status = 'half_c_off';
+                    }
+                } 
+
+                
+
+                $form_date = [
+                    'emp_id' => $emp_id,
+                    'department_id' => $department_id,
+                    'attendance_date' => $date,
+                    'attendance_stamp' => $date,
+                    "month" => (int)$month,
+                    "year" => (int)$year, 
+                    'entry_type' => 'manual',
+                    'entry_type_out' => 'manual',
+                    'in_status' => 'IN',
+                    'out_status' => 'OUT',
+                    'unit_id' => $unit_id,
+                    'sessionid' => $sessionid,
+                    'in_remark' => $remark,
+                    'basic_salary' => $basic_salary,
+                    'createdate' => date('Y-m-d'),
+                    'createtime' => $current_time,
+                    'createdby' => $loginid,
+                    'updateby' => $loginid,
+                    'lastupdated' => date('Y-m-d'),
+                    'ipaddress' => $ipaddress,
+                ];
+
+                if ($punch_status == 'weekly_leave') {
+                    $form_date['attendance_status'] = 'Weekly Leave'; 
+                } elseif ($punch_status == 'earn_leave') { 
+                    $form_date['attendance_status'] = 'Earning Leave'; 
+                } elseif ($punch_status == 'half_weekly_leave') { 
+                    $form_date['attendance_status'] = 'Half Weekly Leave'; 
+                } elseif ($punch_status == 'half_earn_leave') { 
+                    $form_date['attendance_status'] = 'Half Earning Leave'; 
+                }elseif ($punch_status == 'half_extra_off') { 
+                    $form_date['attendance_status'] = 'Half Extra Off'; 
+                } elseif ($punch_status == 'extra_off') { 
+                    $form_date['attendance_status'] = 'Extra Off'; 
+                }elseif ($punch_status == 'leave') { 
+                    $form_date['attendance_status'] = 'Leave'; 
+                } elseif ($punch_status == 'half_leave') { 
+                    $form_date['attendance_status'] = 'Half Leave'; 
+                }elseif ($punch_status == 'c_off') { 
+                    $form_date['attendance_status'] = 'C Off'; 
+                } elseif ($punch_status == 'half_c_off') { 
+                    $form_date['attendance_status'] = 'Half C Off'; 
+                }
+
+                $lastid = $obj->insert_record_lastid("attendance_entry", $form_date);
+
+                if ($lastid > 0) {
+                    $obj->update_record(
+                        "leave_apply_detail",
+                        ['leave_details_id' => $id],
+                        [
+                            'status' => $status,
+                            'updatedby' => $loginid,
+                            'attendance_id' => $lastid,
+                            'appr_remark' => $remark,
+                            'lastupdated' => $createdate,
+                            'approve_date' => $createdate,
+                            'approve_by' => $loginid
+                        ]
+                    );
+                    $approvedCount++;
+
+                    // ---- Keep the in-memory cache in sync so subsequent rows for the
+                    //      same employee/month see this newly-approved date too ----
+                    $attendanceMapCache[$cacheKey][$date] = $form_date['attendance_status'] ?? '';
+                } else {
+                    $skipMessages[] = [
+                        "employee" => $employee,
+                        "application" => $on_duty_id,
+                        "date" => date('d-m-Y', strtotime($date)),
+                        "reason" => "Attendance insertion failed"
+                    ];
+                }
+
+                $form_data1 = array(
+                    "primary_id" => $lastid,
+                    "flag" => 'Punch IN and OUT Attendence',
+                    "activity_type" => 'Attendence IN/OUT From Leave',
+                    "createdby" => $loginid,
+                    "pagename" => 'leave_approve.php',
+                    "created_date" => $createdate,
+                    "created_time" => date('H:i:s'),
+                    "unit_id" => $unitid,
+                    'ipaddress' => $ipaddress,
+                    "sessionid" => $sessionid
+                );
+                $logactivity = $obj->insert_record("logactivity_master", $form_data1);
             }
-
-            $('#show_attAll_details').attr(
-                'href',
-                'employee_wise_attendance.php?emp_id=' + emp_id + '&currentYear=' + year + '&currentMonth=' + month
-            );
-        };
-
-
-        function saveAllPunch() {
-            var btn = document.getElementById('saveAllbutton');
-            var punch_remark = document.getElementById('punching_all_remark').value;
-            var punch_all_status = document.getElementById('punch_all_status').value;
-            var punch_shift_id = document.getElementById('all_att_shift_id').value;
-            var punchtime = ' <?= date("H:i:s"); ?>';
-            var currentMonth = document.getElementById('punch_all_month').value;
-            var currentYear = document.getElementById('punch_all_year').value;
-            var emp_id = document.getElementById('punch_all_employee_id').value;
-            var punch_all_type = document.getElementById('punch_all_type').value;
-
-            if (punch_shift_id == "") {
-                alert("Please Select Shift Name");
-                return false;
-            }
-
-            btn.disabled = true;
-            btn.value = 'Saving...';
-            Swal.fire({
-                title: 'Please wait...',
-                text: 'Applying attendance for all days',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-            jQuery.ajax({
-                type: 'POST',
-                url: 'ajax_att_save_all_punch.php',
-                data: 'emp_id=' + emp_id + '&currentYear=' + currentYear + '&currentMonth=' + currentMonth +
-                    '&punch_remark=' + punch_remark + '&punch_status=' + punch_all_status + '&punch_shift_id=' +
-                    punch_shift_id + '&punchtime=' + punchtime + '&punch_all_type=' + punch_all_type,
-                dataType: 'html',
-                success: function(data) {
-                    Swal.close();
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success',
-                        text: 'Attendance saved successfully',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        $('#AllAttendenceModal').modal('hide');
-                        var emp_id = document.getElementById('punch_all_employee_id').value;
-                        var s = statusMap[punch_all_status] || statusMap["Absent"];
-                        for (var d = 1; d <= '<?= $length ?>'; d++) {
-                            var day = d.toString().padStart(2, '0');
-                            var date = currentYear + "-" + currentMonth + "-" + day;
-
-                            var cellId = "#cell_" + emp_id + "_" + date;
-
-                            if ($(cellId).length) {
-                                $(cellId).css("background", s.bg);
-                                $(cellId).find("b").text(s.txt);
-                            }
-                        }
-                        document.getElementById('punching_all_remark').value = '';
-                        $('#punch_all_status').val('Present').trigger('chosen:updated').trigger(
-                            'change');
-                        btn.disabled = false;
-                        btn.value = 'Save change';
-                        // location.reload();
-                    });
-                },
-                error: function() {
-                    btn.disabled = false;
-                    btn.value = 'Punch In';
-                    Swal.fire("Error", "Error while uploading. Try again.");
-                }
-            }); //ajax close
         }
-    </script>
-</body>
+    } 
 
-</html>
+    $response = [
+        "totalApplication" => $totalApplication,
+        "totalLeaves"      => $totalLeaves,
+        "approvedCount"    => $approvedCount,
+        "rejectedCount"    => $rejectedCount,
+        "pendingCount"     => $pendingCount,
+        "failedCount"      => count($skipMessages),
+        "errors"           => $skipMessages,
+        "debug"           => $debug
+    ];
+
+   echo json_encode($response);
+die;
+}

@@ -10,9 +10,13 @@ $where = array($tblpkey => $id);
 // $rowimg = $obj->select_record($tblname, $where);
 // $oldimg = $rowimg["imgname"];
 
+$watermarkname = $_REQUEST['watermarkname'] ?? '';
 
 if ($imgname != "") {
 	@unlink($imgpath . $imgname);
+}
+if ($watermarkname != "") {
+	@unlink($imgpath . $watermarkname);
 }
 $res = $obj->delete_record($tblname, $where);
 //$keyvalue = mysql_insert_id();

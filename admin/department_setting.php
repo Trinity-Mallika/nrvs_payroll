@@ -16,7 +16,7 @@ if (isset($_POST['submit'])) {
     $department_ids    = $_POST['department_ids'] ?? [];
     $c_off_check       = $_POST['c_off_check'] ?? [];
     $earn_leave_check  = $_POST['earn_leave_check'] ?? [];
-    $allow_weekly_off  = $_POST['allow_weekly_off'] ?? [];
+    $allow_weekly_off  = $_POST['allow_weekly_off'] ?? []; 
 
     $current_month = date('n');
     $current_year  = date('Y');
@@ -39,13 +39,13 @@ if (isset($_POST['submit'])) {
 
         $cOff    = isset($c_off_check[$dept_id]) ? 1 : 0;
         $earnOff = isset($earn_leave_check[$dept_id]) ? 1 : 0;
-        $wOff    = isset($allow_weekly_off[$dept_id]) ? 1 : 0;
+        $wOff    = isset($allow_weekly_off[$dept_id]) ? 1 : 0; 
 
         // Update department master
         $update_data = [
             'c_off_check'      => $cOff,
             'earn_leave_check' => $earnOff,
-            'allow_weekly_off' => $wOff,
+            'allow_weekly_off' => $wOff, 
             'lastupdated'      => $createdate
         ];
 
@@ -80,7 +80,7 @@ if (isset($_POST['submit'])) {
 
         // Update employee master
         $update_employee = [
-            'allow_weekly_off' => $wOff
+            'allow_weekly_off' => $wOff, 
         ];
 
         $where_employee = [
@@ -168,6 +168,7 @@ if (isset($_POST['submit'])) {
 
 <body>
     <?php include('inc/header.php') ?>
+    <?php include('inc/loader.php') ?>
     <?php include('inc/sidebar.php') ?>
     <!-- end auth-page-wrapper -->
     <div class="main-content">
@@ -220,7 +221,7 @@ if (isset($_POST['submit'])) {
                                                     <th>Allow Earn Leave Carry<input type="checkbox" id="check_all_earn"
                                                             class="form-check-input" /></th>
                                                     <th>Allow Weekly Off <input type="checkbox" id="check_all_woff"
-                                                            class="form-check-input" /></th>
+                                                            class="form-check-input" /></th> 
                                                 </tr>
                                             </thead>
                                             <tbody><?php
@@ -260,6 +261,7 @@ if (isset($_POST['submit'])) {
                                                             <?= ($row['allow_weekly_off'] == 1) ? 'checked' : '' ?>>
                                                         <label class="form-check-label" for="allow_weekly_off"></label>
                                                     </td>
+                                                    
                                                 </tr>
                                                 <?php } ?>
                                             </tbody>
@@ -307,11 +309,13 @@ if (isset($_POST['submit'])) {
         $('#check_all_earn').on('change', function() {
             $('.earn-checkbox').prop('checked', $(this).is(':checked'));
         });
-
+ 
         // Weekly Off Select All
         $('#check_all_woff').on('change', function() {
             $('.woff-checkbox').prop('checked', $(this).is(':checked'));
         });
+
+       
     });
     </script>
 </body>

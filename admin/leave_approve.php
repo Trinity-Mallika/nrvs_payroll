@@ -6,10 +6,17 @@ if (isset($_POST['updatess'])) {
     $emp_id = $obj->test_input($_POST['emp_id']);
     $emp_data = $obj->select_record("employee_master", ['emp_id' => $emp_id]);
     $department_id = $emp_data['department_id'];
-    $shift_hrs = $emp_data['shift_id'];
-    $unit_id = $emp_data['unit_id'];
-    $basic_salary = $emp_data['basic_salary'];
-    $date_of_joining = $emp_data['date_of_joining'];
+    $shift_hrs = $emp_data['shift_id']??0;
+    $unit_id = $emp_data['unit_id']??0;
+    $basic_salary = $emp_data['basic_salary']??0;
+    $date_of_joining = $emp_data['date_of_joining']??'';
+    $is_esic = $emp_data['is_esic']??0;
+    $allow_add_leave = $emp_data['allow_add_leave']??0;
+    $setting_type = ($is_esic  == 1) ? 'ESIC' : 'Non ESIC';
+    $is_allow_c_off = $obj->getvalfield("department_master", "c_off_check", "department_id='$department_id'");
+    $allow_earn_leave_carry = $obj->getvalfield("department_master", "earn_leave_check", "department_id='$department_id'");
+    $is_all_leave_add = $obj->getvalfield("unit_master", "add_leave", "unit_id='$emp_data[unit_id]'");
+
     $skipMessages = [];
     $approvedCount = 0;
     $rejectedCount = 0;
@@ -20,7 +27,7 @@ if (isset($_POST['updatess'])) {
         $remark = $row['remark'];
         $leave_type = $row['leave_type'];
         $leave_day = $row['leave_day'];
-        $date = $row['date'];
+        $date = $row['date']; 
 
         //$obj->update_record("leave_apply_detail", ['leave_details_id' => $id], ['status' => $status, 'updatedby' => $loginid, 'appr_remark' => $remark, 'lastupdated' => $createdate, 'approve_date' => $createdate, 'approve_by' => $loginid]);
         if ($status == 0) {
@@ -79,18 +86,89 @@ if (isset($_POST['updatess'])) {
                 'emp_id' => $emp_id,
                 'attendance_id' => $attendance_id,
                 'unit_id' => $unit_id
-            ]);
-
+            ]); 
 
             $rejectedCount++;
             continue;
-        }
-
+        } 
 
         $leaveApproved = false;
         if ($status == 1) {
             $date_of_joining = date('Y-m-d', strtotime($emp_data['date_of_joining']));
             $leave_date = date('Y-m-d', strtotime($date));
+
+            $month = (int)date('m', strtotime($date));
+            $year  = date('Y', strtotime($date));
+            $currentMonth = (int)$month;
+            $currentYear  = (int)$year;
+
+            $totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
+            $res = $obj->executequery("
+                SELECT 
+                    SUM(CASE 
+                        WHEN attendance_status = 'Present' THEN 1 
+                        ELSE 0 
+                    END) AS total_present1,
+
+                    SUM(CASE 
+                        WHEN attendance_status = 'Half Day' THEN 1 
+                        ELSE 0 
+                    END) AS total_half1,
+
+                    SUM(CASE 
+                        WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave') THEN 1 
+                        ELSE 0 
+                    END) AS total_present,
+
+                    SUM(CASE 
+                        WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave') THEN 1 
+                        ELSE 0 
+                    END) AS total_half
+
+                FROM attendance_entry
+                WHERE emp_id='$emp_id'
+                AND month='$currentMonth'
+                AND year='$currentYear'
+                AND unit_id='$unitid'
+            ");
+            $attRow = $res[0] ?? [];
+            $total_present1 = $attRow['total_present1'] ?? 0;
+            $total_half1    = $attRow['total_half1'] ?? 0;
+
+            $total_present  = $attRow['total_present'] ?? 0;
+            $total_half     = $attRow['total_half'] ?? 0;
+
+            $real_total_attandence = $total_present1 + ($total_half1 / 2);
+            $total_attandence      = $total_present + ($total_half / 2);
+
+            $totalAttendance = $total_present + ($total_half / 2); 
+            $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $emp_id, $currentMonth, $currentYear);
+            $earn_leave_present =  $real_total_attandence+$week_leave;
+            $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
+            $result = $obj->calculateLeaveUsage(
+                $totalDaysInMonth,
+                $totalAttendance,
+                $week_leave,
+                $monthly_leave,
+                $is_allow_c_off,
+                $is_all_leave_add,
+                $allow_earn_leave_carry,
+                0,
+                0,
+                $date_of_joining,
+                $currentMonth,
+                $currentYear
+            );
+            // Total working days of month
+            $totalWorkingDays = $result['total_working_days'] ?? 0; 
+            
+            if ($totalDaysInMonth <= $totalWorkingDays && $allow_add_leave == 0) {
+                $skipMessages[] = [ 
+                    "date"        => date('d-m-Y', strtotime($date)),
+                    "reason"      => "Leave cannot be approved because the employee has already completed all working days ($totalWorkingDays) for ".date('F Y', strtotime($date))
+                ];
+                continue;
+            }
 
             if ($leave_date < $date_of_joining) {
                 $skipMessages[] = [
@@ -105,8 +183,7 @@ if (isset($_POST['updatess'])) {
             if($already_appr==1){
                 continue;
             } 
-            $month = (int)date('m', strtotime($date));
-            $year  = date('Y', strtotime($date));
+        
             $leave_balance = 0;
             if ($leave_type == 'EL') {
                 $leave_balance = $obj->getEarningLeave($emp_id,$sessionid,$month,$year);
@@ -127,17 +204,20 @@ if (isset($_POST['updatess'])) {
             ]);
 
             $attendance_status =$attendance_row['attendance_status'] ?? '';
+ 
 
-            if (in_array($attendance_status, ['Present'])) {
-                $skipMessages[] = [
-                    "date" => $date,
-                    "reason" => "Already marked Present"
-                ];
-                continue;
-            }
+            // if (in_array($attendance_status, ['Present'])) {
+            //     $skipMessages[] = [
+            //         "date" => $date,
+            //         "reason" => "Already marked Present"
+            //     ];
+            //     continue;
+            // }
 
+        
             $fullLeaveStatuses = [
                 'Weekly Leave',
+                'Present',
                 'Earning Leave',
                 'Leave',
                 'C Off',
@@ -160,7 +240,7 @@ if (isset($_POST['updatess'])) {
             'Half Leave',
             'Half C Off'
         ];
-        $isHalfAttendance = in_array(trim($attendance_status), $halfStatuses);
+            $isHalfAttendance = in_array(trim($attendance_status), $halfStatuses);
             if ($isHalfAttendance) { 
                 if ($leave_day == 'FD') {
                     $skipMessages[] = [
@@ -170,6 +250,23 @@ if (isset($_POST['updatess'])) {
                     continue;
                 } 
             }
+
+            // $attendanceLogExists = $obj->getvalfield(
+            //     "attendance_log",
+            //     "COUNT(*)",
+            //     "emp_id='$emp_id'
+            //     AND attendance_date='$date'
+            //     AND unit_id='$unit_id'"
+            // );
+
+            // if ($attendanceLogExists > 0 && !$isHalfAttendance) {
+            //     $skipMessages[] = [
+            //         "date" => date('d-m-Y', strtotime($date)),
+            //         "reason" => "Attendance punch already exists for this date."
+            //     ];
+            //     continue;
+            // }
+
 
             // $where = array(
             //     'emp_id' => $emp_id,
@@ -181,8 +278,15 @@ if (isset($_POST['updatess'])) {
             // $obj->delete_record('attendance_entry', $where);
             // $obj->delete_record('attendance_log', $where);
 
-            $required_balance = ($leave_day == 'FHD' || $leave_day == 'SHD') ? 0.5 : 1;
+            if ($leave_type == 'LWP') {
+                $skipMessages[] = [
+                    "date" => $date,
+                    "reason" => "LWP cannot be approved"
+                ];
+                continue;
+            }
 
+            $required_balance = ($leave_day == 'FHD' || $leave_day == 'SHD') ? 0.5 : 1;
             if ($leave_balance <= 0) {
                 $skipMessages[] = [
                     "date" => $date,
@@ -206,13 +310,7 @@ if (isset($_POST['updatess'])) {
                 ];
                 continue;
             }
-            if ($leave_type == 'LWP') {
-                $skipMessages[] = [
-                    "date" => $date,
-                    "reason" => "LWP cannot be approved"
-                ];
-                continue;
-            }
+        
             $leave_data = array(
                 "emp_id" => $emp_id,
                 "department_id" => $department_id,
@@ -252,21 +350,7 @@ if (isset($_POST['updatess'])) {
                 }elseif ($leave_type == 'CO') {
                     $punch_status = 'half_c_off';
                 }
-            }
-
-            $sql = "SELECT shift_id, in_time, out_time,working_hour, is_cross_day,grace_time_in,grace_time_out FROM shift_master WHERE unit_id = '$unit_id' AND working_hour = '$shift_hrs' ORDER BY shift_id ASC LIMIT 1";
-
-            $res = $obj->executequery($sql);
-            if (empty($res)) continue;
-            $shift = $res[0];
-            $office_in_time = $shift['in_time'];
-            $office_out_time = $shift['out_time'];
-            $shift_id     = $shift['shift_id'];
-            $office_working_hour = $shift['working_hour'];
-            $in_margin = $shift['grace_time_in'];
-            $out_margin = $shift['grace_time_out'];
-
-
+            } 
 
             $form_date = [
                 'emp_id' => $emp_id,
@@ -274,8 +358,7 @@ if (isset($_POST['updatess'])) {
                 'attendance_date' => $date,
                 'attendance_stamp' => $date,
                 "month" => (int)$month,
-                "year" => (int)$year,
-                'shift_id' => $shift_id,
+                "year" => (int)$year, 
                 'entry_type' => 'manual',
                 'entry_type_out' => 'manual',
                 'in_status' => 'IN',
