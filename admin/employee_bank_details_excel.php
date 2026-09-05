@@ -29,9 +29,9 @@ if (isset($_POST['upload_excel'])) {
                         continue;
                     }
 
-                    list($emp_code, $bank_name, $acc_holder_name, $acc_no, $ifsc_code) = $data;
-
-
+                    list($emp_code, $bank_name, $acc_holder_name, $acc_no, $ifsc_code,$branch_name) = $data;
+ 
+                    $branch_name = !empty($branch_name) ? trim($branch_name) : '';
                     if (empty($emp_code)) {
                         continue;
                     }
@@ -81,6 +81,7 @@ if (isset($_POST['upload_excel'])) {
                         "bank_id"   => $bank_id,
                         "acc_holder_name"   => $acc_holder_name,
                         "ifsc_code"   => $ifsc_code,
+                        "branch_name"   => $branch_name,
                         "account_no"   => $acc_no,
                         "is_active"   => 1,
                         "createdby"   => $loginid,

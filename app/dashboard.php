@@ -1,6 +1,6 @@
 <?php
 include("appsession.php");
- 
+$pagename = "dashboard.php";
 $currentYear  = date('Y');
 $currentMonth = date('n');
 
@@ -45,8 +45,11 @@ $grade     = $empData['grade_name'] ?? '';
 $is_esic = $empData['is_esic'];
 
 $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
+ 
+$c_off_balance = $obj->getEmpCoffLeave($emp_id, $sessionid);
 //$three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
 $extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear);
+//$opening_leave_balance = $obj->get_opening_leave_balance($emp_id, $sessionid);
 
 $setting_type = ($is_esic == 1) ? 'ESIC' : 'Non ESIC';
 
@@ -473,9 +476,25 @@ $total_attandence      = $total_present + ($total_half / 2);
                 <div class="col-6 ps-1">
                     <div class="card shadow-lg mb-2 border-card-white bg-green p-1 h-80">
                         <h3 class="text-center"><?=  $total_earning_leave ?></h3>
-                        <h6 class="text-center text-white">Earn Leave Balance</h6>
+                        <h6 class="text-center text-white">Prev. Earn Leave Bal.</h6>
                     </div>
                 </div>
+               <!-- Different Color -->
+<!-- <div class="col-6 pe-1">
+    <div class="card shadow-lg mb-2 border-card-white bg-pink p-1 h-80">
+        <h3 class="text-center text-white">< $opening_leave_balance ?></h3>
+        <h6 class="text-center text-white">Op. Leave Balance</h6>
+    </div>
+</div> -->
+
+<!-- Different Color -->
+<div class="col-12  ">
+    <div class="card shadow-lg mb-2 border-card-white bg-danger p-1 h-80">
+        <h3 class="text-center text-white"><?= $c_off_balance ?></h3>
+        <h6 class="text-center text-white">Prev. C-Off Balance</h6>
+    </div>
+</div>
+               
                 <div class="col-6 pe-1">
                     <div class="card shadow-lg mb-2 border-card-white bg-red p-1 h-80">
                         <h3 class="text-center"><?= $todayStatus ?: '----' ?></h3>

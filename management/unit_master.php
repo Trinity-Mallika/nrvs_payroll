@@ -16,13 +16,16 @@ if (isset($_POST['submit'])) {
     $mobile = $obj->test_input($_POST['mobile']);
     $email_id = $obj->test_input($_POST['email_id']);
     $address = $obj->test_input($_POST['address']);
+    $work_address = $obj->test_input($_POST['work_address']);
     $pan_no = $obj->test_input($_POST['pan_no']);
     $gstin_no = $obj->test_input($_POST['gstin_no']);
+    $cin_no = $obj->test_input($_POST['cin_no']);
     $city = $obj->test_input($_POST['city']);
     $unithead  = $obj->test_input($_POST['unithead']);
     $add_leave = $obj->test_input($_POST['add_leave'] ?? 0);
     $machine_id = $obj->test_input($_POST['machine_id'] ?? 0);
     $logo_image = $_FILES["logo_image"] ?? '';
+    $watermark = $_FILES["watermark"] ?? '';
     $count = $obj->getvalfield($tblname, "count(*)", "unit_name='$unit_name' and $tblpkey!='$keyvalue'");
     $allowedTypes = ['jpg', 'jpeg', 'png'];
     $imageName = $_FILES["logo_image"]['name'];
@@ -34,8 +37,10 @@ if (isset($_POST['submit'])) {
         "mobile" => $mobile,
         "email_id" => $email_id,
         "address" => $address,
+        "work_address"=>$work_address,
         "pan_no" => $pan_no,
         "gstin_no" => $gstin_no,
+        "cin_no" => $cin_no,
         "machine_id" => $machine_id,
         "city" => $city,
         "add_leave" => $add_leave,
@@ -55,6 +60,13 @@ if (isset($_POST['submit'])) {
                     $form_data['logo_image'] = $logo_image;
                 }
             }
+            if (isset($_FILES["watermark"]) && !empty($_FILES["watermark"]['name'])) {
+                $imageFileType = strtolower(pathinfo($_FILES["watermark"]['name'], PATHINFO_EXTENSION));
+                if (in_array($imageFileType, $allowedTypes)) {
+                    $watermark = $obj->uploadImage($imgpath1, $_FILES["watermark"]);
+                    $form_data['watermark'] = $watermark;
+                }
+            }
             $form_data["createdate"] = $createdate;
             // print_r($form_data);
             // die;
@@ -69,6 +81,16 @@ if (isset($_POST['submit'])) {
                 }
                 $filename = $obj->uploadImage($imgpath1, $_FILES["logo_image"]);
                 $form_data['logo_image'] = $filename;
+            }
+            $watermarkName = $_FILES["watermark"]['name'];
+            $watermarkFileType = strtolower(pathinfo($watermarkName, PATHINFO_EXTENSION));
+            if (!empty($watermarkName) && in_array($watermarkFileType, $allowedTypes)) {
+                $old = $obj->getvalfield($tblname, "watermark", "unit_id='$keyvalue'");
+                if (!empty($old)) {
+                    @unlink($imgpath1 . $old);
+                }
+                $filename = $obj->uploadImage($imgpath1, $_FILES["watermark"]);
+                $form_data['watermark'] = $filename;
             }
             $form_data["lastupdated"] = $createdate;
 
@@ -90,28 +112,34 @@ if (isset($_GET[$tblpkey])) {
     $unit_name =  $sqledit['unit_name'];
     $mobile = $sqledit['mobile'];
     $address = $sqledit['address'];
+    $work_address = $sqledit['work_address'];
     $gstin_no = $sqledit['gstin_no'];
+    $cin_no = $sqledit['cin_no'];
     $machine_id = $sqledit['machine_id'];
     $city = $sqledit['city'];
     $pan_no = $sqledit['pan_no'];
     $unithead = $sqledit['unithead'];
     $email_id = $sqledit['email_id'];
     $logo_image = $sqledit['logo_image'];
+    $watermark = $sqledit['watermark'];
     $add_leave = $sqledit['add_leave'];
     $img = "";
 } else {
     $unit_name = "";
     $mobile = "";
     $address = "";
+    $work_address = "";
     $gstin_no = "";
+    $cin_no = "";
     $machine_id = "";
     $city = "";
     $pan_no = "";
     $unithead = "";
     $email_id = "";
     $logo_image = "";
+    $watermark = "";
     $add_leave = "0";
-    $img = "logo_image";
+    $img = "logo_image,watermark";
 }
 ?>
 
@@ -179,6 +207,11 @@ if (isset($_GET[$tblpkey])) {
                                             <label for="gstin_no" class="form-label">GSTIN No.<span class="text-danger fw-bold"></span></label>
                                             <input type="text" id="gstin_no" name="gstin_no" class="form-control form-control-sm" placeholder="Enter GSTIN No." value="<?php echo $gstin_no ?>" autocomplete="off" />
                                         </div>
+
+                                        <div class="col-lg-3 mb-3">
+                                            <label for="cin_no" class="form-label">CIN No.<span class="text-danger fw-bold"></span></label>
+                                            <input type="text" id="cin_no" name="cin_no" class="form-control form-control-sm" placeholder="Enter cin No." value="<?php echo $cin_no ?>" autocomplete="off" />
+                                        </div>
                                         <div class="col-lg-3 mb-3">
                                             <label for="city" class="form-label">City<span class="text-danger fw-bold">*</span></label>
                                             <input type="text" id="city" name="city" class="form-control form-control-sm" placeholder="Enter City" value="<?php echo $city ?>" autocomplete="off" />
@@ -193,9 +226,24 @@ if (isset($_GET[$tblpkey])) {
                                             <?php
                                             } ?>
                                         </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Watermark Image <span class="text-danger fw-bold">*</span></label>
+                                            <input type="file" class="form-control form-control-sm"
+                                                name="watermark" id="watermark" accept="image/*">
+                                            <?php if (!empty($watermark)) {
+                                            ?>
+                                                <img src="<?php echo $imgpath1 . $watermark; ?>" style="height: 50px;" alt="">
+                                            <?php
+                                            } ?>
+                                        </div>
                                         <div class="col-lg-3 mb-3">
                                             <label for="address" class="form-label"> Unit Address<span class="text-danger fw-bold">*</span></label>
                                             <textarea name="address" id="address" class="form-control form-control-sm"><?php echo $address ?></textarea>
+
+                                        </div>
+                                        <div class="col-lg-3 mb-3">
+                                            <label for="work_address" class="form-label"> Work Address<span class="text-danger fw-bold">*</span></label>
+                                            <textarea name="work_address" id="work_address" class="form-control form-control-sm"><?php echo $work_address ?></textarea>
 
                                         </div>
                                         <div class="col-md-3">
@@ -221,7 +269,7 @@ if (isset($_GET[$tblpkey])) {
                                         <div class="col-lg-4 mb-3">
                                             <br>
                                             <input type="hidden" name="<?php echo $tblpkey ?>" value="<?php echo $keyvalue ?>">
-                                            <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('unit_name,unithead,mobile,city,<?= $img ?>,address')">
+                                            <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn" value="<?php echo $btn_name ?> " onClick="return checkinputmaster('unit_name,unithead,mobile,city,<?= $img ?>,watermark,address,work_address');" />
                                             <a href=" <?php echo $pagename ?>" type="button" class="btn btn-sm btn-danger add-btn">Reset</a>
                                         </div>
 
@@ -254,12 +302,14 @@ if (isset($_GET[$tblpkey])) {
                                                 <th>Email-Id</th>
                                                 <th>Pan No.</th>
                                                 <th>GSTIN No.</th>
+                                                <th>CIN No.</th>
                                                 <th>City</th>
                                                 <th>Machine ID</th>
                                                 <th>Allow Leave</th>
                                                 <th>Unit Logo</th>
+                                                <th>Watermark</th>
                                                 <th>Unit Address</th>
-
+                                                <th>Work Address</th>
 
                                                 <th>Actions</th>
                                             </tr>
@@ -277,11 +327,27 @@ if (isset($_GET[$tblpkey])) {
                                                     <td><?php echo $row["email_id"]; ?></td>
                                                     <td><?php echo $row["pan_no"]; ?></td>
                                                     <td><?php echo $row["gstin_no"]; ?></td>
+                                                    <td><?php echo $row["cin_no"]; ?></td>
                                                     <td><?php echo $row["city"]; ?></td>
                                                     <td><?php echo $row["machine_id"]; ?></td>
                                                     <td><?php echo $row["add_leave"] == '1' ? 'Yes' : 'No'; ?></td>
-                                                    <td><a href="<?= $imgpath1 . $row['logo_image'] ?>" class="btn btn-sm btn-primary" target="_blank">view</a></td>
+                                                    <td>
+                                                        <?php if (!empty($row['logo_image'])) { ?>
+                                                            <a href="<?= $imgpath1 . $row['logo_image'] ?>" target="_blank" class="btn btn-sm btn-primary">
+                                                                View
+                                                            </a>
+                                                        <?php } ?>
+                                                    </td>
+
+                                                    <td>
+                                                        <?php if (!empty($row['watermark'])) { ?>
+                                                            <a href="<?= $imgpath1 . $row['watermark'] ?>" target="_blank" class="btn btn-sm btn-primary">
+                                                                View
+                                                            </a>
+                                                        <?php } ?>
+                                                    </td>
                                                     <td><?php echo $row["address"]; ?></td>
+                                                    <td><?php echo $row["work_address"]?></td>
 
                                                     <td>
                                                         <ul class="list-inline hstack gap-2 mb-0">
@@ -292,7 +358,7 @@ if (isset($_GET[$tblpkey])) {
                                                             </li>
 
                                                             <li class="list-inline-item" data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-placement="top" title="Delete">
-                                                                <a class="remove-item-btn" type="button" onclick="funDel('<?php echo $row[$tblpkey]; ?>','<?php echo $row['logo_image']; ?>');">
+                                                                <a class="remove-item-btn" type="button" onclick="funDel('<?php echo $row[$tblpkey]; ?>','<?php echo $row['logo_image']; ?>','<?php echo $row['watermark']; ?>');">
                                                                     <i class="ri-delete-bin-fill align-bottom text-danger"></i>
                                                                 </a>
                                                             </li>
@@ -331,7 +397,7 @@ if (isset($_GET[$tblpkey])) {
             });
         });
 
-        function funDel(id, imgname) {
+        function funDel(id, imgname, watermarkname) {
             $('#deleteRecordModal').modal('show');
             var tblname = '<?php echo $tblname; ?>';
             var tblpkey = '<?php echo $tblpkey; ?>';
@@ -347,6 +413,7 @@ if (isset($_GET[$tblpkey])) {
                         tblpkey: tblpkey,
                         imgname: imgname,
                         imgpath: imgpath,
+                        watermarkname: watermarkname,
                     },
                     success: function(data) {
                         location = '<?php echo $pagename; ?>';

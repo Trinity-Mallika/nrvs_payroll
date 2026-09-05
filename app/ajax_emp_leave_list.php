@@ -2,8 +2,10 @@
 include("appsession.php");
 $imgpath = "../admin/uploaded/on_duty/";
 $from = $_POST['from_date'] ?? date('Y-m-d');
+$leave_type = $_POST['leave_type'] ?? '';
 $to   = $_POST['to_date'] ?? date('Y-m-d');
-
+$from = DateTime::createFromFormat('d-m-Y', $from)->format('Y-m-d');
+$to   = DateTime::createFromFormat('d-m-Y', $to)->format('Y-m-d');
 // $data = $obj->executequery("
 //     SELECT m.*, MAX(d.status) as status
 //     FROM on_duty_master m
@@ -17,12 +19,17 @@ $to   = $_POST['to_date'] ?? date('Y-m-d');
 //     GROUP BY m.on_duty_id
 //     ORDER BY m.on_duty_id DESC
 // ");
- 
+$crit = '';
+if (!empty($leave_type)) {
+    $crit .= " AND d.leave_type = '$leave_type'";
+}  
+
 $data = $obj->executequery("
     SELECT 
         m.*, 
         em.first_name,
-       
+        d.leave_type, 
+
         MAX(d.status) as status,
         SUM(
             CASE 
@@ -58,7 +65,43 @@ $data = $obj->executequery("
                     END
                 ELSE 0
             END
-        ) as pending_days
+        ) as pending_days,
+
+        SUM(
+            CASE 
+                WHEN d.is_apr_hod = 1 THEN 
+                    CASE 
+                        WHEN d.leave_day IN ('FD','SL') THEN 1
+                        WHEN d.leave_day IN ('FHD','SHD') THEN 0.5
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ) as approved_days_hod,
+
+        SUM(
+            CASE 
+                WHEN d.is_apr_hod = 2 THEN 
+                    CASE 
+                        WHEN d.leave_day IN ('FD','SL') THEN 1
+                        WHEN d.leave_day IN ('FHD','SHD') THEN 0.5
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ) as rejected_days_hod,
+
+        SUM(
+            CASE 
+                WHEN d.is_apr_hod = 0 THEN 
+                    CASE 
+                        WHEN d.leave_day IN ('FD','SL') THEN 1
+                        WHEN d.leave_day IN ('FHD','SHD') THEN 0.5
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ) as pending_days_hod
 
     FROM on_duty_master m
 
@@ -66,20 +109,25 @@ $data = $obj->executequery("
         ON m.on_duty_id = d.on_duty_id
 
     LEFT JOIN employee_master em
-        ON m.emp_id = em.emp_id
- 
+        ON m.emp_id = em.emp_id 
     
     WHERE  
         m.unit_id='$unitid' 
         AND m.emp_id='$emp_id'
         AND m.type='leave'
+        $crit
         AND DATE(m.application_date) BETWEEN '$from' AND '$to'
 
     GROUP BY m.on_duty_id
     ORDER BY m.on_duty_id DESC
 ");
 
+
+ 
+
 ?>
+
+
 <div class="row">
     <?php
     $statusArr = [
@@ -89,17 +137,20 @@ $data = $obj->executequery("
     ];
     ?>
 
-    <div class="row g-3">
-        <?php if (!empty($data)) {
-            foreach ($data as $row) {
- 
-        ?>
 
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4">
+    <?php if (!empty($data)) {
+        foreach ($data as $row) {
+        if ($row['leave_type'] == 'EL') {
+        $red_page = "leave_apply.php";
+        } elseif ($row['leave_type'] == 'EO') {
+        $red_page = "extra_off_apply.php";
+        } elseif ($row['leave_type'] == 'CO') {
+            $red_page = "c_off_apply.php";
+        }
+    ?>
 
-                <!-- Header -->
-                <div class="card-body pb-2">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 mb-2">
 
                     <div class="d-flex justify-content-between align-items-center mb-2">
 
@@ -151,37 +202,64 @@ $data = $obj->executequery("
                         <!-- File -->
                         <div class="col-12 mt-1">
                             <?php if (!empty($row['doc_file'])) { ?>
-                            <a href="<?= $imgpath . $row['doc_file'] ?>" target="_blank"
-                                class="btn btn-sm btn-light border w-100">
-                                <i class="fa fa-file"></i> View Attachment
-                            </a>
+                                <a href="<?= $imgpath . $row['doc_file'] ?>" target="_blank"
+                                    class="btn btn-sm btn-light border w-100">
+                                    <i class="fa fa-file"></i> View Attachment
+                                </a>
                             <?php } else { ?>
-                            <span class="text-muted">No Attachment</span>
+                                <span class="text-muted">No Attachment</span>
                             <?php } ?>
                         </div>
+                        <div class="d-flex align-items-center  mt-3">
+                            <p class="fw-bold">Approve By HOD</p>
+                        </div>
 
-                        <div class="row mt-3 text-center">
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-12 p-0">
+                            <div class="approve-sec">
+                                <div class=" rounded-3 bg-success bg-opacity-10 box">
+                                    <div class="fw-bold text-success fs-6">
+                                        <?= $row['approved_days_hod'] ?? 0 ?>
+                                    </div>
+                                    <small class="text-muted">Approved</small>
+                                </div>
+                                <div class=" rounded-3 bg-danger bg-opacity-10 box">
+                                    <div class="fw-bold text-danger fs-6">
+                                        <?= $row['rejected_days_hod'] ?? 0 ?>
+                                    </div>
+                                    <small class="text-muted">Rejected</small>
+                                </div>
+                                <div class=" rounded-3 bg-warning bg-opacity-10 box">
+                                    <div class="fw-bold text-warning fs-6">
+                                        <?= $row['pending_days_hod'] ?? 0 ?>
+                                    </div>
+                                    <small class="text-muted">Pending</small>
+                                </div>
+                            </div>
 
-                            <div class="col-4">
-                                <div class=" rounded-3 bg-success bg-opacity-10">
+                        </div>
+                        
+                    </div>
+                    <div class="d-flex align-items-center  mt-3">
+                        <p class="fw-bold">Final Approve</p>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-12 p-0">
+                            <div class="approve-sec">
+                                <div class=" rounded-3 bg-success bg-opacity-10 box">
                                     <div class="fw-bold text-success fs-6">
                                         <?= $row['approved_days'] ?? 0 ?>
                                     </div>
                                     <small class="text-muted">Approved</small>
                                 </div>
-                            </div>
-
-                            <div class="col-4">
-                                <div class=" rounded-3 bg-danger bg-opacity-10">
+                                <div class=" rounded-3 bg-danger bg-opacity-10 box">
                                     <div class="fw-bold text-danger fs-6">
                                         <?= $row['rejected_days'] ?? 0 ?>
                                     </div>
                                     <small class="text-muted">Rejected</small>
                                 </div>
-                            </div>
-
-                            <div class="col-4">
-                                <div class=" rounded-3 bg-warning bg-opacity-10">
+                                <div class=" rounded-3 bg-warning bg-opacity-10 box">
                                     <div class="fw-bold text-warning fs-6">
                                         <?= $row['pending_days'] ?? 0 ?>
                                     </div>
@@ -189,8 +267,8 @@ $data = $obj->executequery("
                                 </div>
                             </div>
                         </div>
+                      
                     </div>
-
                     <!-- Actions -->
                     <div class="row mt-3 g-2">
 
@@ -202,34 +280,34 @@ $data = $obj->executequery("
                         </div>
 
                         <?php if ($row['status'] != 1) { ?>
-                        <div class="col-4">
-                            <a href="leave_apply.php?on_duty_id=<?= $row['on_duty_id'] ?>"
-                                class="btn btn-primary btn-sm w-100">
-                                <i class="fa fa-edit"></i> Edit
-                            </a>
-                        </div>
+                            <div class="col-4">
+                                <a href="<?= $red_page ?>?on_duty_id=<?= $row['on_duty_id'] ?>"
+                                    class="btn btn-primary btn-sm w-100">
+                                    <i class="fa fa-edit"></i> Edit
+                                </a>
+                            </div>
 
-                        <div class="col-4">
-                            <button onclick="deleteLeave(<?= $row['on_duty_id'] ?>)"
-                                class="btn btn-danger btn-sm w-100">
-                                <i class="fa fa-trash"></i> Delete
-                            </button>
-                        </div>
+                            <div class="col-4">
+                                <button onclick="deleteLeave(<?= $row['on_duty_id'] ?>)"
+                                    class="btn btn-danger btn-sm w-100">
+                                    <i class="fa fa-trash"></i> Delete
+                                </button>
+                            </div>
                         <?php } ?>
 
                     </div>
 
+
                 </div>
             </div>
-        </div>
 
         <?php }
-        } else { ?>
+    } else { ?>
         <div class="col-12">
             <div class="alert alert-danger text-center rounded-3 shadow-sm">
                 No Records Found
             </div>
         </div>
-        <?php } ?>
-    </div>
+    <?php } ?>
+
 </div>

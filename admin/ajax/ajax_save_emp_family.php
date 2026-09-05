@@ -192,6 +192,7 @@ if ($type == 'family') {
     $bank_id = $obj->test_input($_REQUEST['bank_id'] ?? '0');
     $emp_bank_id = $obj->test_input($_REQUEST['emp_bank_id'] ?? '0');
     $acc_holder_name = $obj->test_input($_REQUEST['acc_holder_name'] ?? '');
+    $branch_name = $obj->test_input($_REQUEST['branch_name'] ?? '');
     $account_no = $obj->test_input($_REQUEST['account_no'] ?? '');
     $ifsc_code = $obj->test_input($_REQUEST['ifsc_code'] ?? '');
     $bank_active = $obj->test_input($_REQUEST['bank_active'] ?? '0');
@@ -201,6 +202,7 @@ if ($type == 'family') {
         'emp_id' => $keyvalue,
         'bank_id' => $bank_id,
         'acc_holder_name' => $acc_holder_name,
+        'branch_name' => $branch_name,
         'account_no' => $account_no,
         'is_active' => $bank_active,
         'ifsc_code' => $ifsc_code,

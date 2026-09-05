@@ -293,6 +293,71 @@ if (isset($_GET['year'])) {
 
 
                                     </div>
+                                    <?php
+                                    $deduction_summary = $obj->executequery("
+                                            SELECT 
+                                                SUM(
+                                                    CASE 
+                                                        WHEN lad.type='Advance' 
+                                                            AND lad.status = 1
+                                                        THEN lad.amount
+                                                        ELSE 0
+                                                    END
+                                                ) as advance_deduction,
+
+                                                SUM(
+                                                    CASE 
+                                                        WHEN lad.type='Loan' 
+                                                            AND lad.status = 1
+                                                        THEN lad.amount
+                                                        ELSE 0
+                                                    END
+                                                ) as loan_deduction
+
+                                            FROM loan_advance_details lad
+
+                                            INNER JOIN loan_advance la 
+                                                ON lad.loan_advance_id = la.loan_advance_id
+
+                                            WHERE la.unit_id='$unitid'
+                                            AND lad.month='$application_month'
+                                            AND lad.year = YEAR(CURDATE()) 
+                                        ");
+                                        $sum = $deduction_summary[0];
+                                          $monthName = date("F", mktime(0, 0, 0, $application_month, 1)); ?>
+                                           <div class="row justify-content-end mt-3"> 
+                                        <div class="col-lg-5">
+                                            <div class="card shadow-sm border-0">
+
+                                                <div class="card-header py-2">
+                                                    <h6 class="mb-0">
+                                                        <i class="ri-bar-chart-box-line"></i>
+                                                        Loan / Advance Summary  (<?= $monthName ?> - <?= date('Y') ?>)
+                                                    </h6>
+                                                </div>
+
+                                                <div class="card-body p-3">
+                                                    <div class="d-flex justify-content-between border-bottom py-2">
+                                                        <span class="fw-semibold text-success">
+                                                            Approved Advance
+                                                        </span>
+                                                        <span class="fw-bold">
+                                                            ₹ <?= number_format($sum['advance_deduction'],2) ?>
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="d-flex justify-content-between border-bottom py-2">
+                                                        <span class="fw-semibold text-success">
+                                                            Approve Loan
+                                                        </span>
+                                                        <span class="fw-bold">
+                                                            ₹ <?= number_format($sum['loan_deduction'],2) ?>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                             </div>

@@ -393,7 +393,7 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 
                                                     $totalPresentDays +=  $totalAttendance;
                                                     $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $real_total_att, $unitid);
-                                                    $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_att, $allow_weekly_off);
+                                                    $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_att,$empId, $month, $year);
                                                     $totalWeekOff += $week_leave;
                                                     $totalEarnLEave += $monthly_leave;
 
@@ -921,3 +921,144 @@ if (isset($_REQUEST['ajax_emp_shift_hrs'])) {
 </body>
 
 </html>
+
+department setting tracking 
+
+ $coffUsedRows = $obj->executequery("
+                                SELECT 
+                                    e.emp_id,
+                                    SUM(
+                                        CASE
+                                            WHEN ae.attendance_status='C Off' THEN 1
+                                            WHEN ae.attendance_status='Half C Off' THEN 0.5
+                                            ELSE 0
+                                        END
+                                    ) AS used_coff
+                                FROM employee_master e
+
+                               LEFT JOIN depart_setting_track dst
+                                ON dst.depart_track_id = (
+                                    SELECT depart_track_id
+                                    FROM depart_setting_track
+                                    WHERE department_id = e.department_id
+                                    AND type='c_off' and unit_id ='$unitid'
+                                    AND (
+                                        last_inactive_year < '$year'
+                                        OR (
+                                            last_inactive_year='$year'
+                                            AND last_inactive_month <= '$month'
+                                        )
+                                    )
+                                    ORDER BY last_inactive_year DESC,
+                                            last_inactive_month DESC
+                                    LIMIT 1
+                                )
+
+                                LEFT JOIN attendance_entry ae
+                                    ON ae.emp_id = e.emp_id
+                                    AND ae.sessionid='$sessionid'
+                                    AND (
+                                        (
+                                            dst.is_allow='1'
+                                            AND (
+                                                ae.year < '$year'
+                                                OR (ae.year='$year' AND ae.month <= '$month')
+                                            )
+                                        )
+                                        OR
+                                        (
+                                            dst.is_allow='0'
+                                            AND ae.year='$year'
+                                            AND ae.month='$month'
+                                        )
+                                    )
+
+                                WHERE e.emp_id IN ($empIdsStr)
+
+                                GROUP BY e.emp_id
+                            ");
+
+                            $usedCoffMap = [];
+
+                            foreach ($coffUsedRows as $r) {
+
+                                $usedCoffMap[$r['emp_id']] = $r['used_coff'];
+                            }
+
+
+                            // $coffUploadRows = $obj->executequery("
+                            //     SELECT 
+                            //         emp_id,
+
+                            //         SUM(total_leave) total_leave
+
+                            //     FROM emp_monthly_leave
+
+                            //     WHERE leave_type='weekly'
+                            //     AND sessionid='$sessionid'
+
+                            //     AND (
+                            //         year < '$year'
+                            //         OR (year='$year' AND month <= '$month')
+                            //     )
+
+                            //     GROUP BY emp_id
+                            // ");
+                           
+                           $coffUploadRows = $obj->executequery("
+                                SELECT
+                                    e.emp_id,
+
+                                    IFNULL(SUM(eml.total_leave),0) AS total_leave
+
+                                FROM employee_master e
+
+                                LEFT JOIN depart_setting_track dst
+                                ON dst.depart_track_id = (
+                                    SELECT depart_track_id
+                                    FROM depart_setting_track
+                                    WHERE department_id = e.department_id
+                                    AND type='c_off' and unit_id ='$unitid'
+                                    AND (
+                                        last_inactive_year < '$year'
+                                        OR (
+                                            last_inactive_year='$year'
+                                            AND last_inactive_month <= '$month'
+                                        )
+                                    )
+                                    ORDER BY last_inactive_year DESC,
+                                            last_inactive_month DESC
+                                    LIMIT 1
+                                )
+
+                                LEFT JOIN emp_monthly_leave eml
+                                ON eml.emp_id=e.emp_id
+                                AND eml.leave_type='weekly'
+                                AND eml.sessionid='$sessionid'
+                                AND (
+                                    (
+                                        dst.is_allow='1'
+                                        AND (
+                                            eml.year < '$year'
+                                            OR (eml.year='$year' AND eml.month <= '$month')
+                                        )
+                                    )
+                                    OR
+                                    (
+                                        dst.is_allow='0'
+                                        AND eml.year='$year'
+                                        AND eml.month='$month'
+                                    )
+                                )
+
+                                WHERE e.emp_id IN ($empIdsStr)
+
+                                GROUP BY e.emp_id
+                                ");
+ 
+                            $coffUploadMap = [];
+
+                            foreach ($coffUploadRows as $r) {
+
+                                $coffUploadMap[$r['emp_id']] = $r['total_leave'];
+                            }

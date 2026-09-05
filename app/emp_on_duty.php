@@ -11,9 +11,9 @@ $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
 //$imgpath1 = './admin/uploaded/on_duty/';
 $imgpath1 = '../admin/uploaded/on_duty/';
-
+$reporting_manager =$obj->getvalfield("employee_master","reporting_manager","emp_id='$emp_id'");;
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $application_date  = $obj->test_input($_POST['application_date']);
+    $application_date = date('Y-m-d', strtotime($_POST['application_date']));
     $on_duty_type = $obj->test_input($_POST['on_duty_type']);
     $total_day = $obj->test_input($_POST['total_day']);
     $doc_file = $_FILES["doc_file"] ?? '';
@@ -23,17 +23,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $form_data = array(
         "emp_id" => $emp_id,
+        "reporting_manager" => $reporting_manager,
         "type" => 'on_duty',
         "application_date" => $application_date,
         "on_duty_type" => $on_duty_type,
         "total_day" => $total_day,
         "unit_id" => $unitid,
+        "entry_by" => 'emp',
         "createdby" => $emp_id,
         "sessionid" => $sessionid,
         "ipaddress" => $ipaddress
     );
 
     if ($keyvalue == 0) {
+        $detailCount = $obj->getvalfield(
+            "on_duty_details",
+            "COUNT(*)",
+            "on_duty_id='0' 
+            AND createdby='$emp_id'
+            AND unit_id='$unitid'"
+        );
+        if ($detailCount <= 0) {
+            echo json_encode([
+                "status" => "error",
+                "message" => "Please enter at least one On Duty detail record."
+            ]);
+            exit;
+        }
+
         if (isset($_FILES["doc_file"]) && !empty($_FILES["doc_file"]['name'])) {
             $imageFileType = strtolower(pathinfo($_FILES["doc_file"]['name'], PATHINFO_EXTENSION));
             if (in_array($imageFileType, $allowedTypes)) {
@@ -73,6 +90,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         ]);
         exit;
     } else {
+
+        $detailCount = $obj->getvalfield(
+            "on_duty_details",
+            "COUNT(*)",
+            "on_duty_id='$keyvalue' 
+            AND createdby='$emp_id'
+            AND unit_id='$unitid'"
+        );
+
+        if ($detailCount <= 0) {
+            echo json_encode([
+                "status" => "error",
+                "message" => "Please enter at least one On Duty detail record."
+            ]);
+            exit;
+        }
         if (!empty($imageName) && in_array($imageFileType, $allowedTypes)) {
             $old = $obj->getvalfield($tblname, "doc_file", "on_duty_id='$keyvalue'");
             if (!empty($old)) {
@@ -117,18 +150,21 @@ if (isset($_GET[$tblpkey])) {
     $sqledit = $obj->select_record($tblname, $where);
     $application_date =  $sqledit['application_date'];
     $on_duty_type = $sqledit['on_duty_type'];
-
+    $reporting_manager = $sqledit['reporting_manager'];
     $doc_file = $sqledit['doc_file'];
     $img = "";
 } else {
     $application_date = date('Y-m-d');
-    $on_duty_type = "On Duty";
+    $on_duty_type = "Outdoor Duty";
 
     $doc_file = "";
     $img = "doc_file";
 }
 $total_day  = $obj->getvalfield("on_duty_details", "count(*)", "on_duty_id='$keyvalue' and createdby='$emp_id'");
+$report_emp_data = $obj->select_record("employee_master", ["emp_id" => $reporting_manager]);
 
+$report_man_name = $report_emp_data['first_name'] ?? '';
+$report_man_code = $report_emp_data['emp_code'] ?? "";
 
 ?>
 
@@ -142,22 +178,28 @@ $total_day  = $obj->getvalfield("on_duty_details", "count(*)", "on_duty_id='$key
     <!-- css links  files -->
     <?php include("inc/css-file.php"); ?>
     <style>
-        .fixed-save-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: #fff;
-            padding: 10px 15px;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-            z-index: 999;
-        }
+    body.dashboard {
+        padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    }
 
-        .fixed-save-bar .btn {
-            height: 45px;
-            font-size: 16px;
-            font-weight: 600;
-        }
+    .fixed-save-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: #fff;
+        padding: 10px 15px;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 999;
+        /* Important for mobile devices */
+        padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    }
+
+    .fixed-save-bar .btn {
+        height: 45px;
+        font-size: 16px;
+        font-weight: 600;
+    }
     </style>
 </head>
 
@@ -176,8 +218,21 @@ $total_day  = $obj->getvalfield("on_duty_details", "count(*)", "on_duty_id='$key
                         </a>
                     </div>
                     <div class="mb-3">
+                        <label for="" class="form-label">Reporting Manager</label>
+                        <input type="text" class="form-control shadow-sm" id="reporting_manager_name"
+                            name="reporting_manager_name" value="<?= $report_man_code . '-' . $report_man_name ?>"
+                            readonly>
+
+                        <input type="hidden" class="form-control shadow-sm" id="reporting_manager"
+                            name="reporting_manager" value="<?= $reporting_manager ?>">
+
+                    </div>
+                    <div class="mb-3">
                         <label for="" class="form-label">Application Date</label>
-                        <input type="date" class="form-control shadow-sm" id="application_date" name="application_date" value="<?= $application_date ?>" readonly>
+                     
+                        <input type="text" class="form-control shadow-sm"
+                            value="<?= !empty($application_date) ? date('d-m-Y', strtotime($application_date)) : '' ?>"
+                            readonly id="application_date" name="application_date">
                     </div>
 
                     <div class="mb-3">
@@ -188,7 +243,7 @@ $total_day  = $obj->getvalfield("on_duty_details", "count(*)", "on_duty_id='$key
                             <option value="Official Travel">Official Travel</option>
                         </select>
                         <script>
-                            document.getElementById('on_duty_type').value = '<?= $on_duty_type; ?>';
+                        document.getElementById('on_duty_type').value = '<?= $on_duty_type; ?>';
                         </script>
                     </div>
                 </div>
@@ -196,7 +251,17 @@ $total_day  = $obj->getvalfield("on_duty_details", "count(*)", "on_duty_id='$key
                     <div class="row">
                         <div class="mb-3 col-6">
                             <label for="" class="form-label"> Date</label>
-                            <input type="date" class="form-control shadow-sm" id="date" name="date">
+                             <input type="text"
+                                class="form-control shadow-sm datepicker"
+                                id="date"
+                                name="date"
+                                value="<?= date('d-m-Y'); ?>"
+                                autocomplete="off">
+                        </div>
+                        <div class="mb-3 col-6">
+                            <label for="" class="form-label">No. Of Days</label>
+                            <input type="text" class="form-control shadow-sm" id="no_of_days" name="no_of_days"
+                                value="1" onkeypress="numberOnly(event);">
                         </div>
                         <div class="mb-3 col-6">
                             <label for="" class="form-label">In Time</label>
@@ -220,8 +285,9 @@ $total_day  = $obj->getvalfield("on_duty_details", "count(*)", "on_duty_id='$key
                         </div>
                     </div>
                     <div class="d-grid mt-3 col-2 ">
+                        <input type="hidden" class="form-control shadow-sm" id="on_duty_details_id" value="0">
                         <a class="btn btn-primary" onclick="save_duty_details();">
-                            <span id="btnText"><?= "Add" ?></span>
+                            <span id="btnDText"><?= "Add" ?></span>
                         </a>
                     </div>
 
@@ -231,7 +297,8 @@ $total_day  = $obj->getvalfield("on_duty_details", "count(*)", "on_duty_id='$key
 
                     <div class="mb-3 col-12">
                         <label for="total_day" class="form-label">Total Days</label>
-                        <input type="number" name="total_day" id="total_day" class="form-control shadow-sm" value="<?= $total_day; ?>" readonly />
+                        <input type="number" name="total_day" id="total_day" class="form-control shadow-sm"
+                            value="<?= $total_day; ?>" readonly />
 
                     </div>
                     <div class="mb-3 col-12">
@@ -239,26 +306,23 @@ $total_day  = $obj->getvalfield("on_duty_details", "count(*)", "on_duty_id='$key
                             Attached File <span class="text-danger fw-bold"> </span>
                         </label>
 
-                        <input type="file" class="form-control form-control-sm"
-                            name="doc_file" id="doc_file" value="<?= $doc_file ?>">
+                        <input type="file" class="form-control form-control-sm" name="doc_file" id="doc_file"
+                            value="<?= $doc_file ?>">
 
                         <?php if (!empty($doc_file)) {
                             $ext = strtolower(pathinfo($doc_file, PATHINFO_EXTENSION));
                         ?>
-                            <div class="mt-2">
-                                <?php if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) { ?>
-                                    <img src="<?= $imgpath1 . $doc_file ?>"
-                                        style="height:50px;border:1px solid #ccc;">
-                                <?php } else { ?>
-                                    <a href="<?= $imgpath1 . $doc_file ?>"
-                                        target="_blank" class="btn btn-sm btn-secondary">
-                                        View Uploaded <?= strtoupper($ext) ?>
-                                    </a>
-                                <?php } ?>
-                            </div>
+                        <div class="mt-2">
+                            <?php if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) { ?>
+                            <img src="<?= $imgpath1 . $doc_file ?>" style="height:50px;border:1px solid #ccc;">
+                            <?php } else { ?>
+                            <a href="<?= $imgpath1 . $doc_file ?>" target="_blank" class="btn btn-sm btn-secondary">
+                                View Uploaded <?= strtoupper($ext) ?>
+                            </a>
+                            <?php } ?>
+                        </div>
 
-                            <input type="hidden" name="old_attachment"
-                                value="<?= $doc_file ?>">
+                        <input type="hidden" name="old_attachment" value="<?= $doc_file ?>">
                         <?php } ?>
                     </div>
                 </div>
@@ -287,279 +351,331 @@ $total_day  = $obj->getvalfield("on_duty_details", "count(*)", "on_duty_id='$key
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.10.0/js/bootstrap-datepicker.min.js"></script>
 <script>
-    $(document).ready(function() {
-        fetch_duty_details();
+$(document).ready(function() {
+      $('.datepicker').datepicker({
+    format: 'dd-mm-yyyy',
+    autoclose: true,
+    todayHighlight: true
+});
+    fetch_duty_details();
 
 
-    });
+});
 
-    function saveForm() {
-        // e.preventDefault();
-        let form = document.getElementById("gatepassForm");
-        let formData = new FormData(form);
-        let application_date = $("#application_date").val();
-        let on_duty_type = $("#on_duty_type").val();
-        let total_day = $("#total_day").val();
-
-
-        if (application_date == '') {
+function saveForm() {
+    // e.preventDefault();
+    let form = document.getElementById("gatepassForm");
+    let formData = new FormData(form);
+    let application_date = $("#application_date").val();
+    let on_duty_type = $("#on_duty_type").val();
+    let total_day = $("#total_day").val();
+      if (reporting_manager == "" || reporting_manager == 0) {
             Swal.fire({
                 icon: 'warning',
-                title: 'Missing Field',
-                text: 'Please select application date'
+                title: 'Required',
+                text: 'Reporting Manager Not Allotted ! Contact to HR'
             });
-            return false;
+            return;
         }
-
-        if (on_duty_type == '') {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Missing Field',
-                text: 'Please select on duty type'
-            });
-            return false;
-        }
-
-        if (total_day == '' || total_day <= 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Invalid Input',
-                text: 'Enter valid total days'
-            });
-            return false;
-        }
-        let file = $("#doc_file")[0].files[0];
-        if (file) {
-            let allowed = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'xlsx'];
-            let ext = file.name.split('.').pop().toLowerCase();
-
-            if (!allowed.includes(ext)) {
-                alert("Invalid file type");
-                return false;
-            }
-        }
-        $("#saveBtn").attr("disabled", true);
-        $("#btnText").hide();
-        $("#btnLoader").show();
-        $.ajax({
-            url: '',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            dataType: 'json',
-
-            success: function(res) {
-
-                if (res.status == 'success') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Created!',
-                        text: 'Record Saved Successfully!',
-                        timer: 2000
-                    }).then(() => location.reload());
-                } else if (res.status == 'updated') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Updated!',
-                        text: 'On Duty Updated Successfully!',
-                        timer: 2000
-                    }).then(() => {
-                        window.location.href = "emp_on_duty.php";
-                    });
-                } else {
-                    alert(res.message || "Something went wrong");
-                }
-
-                $("#saveBtn").attr("disabled", false);
-                $("#btnText").show();
-                $("#btnLoader").hide();
-            },
-
-            error: function(xhr) {
-                console.log(xhr.responseText);
-
-                alert("Server Error");
-
-                $("#saveBtn").attr("disabled", false);
-                $("#btnText").show();
-                $("#btnLoader").hide();
-            }
+    if (application_date == '') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Missing Field',
+            text: 'Please select application date'
         });
-
-
+        return false;
     }
 
-    function save_duty_details() {
-        const date = $('#date').val();
-        const intime = $('#intime').val();
-        const outtime = $('#outtime').val();
-        const place = $('#place').val();
-        const with_employee = $('#with_employee').val();
-        const remark = $('#remark').val();
-        const keyvalue = '<?= $keyvalue; ?>';
-        if (date === "") {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Required',
-                text: 'Please enter Date'
-            });
-            return;
+    if (on_duty_type == '') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Missing Field',
+            text: 'Please select on duty type'
+        });
+        return false;
+    }
+
+
+    let file = $("#doc_file")[0].files[0];
+    if (file) {
+        let allowed = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'xlsx'];
+        let ext = file.name.split('.').pop().toLowerCase();
+
+        if (!allowed.includes(ext)) {
+            alert("Invalid file type");
+            return false;
         }
+    }
+    $("#saveBtn").attr("disabled", true);
+    $("#btnText").hide();
+    $("#btnLoader").show();
+    $.ajax({
+        url: '',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
 
-        if (intime === "" || outtime === "") {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Required',
-                text: 'Please enter IN /OUT Time'
-            });
-            return;
+        success: function(res) {
+
+            if (res.status == 'error') {
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Validation',
+                    text: res.message
+                }).then(() => {
+                    $('#saveBtn').prop("disabled", false).text("Create");
+                });
+
+                return false;
+            }
+
+            if (res.status == 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Created!',
+                    text: 'Record Saved Successfully!',
+                    timer: 2000
+                }).then(() => location.reload());
+            } else if (res.status == 'updated') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Updated!',
+                    text: 'On Duty Updated Successfully!',
+                    timer: 2000
+                }).then(() => {
+                    window.location.href = "emp_on_duty.php";
+                });
+            }
+        },
+
+        error: function(xhr) {
+            console.log(xhr.responseText);
+            alert("Server Error");
+            $("#saveBtn").attr("disabled", false);
+            $("#btnText").show();
+            $("#btnLoader").hide();
         }
+    });
 
-        if (place === "") {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Required',
-                text: 'Please enter Place Name'
-            });
-            return;
+
+}
+
+function save_duty_details() {
+    const date = $('#date').val();
+    const intime = $('#intime').val();
+    const outtime = $('#outtime').val();
+    const no_of_days = $('#no_of_days').val();
+    const on_duty_details_id = $('#on_duty_details_id').val();
+    const place = $('#place').val();
+    const with_employee = $('#with_employee').val();
+    const remark = $('#remark').val();
+    const keyvalue = '<?= $keyvalue; ?>';
+    if (date === "") {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Required',
+            text: 'Please enter Date'
+        });
+        return;
+    }
+
+    if (intime === "" || outtime === "") {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Required',
+            text: 'Please enter IN /OUT Time'
+        });
+        return;
+    }
+
+    if (place === "") {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Required',
+            text: 'Please enter Place Name'
+        });
+        return;
+    }
+
+    $.ajax({
+        url: 'ajax_on_duty_save.php',
+        type: 'POST',
+        data: {
+            date: date,
+            keyvalue: keyvalue,
+            place: place,
+            intime: intime,
+            outtime: outtime,
+            no_of_days: no_of_days,
+            with_employee: with_employee,
+            on_duty_details_id: on_duty_details_id,
+            remark: remark
+        },
+
+        beforeSend: function() {
+            $('#btnDText').prop("disabled", true).text("Saving...");
+        },
+        success: function(response) {
+            // console.log('response',response);
+            let res = JSON.parse(response);
+            if (res.status === "success") {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Details added successfully',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    fetch_duty_details();
+                    $('#total_day').val(res.total_days);
+                    $('#date,#intime,#outtime,#place,#with_employee,#remark').val('');
+                    $('#on_duty_details_id').val(0);
+                    $('#no_of_days').val(1);
+                })
+
+            } else if (res.status === "duplicate") {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Duplicate Entry',
+                    text: res.message
+                });
+                return;
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: response
+                });
+            }
+        },
+        error: function() {
+            Swal.fire("Error", "Error while uploading. Try again.");
+        },
+        complete: function() {
+            $('#btnDText').prop("disabled", false).text("Add");
         }
+    });
+}
 
-        $.ajax({
-            url: 'ajax_on_duty_save.php',
-            type: 'POST',
-            data: {
-                date: date,
-                keyvalue: keyvalue,
-                place: place,
-                intime: intime,
-                outtime: outtime,
-                with_employee: with_employee,
-                remark: remark
-            },
+function fetch_duty_details() {
 
-            beforeSend: function() {
-                $('#ajax_btn').prop("disabled", true).text("Saving...");
-            },
-            success: function(response) {
+    let keyvalue = '<?= $keyvalue; ?>';
+    jQuery.ajax({
+        type: 'POST',
+        url: 'ajax_on_duty_fetch.php',
+        data: 'keyvalue=' + keyvalue,
+        dataType: 'html',
+        success: function(data) {
 
-                let res = JSON.parse(response);
-                if (res.status === "success") {
+            document.getElementById('fetch_duty_details').innerHTML = data;
+        }
+    }); //ajax close
+}
+
+
+function editOnduty(on_duty_details_id, date, intime, outtime, place, with_employee, remark) {
+    $('#on_duty_details_id').val(on_duty_details_id);
+    $('#date').val(date);
+    $('#intime').val(intime);
+    $('#outtime').val(outtime);
+    $('#place').val(place);
+    $('#with_employee').val(with_employee);
+    $('#remark').val(remark);
+    
+    // Button text change
+    $('#btnDText').text('Update');
+
+    // Scroll to form
+    $('html, body').animate({
+        scrollTop: $("#date").offset().top - 100
+    }, 500);
+}
+
+
+function funDel(id) {
+    let tblname = 'on_duty_details';
+    let tblpkey = 'on_duty_details_id';
+    let pagename = '<?php echo $pagename; ?>';
+    let keyvalue = '<?php echo $keyvalue; ?>';
+
+    Swal.fire({
+        title: "Are you sure?",
+        text: "This record will be deleted permanently!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, delete it!"
+    }).then((result) => {
+
+        if (result.isConfirmed) {
+
+            $.ajax({
+                type: 'POST',
+                url: 'delete_master.php',
+                data: {
+                    id: id,
+                    tblname: tblname,
+                    tblpkey: tblpkey,
+                    pagename: pagename
+                },
+                success: function(response) {
+                    $.ajax({
+                        type: 'POST',
+                        url: 'get_total_day.php',
+                        data: {
+                            on_duty_details_idd: keyvalue,
+                            action: 'on_duty',
+                        },
+                        success: function(res) {
+                            $('#total_day').val(res);
+                        }
+                    });
+                    fetch_duty_details();
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Success',
-                        text: 'Details added successfully',
+                        icon: "success",
+                        title: "Deleted!",
+                        text: "Record deleted successfully",
                         timer: 1500,
                         showConfirmButton: false
                     }).then(() => {
                         fetch_duty_details();
-                        $('#total_day').val(res.total_days);
-                        $('#date,#intime,#outtime,#place,#with_employee,#remark').val('');
-                    })
-
-                } else if (res.status === "duplicate") {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Duplicate Entry',
-                        text: res.message
                     });
-                    return;
-                } else {
+                },
+                error: function() {
                     Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: response
+                        icon: "error",
+                        title: "Error!",
+                        text: "Something went wrong"
                     });
                 }
-            },
-            error: function() {
-                Swal.fire("Error", "Error while uploading. Try again.");
-            },
-            complete: function() {
-                $('#ajax_btn').prop("disabled", false).text("Add");
-            }
-        });
+            });
+
+        }
+    });
+}
+
+function numberOnly(evt) {
+    var theEvent = evt || window.event;
+    // Handle paste
+    if (theEvent.type === 'paste') {
+        key = event.clipboardData.getData('text/plain');
+    } else {
+        // Handle key press
+        var key = theEvent.keyCode || theEvent.which;
+        key = String.fromCharCode(key);
     }
-
-    function fetch_duty_details() {
-
-        let keyvalue = '<?= $keyvalue; ?>';
-        jQuery.ajax({
-            type: 'POST',
-            url: 'ajax_on_duty_fetch.php',
-            data: 'keyvalue=' + keyvalue,
-            dataType: 'html',
-            success: function(data) {
-                document.getElementById('fetch_duty_details').innerHTML = data;
-            }
-        }); //ajax close
+    var regex = /[0-9]|\.|\s/;
+    if (!regex.test(key)) {
+        theEvent.returnValue = false;
+        if (theEvent.preventDefault) theEvent.preventDefault();
     }
-
-
-    function funDel(id) {
-        let tblname = 'on_duty_details';
-        let tblpkey = 'on_duty_details_id';
-        let pagename = '<?php echo $pagename; ?>';
-        let keyvalue = '<?php echo $keyvalue; ?>';
-
-        Swal.fire({
-            title: "Are you sure?",
-            text: "This record will be deleted permanently!",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#d33",
-            cancelButtonColor: "#3085d6",
-            confirmButtonText: "Yes, delete it!"
-        }).then((result) => {
-
-            if (result.isConfirmed) {
-
-                $.ajax({
-                    type: 'POST',
-                    url: 'delete_master.php',
-                    data: {
-                        id: id,
-                        tblname: tblname,
-                        tblpkey: tblpkey,
-                        pagename: pagename
-                    },
-                    success: function(response) {
-                        $.ajax({
-                            type: 'POST',
-                            url: 'get_total_day.php',
-                            data: {
-                                on_duty_details_idd: keyvalue,
-                                action: 'on_duty',
-                            },
-                            success: function(res) {
-                                $('#total_day').val(res);
-                            }
-                        });
-                        fetch_duty_details();
-                        Swal.fire({
-                            icon: "success",
-                            title: "Deleted!",
-                            text: "Record deleted successfully",
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            location.reload(); // ✅ FULL PAGE REFRESH
-                        });
-                    },
-                    error: function() {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Error!",
-                            text: "Something went wrong"
-                        });
-                    }
-                });
-
-            }
-        });
-    }
+}
 </script>
 
 

@@ -1,9 +1,9 @@
 <?php include("../adminsession.php");
 
 $pagename = "mngmt_privilege.php";
-$title = "Management Privilage Entry";
-$module = "Management Privilage Master";
-$submodule = "Management Privilage Master";
+$title = "Management Privilege Entry";
+$module = "Management Privilege Master";
+$submodule = "Management Privilege Master";
 $btn_name = "Save";
 $keyvalue = 0;
 $tblname = "privilage_setting";
@@ -50,7 +50,8 @@ if (isset($_GET[$tblpkey])) {
 
 ?>
 <!doctype html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
+    data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
 
 <head>
     <meta charset="utf-8" />
@@ -58,10 +59,10 @@ if (isset($_GET[$tblpkey])) {
     <?php include('inc/css.php') ?>
 </head>
 <style>
-    .table-borderless tr td {
-        border: 0px !important;
-        padding-bottom: 0px;
-    }
+.table-borderless tr td {
+    border: 0px !important;
+    padding-bottom: 0px;
+}
 </style>
 
 <body>
@@ -85,7 +86,7 @@ if (isset($_GET[$tblpkey])) {
                                         <div class="row g-4 align-items-center">
                                             <div class="col-sm">
                                                 <div>
-                                                    <h5 class="card-title mb-0"> <?= $module; ?></h5>
+                                                    <h5 class="card-title mb-0">Copy Previlege</h5>
                                                 </div>
                                             </div>
                                         </div>
@@ -93,57 +94,106 @@ if (isset($_GET[$tblpkey])) {
                                     <div class="card-body">
                                         <div class="row">
                                             <div class="col-md-3">
-                                                <strong> <label for="userid">Select User<span class="text-danger fw-bold"> *</span></label></strong>
+                                                <strong> <label for="fromuserid">From User<span
+                                                            class="text-danger fw-bold"> *</span></label></strong>
                                                 <div class="input-group mb-3">
-                                                    <select autofocus name="userid" id="userid" class="chosen-select form-control" onchange="getusertype(this.value);">
+                                                    <select autofocus name="fromuserid" id="fromuserid"
+                                                        class="chosen-select form-control" >
                                                         <option value="">---Select User Type---</option>
                                                         <?php
                                                         $result = $obj->executequery("Select * from user where usertype='management' order by username asc");
                                                         foreach ($result as $row_get) {
                                                         ?>
-                                                            <option value="<?php echo $row_get['userid']; ?>"><?php echo $row_get['username']; ?></option>
+                                                        <option value="<?php echo $row_get['userid']; ?>">
+                                                            <?php echo $row_get['username']; ?></option>
                                                         <?php  } ?>
                                                     </select>
-                                                    <script>
-                                                        document.getElementById('userid').value = '<?php echo  $userid; ?>';
-                                                    </script>
+
                                                 </div>
                                             </div>
+                                            <div class="col-md-3">
+                                                <strong> <label for="touserid">From User<span
+                                                            class="text-danger fw-bold"> *</span></label></strong>
+                                                <div class="input-group mb-3">
+                                                    <select autofocus name="touserid" id="touserid"
+                                                        class="chosen-select form-control">
+                                                        <option value="">---Select User Type---</option>
+                                                        <?php
+                                                        $result = $obj->executequery("Select * from user where usertype='management' order by username asc");
+                                                        foreach ($result as $row_get) {
+                                                        ?>
+                                                        <option value="<?php echo $row_get['userid']; ?>">
+                                                            <?php echo $row_get['username']; ?></option>
+                                                        <?php  } ?>
+                                                    </select>
+                                                </div> 
+                                            </div>
+                                              <div class="col-lg-4 mb-3 mt-2">
+                                                    <br>
+                                                    <input type="button" class="btn btn-sm btn-primary"
+                                                        value="Copy Privilege" onclick="copy_user_privilage();">
+                                                </div>
                                         </div>
                                     </div>
                                 </div>
-                                <?php if ($userid > 0) { ?>
-                                    <div class="row mt-4 mb-4">
-                                        <div class="col-lg-12">
-                                            <div class="card">
-                                                <div class="card-header border-bottom-dashed">
-                                                    <div class="row g-4 align-items-center">
-                                                        <div class="col-sm">
-                                                            <div>
-                                                                <h5 class="card-title mb-0"><?php echo $submodule; ?> <span class="text-danger"></span></h5>
-                                                            </div>
+                                
+                                <div class="row mt-4 mb-4">
+                                    <div class="col-lg-12">
+                                        <div class="card">
+                                            <div class="card-header border-bottom-dashed">
+                                                <div class="row g-4 align-items-center">
+                                                    <div class="col-sm">
+                                                        <div>
+                                                            <h5 class="card-title mb-0"><?php echo $submodule; ?> <span
+                                                                    class="text-danger"></span></h5>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div class="card-body">
-                                                    <div class="table-responsive">
-                                                        <table id="buttons-datatables" class="display table table-sm table-bordered" style="width:100%">
-                                                            <thead>
-                                                                <tr class="table-primary">
-                                                                    <th>
-                                                                        Page Menu
-                                                                    </th>
-                                                                    <th>
-                                                                        <input type="checkbox" id="checkAllPages" /> Select All Pages
-                                                                    </th>
-
-                                                                </tr>
-                                                            </thead>
-
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="col-md-3">
+                                                    <strong> <label for="userid">Select User<span
+                                                                class="text-danger fw-bold"> *</span></label></strong>
+                                                    <div class="input-group mb-3">
+                                                        <select autofocus name="userid" id="userid"
+                                                            class="chosen-select form-control"
+                                                            onchange="getusertype(this.value);">
+                                                            <option value="">---Select User Type---</option>
                                                             <?php
+                                                        $result = $obj->executequery("Select * from user where usertype='management' order by username asc");
+                                                        foreach ($result as $row_get) {
+                                                        ?>
+                                                            <option value="<?php echo $row_get['userid']; ?>">
+                                                                <?php echo $row_get['username']; ?></option>
+                                                            <?php  } ?>
+                                                        </select>
+                                                        <script>
+                                                        document.getElementById('userid').value =
+                                                            '<?php echo  $userid; ?>';
+                                                        </script>
+                                                    </div>
+                                                </div>
+                                                 <?php if ($userid > 0) { ?>
+                                                <div class="table-responsive">
+                                                    <table class="display table table-sm table-bordered"
+                                                        style="width:100%">
+                                                        <thead>
+                                                            <tr class="table-primary">
+                                                                <th>
+                                                                    Page Menu
+                                                                </th>
+                                                                <th>
+                                                                    <input type="checkbox" id="checkAllPages" /> Select
+                                                                    All Pages
+                                                                </th>
+
+                                                            </tr>
+                                                        </thead>
+
+                                                        <?php
 
                                                             //$where = array("menuname" => "Master");
-                                                            $where = array("type" => "mngmt");
+                                                            $where = array("type" => "mngmt" , "enable" => 1);
 
                                                             $sql_get = $obj->select_data("m_userprivilege", $where);
 
@@ -159,35 +209,41 @@ if (isset($_GET[$tblpkey])) {
 
                                                                 $pagedel = $obj->getvalfield("privilage_setting", "pagedel", "page_id='$page_id' and userid ='$userid'");
                                                             ?>
-                                                                <tr>
+                                                        <tr>
 
-                                                                    <td>
-                                                                        <label class="fw-semibold">
-                                                                            &nbsp;<?php echo $row_get['menuname']; ?>
-                                                                        </label>
-                                                                    </td>
-                                                                    <td style="width:50%">
-                                                                        <label style="width:100%" class="fw-semibold">
-                                                                            <input type="checkbox" name="page_id[]" value="<?php echo $row_get['page_id']; ?>" <?php if ($module_page != '0') { ?> checked <?php } ?> />
-                                                                            &nbsp;<?php echo $row_get['page_heading']; ?>
-                                                                        </label>
-                                                                    </td>
+                                                            <td>
+                                                                <label class="fw-semibold">
+                                                                    &nbsp;<?php echo $row_get['menuname']; ?>
+                                                                </label>
+                                                            </td>
+                                                            <td style="width:50%">
+                                                                <label style="width:100%" class="fw-semibold">
+                                                                    <input type="checkbox" name="page_id[]"
+                                                                        value="<?php echo $row_get['page_id']; ?>"
+                                                                        <?php if ($module_page != '0') { ?> checked
+                                                                        <?php } ?> />
+                                                                    &nbsp;<?php echo $row_get['page_heading']; ?>
+                                                                </label>
+                                                            </td>
 
 
-                                                                </tr>
-                                                            <?php } ?>
-                                                        </table>
-                                                    </div>
-
+                                                        </tr>
+                                                        <?php } ?>
+                                                    </table>
                                                 </div>
+ <?php } ?>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-12 text-center mb-2">
-                                        <button type="submit" name="submit" class="btn btn-primary" onClick="return checkinputmaster('userid'); ">
-                                            <?php echo $btn_name; ?></button>
-                                        <a href="<?php echo $pagename; ?>" name="reset" id="reset" class="btn btn-success">Reset</a>
-                                    </div>
+                                </div>
+                                 <?php if ($userid > 0) { ?>
+                                <div class="col-md-12 text-center mb-2">
+                                    <button type="submit" name="submit" class="btn btn-primary"
+                                        onClick="return checkinputmaster('userid'); ">
+                                        <?php echo $btn_name; ?></button>
+                                    <a href="<?php echo $pagename; ?>" name="reset" id="reset"
+                                        class="btn btn-success">Reset</a>
+                                </div>
                                 <?php } ?>
                             </form>
                         </fieldset>
@@ -206,31 +262,129 @@ if (isset($_GET[$tblpkey])) {
 
     <!-- script tag -->
     <script>
-        $(document).ready(function() {
-            $('#example').DataTable();
-            $(".chosen-select").select2({
-                width: '100%',
-                search_contains: true
-            });
+    $(document).ready(function() {
+        $('#example').DataTable();
+        $(".chosen-select").select2({
+            width: '100%',
+            search_contains: true
         });
+    });
     </script>
 
     <script>
-        function getusertype(userid) {
-            if (userid != '') {
-                window.location.href = '?userid=' + userid;
-            }
+    function getusertype(userid) {
+        if (userid != '') {
+            window.location.href = '?userid=' + userid;
         }
+    }
 
-        let userid = '<?= $userid ?>';
-        if (userid > 0) {
-            document.addEventListener("DOMContentLoaded", function() {
-                document.getElementById("checkAllPages").addEventListener("change", function() {
-                    document.querySelectorAll("input[name='page_id[]']").forEach(cb => cb.checked = this.checked);
-                });
-
+    let userid = '<?= $userid ?>';
+    if (userid > 0) {
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("checkAllPages").addEventListener("change", function() {
+                document.querySelectorAll("input[name='page_id[]']").forEach(cb => cb.checked = this
+                    .checked);
             });
+
+        });
+    }
+
+
+    
+    function copy_user_privilage() {
+        var fromuserid = $("#fromuserid").val();
+        var touserid = $("#touserid").val();
+        if (fromuserid == "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please select From User'
+            });
+            $("#fromuserid").focus();
+            return false;
         }
+        if (touserid == "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please select To User'
+            });
+            $("#touserid").focus();
+            return false;
+        }
+        if (fromuserid == touserid) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Selection',
+                text: 'From User and To User cannot be same'
+            });
+            return false;
+        }
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You want to copy all privileges to selected user.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#dc3545',
+            confirmButtonText: 'Yes, Copy!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+
+            if (result.isConfirmed) {
+
+                $.ajax({
+                    url: "ajax_copy_privilage.php",
+                    type: "POST",
+                    data: {
+                        fromuserid: fromuserid,
+                        touserid: touserid
+                    },
+                    beforeSend: function() {
+                        Swal.fire({
+                            title: 'Please Wait...',
+                            text: 'Copying privileges...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    },
+                    success: function(response) {
+
+                        if ($.trim(response) == "success") {
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: 'Privileges copied successfully!',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+
+                        } else {
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response
+                            });
+                        }
+                    },
+                    error: function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Server Error',
+                            text: 'Something went wrong. Please try again.'
+                        });
+                    }
+                });
+            }
+        });
+    }
+    
     </script>
 </body>
 

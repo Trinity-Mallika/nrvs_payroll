@@ -57,13 +57,19 @@ if (isset($_GET[$tblpkey])) {
     $unit_mobile = $unit_data["mobile"] ?? "";
     $unit_email = $unit_data["email_id"] ?? "";
     $unit_address = $unit_data["address"] ?? "";
+    $watermark = $unit_data["watermark"] ?? "";
     $gst = $unit_data["gstin_no"] ?? "";
     $currentYear  = date('Y', strtotime($application_date));
     $currentMonth = date('m', strtotime($application_date));
-    $opening_leave_balance =$obj->get_opening_leave_balance($emp_id, $sessionid);
-    $total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
-     
-    $extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear);
+
+    $total_earning_leave = (float)$obj->getEarningLeave($emp_id, $sessionid, $currentMonth, $currentYear);
+
+    $extra_off = $obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear);
+    $extra_off_balance = (float)($extra_off['balance'] ?? 0);
+
+    $getEmpCoffLeave = (float)$obj->getEmpCoffLeave($emp_id, $sessionid, $currentMonth, $currentYear);
+
+    $total_balance = $total_earning_leave + $extra_off_balance + $getEmpCoffLeave;
 }
 $total_days  = $obj->getvalfield(
     "leave_apply_detail",
@@ -77,8 +83,18 @@ $total_days  = $obj->getvalfield(
     )",
     "on_duty_id='$keyvalue' and unit_id='$unitid'"
 );
-$unit_imgpath = 'uploaded/unit_logo/';
+$unit_imgpath = '/management/uploaded/emp_documents/';
+$logoPath = dirname(__DIR__) . $unit_imgpath . $unit_logo;
+
 $logo_html = '';
+// $mpdf->SetWatermarkImage(__DIR__ . $imgpath1.$watermark, 0.2, "", [65, 40]);
+// $mpdf->showWatermarkImage = true;
+
+$watermarkPath = dirname(__DIR__) . '/management/uploaded/emp_documents/' . $watermark;
+
+
+$mpdf->SetWatermarkImage($watermarkPath, 0.2, "", [55, 70]);
+$mpdf->showWatermarkImage = true;
 
 ob_start();
 ?>
@@ -144,9 +160,40 @@ ob_start();
 </style>
 
 <div class="header">
-    <h3><?= $unit_name ?></h3>
-    <div class="mb-2">Head Name : <?= $head_name ?> Mobile No : <?= $unit_mobile ?> </div>
-    <div class="mt-2">Email ID: <?= $unit_email ?> ,<?= $unit_address ?> </div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:none;">
+    <tr>
+        <!-- Logo -->
+        <td width="20%" style="border:none; text-align:left; vertical-align:middle;">
+            <?php if (!empty($unit_logo) && file_exists($logoPath)) { ?>
+                <img src="<?= $logoPath ?>" style="height:80px;">
+            <?php } ?>
+        </td>
+
+        <!-- Company Details -->
+        <td width="60%" style="border:none; text-align:center; vertical-align:middle;">
+            <h2 style="margin:0;"><?= $unit_name ?></h2>
+
+            <div style="margin-top:5px;">
+                <strong>Head Name:</strong> <?= $head_name ?>
+            </div>
+
+            <div style="margin-top:3px;">
+                <strong>Mobile:</strong> <?= $unit_mobile ?>
+            </div>
+
+            <div style="margin-top:3px;">
+                <strong>Email:</strong> <?= $unit_email ?>
+            </div>
+
+            <div style="margin-top:3px;">
+                <?= $unit_address ?>
+            </div>
+        </td>
+
+        <!-- Empty column for balance -->
+        <td width="20%" style="border:none;"></td>
+    </tr>
+</table>
 </div>
 
 <div class="title">LEAVE APPLICATION FORM</div>
@@ -214,13 +261,13 @@ ob_start();
 
 <table class="table no-border">
     <tr>
-        <td><b>Bal Leave:</b> Opening Leave Balance - <?= $opening_leave_balance; ?> <br>Extra Off : <?= $extra_off['balance'] ?>
+        <td><b>Bal Leave As Per (<?= $application_date ?>):</b> <?= $total_balance  ?>
         </td>
-        <td><b>Earn Leave :</b> <?= $total_earning_leave ?></td>
+        <td><b>Contact No:</b> <?= $contact_no ?></td>
     </tr>
     <tr>
         <td><b>Address:</b> <?= $leave_address ?></td>
-        <td><b>Contact No:</b> <?= $contact_no ?></td>
+        <td> </td>
     </tr>
 </table>
 
@@ -253,6 +300,8 @@ ob_start();
 </div>
 <?php
 $html = ob_get_clean();
+// print_r($html);
+// die;
 
 $mpdf->WriteHTML($html);
 $mpdf->Output(); ?>

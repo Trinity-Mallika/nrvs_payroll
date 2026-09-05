@@ -1,8 +1,10 @@
 <?php include_once("appsession.php");
-
 $keyvalue = $obj->test_input($_POST['keyvalue']);
+$type = $obj->test_input($_POST['type']??'');
 
-$details = $obj->executequery("Select * from leave_apply_detail where on_duty_id='$keyvalue' and unit_id='$unitid' and createdby='$emp_id' order by leave_details_id desc");
+$details = $obj->executequery("Select * from leave_apply_detail where on_duty_id='$keyvalue' and unit_id='$unitid' and emp_id='$emp_id' and leave_type='$type' order by date asc");  
+
+
 $sno = 1;
 $leaveDayArr = [
     'FD' => 'Full Day',
@@ -16,6 +18,7 @@ $leaveTypeArr = [
     'EO' => 'EXTRA OFF',
     'L' => 'OPENING LEAVE',
     'WL' => 'Weekly Leave',
+    'CO' => 'C Off',
     'LWP' => 'Leave Without Pay'
 ];
 foreach ($details as $row) {

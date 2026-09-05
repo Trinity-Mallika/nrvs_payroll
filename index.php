@@ -192,11 +192,11 @@ $expired = $obj->software_expire();
                                             <div class="mt-4">
                                                 <button class="btn btn-success w-100" type="submit" name="login" onclick="return checkinputmaster('unit_id,username,password');">Sign In</button>
                                             </div>
-
+<!-- 
                                             <div class="alert align-items-center mt-3" style="background-color:rgb(255, 151, 151)" role="alert">
                                                 <i class="bi bi-info-circle-fill"></i> Software will be expire :
-                                                <span> <?php echo $obj->dateformatindia($expired_date); ?></span>
-                                            </div>
+                                                <span> < $obj->dateformatindia($expired_date); ?></span>
+                                            </div> -->
 
                                         </form>
                                     </div>

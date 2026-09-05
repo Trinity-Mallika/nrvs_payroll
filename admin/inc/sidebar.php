@@ -32,11 +32,23 @@
             </div>
             <ul class="navbar-nav" id="navbar-nav" data-simplebar="init">
                 <li class="nav-item">
+                    <a class="nav-link menu-link">
+                        <i class="ri-search-line"></i>
+                        <span class="w-100">
+                            <div class="position-relative">
+                                <input type="text" class="form-control form-control-sm" placeholder="Search..."
+                                    autocomplete="off" id="search_options_side" value="">
+                            </div>
+                        </span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link menu-link" href="dashboard.php">
-                        <i class="ri-dashboard-2-line">
+                        <i class="">
+                            <img src="img/icon/dashboard.png" alt="">
                             <p>Dashboards</p>
                         </i>
-                        <span>Dashboards</span>
+                        <span class="ms-1 mt-1">Dashboards</span>
                     </a>
                 </li>
                 <?php
@@ -46,9 +58,10 @@
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="#sidebarMasters" data-bs-toggle="collapse" role="button"
                             aria-expanded="false" aria-controls="sidebarMasters">
-                            <i class="ri-apps-2-line">
+                            <i class="">
+                                <img src="img/icon/master.png" alt="">
                                 <p>Master</p>
-                            </i> <span data-key="t-Masters">Master</span>
+                            </i><span class="mt-1 ms-1" data-key="t-Masters">Master</span>
                         </a>
                         <div class="collapse menu-dropdown" id="sidebarMasters">
                             <ul class="nav nav-sm flex-column">
@@ -164,9 +177,10 @@
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="#Employee_module" data-bs-toggle="collapse" role="button"
                             aria-expanded="false" aria-controls="Employee_module">
-                            <i class="ri-account-circle-line">
+                            <i class="">
+                                <img src="img/icon/employee.png" alt="">
                                 <p>Employee</p>
-                            </i> <span data-key="t-Masters">Employee </span>
+                            </i> <span class="ms-1 mt-1" data-key="t-Masters">Employee </span>
                         </a>
                         <div class="collapse menu-dropdown" id="Employee_module">
                             <ul class="nav nav-sm flex-column">
@@ -178,22 +192,20 @@
                                         <a href="employee_master.php" class="nav-link"> Employee Entry</a>
                                     </li>
                                 <?php }
+                                $chkmenu = $obj->check_menuname("emp_list.php", $loginid);
+                                if ($chkmenu > 0) {
+                                ?>
+                                    <li class="nav-item">
+                                        <a href="emp_list.php" class="nav-link">Employee List</a>
+                                    </li>
+                                <?php }
                                 $chkmenu = $obj->check_menuname("excel_upload.php", $loginid);
                                 if ($chkmenu > 0) {
                                 ?>
                                     <li class="nav-item">
                                         <a href="excel_upload.php" class="nav-link">Excel Upload Employee's</a>
                                     </li>
-                                <?php }
-                                $chkmenu = $obj->check_menuname("employee_report.php", $loginid);
-                                if ($chkmenu > 0) {
-                                ?>
-                                    <li class="nav-item">
-                                        <a href="employee_report.php" class="nav-link">Employee Report</a>
-                                    </li>
-                                    <!-- <li class="nav-item">
-                                <a href="emi_setting.php" class="nav-link">EMI Setting</a>
-                            </li> -->
+
                                 <?php }
                                 $chkmenu = $obj->check_menuname("emp_separation.php", $loginid);
 
@@ -202,14 +214,7 @@
                                     <li class="nav-item">
                                         <a href="emp_separation.php" class="nav-link">Employee Exit / Separation</a>
                                     </li>
-                                <?php }
-                                $chkmenu = $obj->check_menuname("on_duty.php", $loginid);
 
-                                if ($chkmenu > 0) {
-                                ?>
-                                    <li class="nav-item">
-                                        <a href="on_duty.php" class="nav-link">On Duty</a>
-                                    </li>
                                 <?php }
                                 $chkmenu = $obj->check_menuname("loan_advance.php", $loginid);
 
@@ -225,20 +230,15 @@
                                     <li class="nav-item">
                                         <a href="unit_transfer.php" class="nav-link">Employee Transfer</a>
                                     </li>
+
                                 <?php }
-                                $chkmenu = $obj->check_menuname("leave_apply.php", $loginid);
-                                if ($chkmenu > 0) {
-                                ?>
-                                    <li class="nav-item">
-                                        <a href="leave_apply.php" class="nav-link">Leave Application</a>
-                                    </li>
-                                <?php }
+
                                 $chkmenu = $obj->check_menuname("emp_promotion.php", $loginid);
 
                                 if ($chkmenu > 0) {
                                 ?>
                                     <li class="nav-item">
-                                        <a href="emp_promotion.php" class="nav-link">Employee Promotion</a>
+                                        <a href="emp_promotion.php" class="nav-link">Employee Promotion Report</a>
                                     </li>
                                 <?php }
                                 $chkmenu = $obj->check_menuname("emp_leave_opb.php", $loginid);
@@ -254,10 +254,20 @@
                                     <li class="nav-item">
                                         <a href="emp_leave_monthly.php" class="nav-link">Emp Monthly Leave</a>
                                     </li>
+                                <?php }
+                                $chkmenu = $obj->check_menuname("employee_leave_ledger.php", $loginid);
+                                if ($chkmenu > 0) {
+                                ?>
+                                    <li class="nav-item">
+                                        <a href="employee_leave_ledger.php" class="nav-link">Emp Leave Ledger</a>
+                                    </li>
                                 <?php } ?>
 
                                 <li class="nav-item">
                                     <a href="emp_bank_details.php" class="nav-link">Emp Bank Details</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="account_open.php" class="nav-link">Emp Account Open</a>
                                 </li>
 
                             </ul>
@@ -270,9 +280,10 @@
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="#Attendance" data-bs-toggle="collapse" role="button"
                             aria-expanded="false" aria-controls="Attendance">
-                            <i class="ri-calendar-check-line">
+                            <i class="">
+                                <img src="img/icon/attendance.png" alt="">
                                 <p>Attendance</p>
-                            </i> <span data-key="t-Masters">Attendance</span>
+                            </i> <span class="ms-1 mt-1" data-key="t-Masters">Attendance</span>
                         </a>
                         <div class="collapse menu-dropdown" id="Attendance">
                             <ul class="nav nav-sm flex-column">
@@ -289,7 +300,7 @@
                                 if ($chkmenu > 0) {
                                 ?>
                                     <li class="nav-item">
-                                        <a href="day_wise_attendence_report.php" class="nav-link">Day Wise Attendance Report</a>
+                                        <a href="day_wise_attendence_report.php" class="nav-link">Day Wise Attendance</a>
                                     </li>
                                 <?php }
                                 $chkmenu = $obj->check_menuname("late_in_report.php", $loginid);
@@ -307,11 +318,19 @@
                                             Report</a>
                                     </li>
                                 <?php }
-                                $chkmenu = $obj->check_menuname("month_wise_attendance_report.php", $loginid);
+                                $chkmenu = $obj->check_menuname("on_duty.php", $loginid);
+
                                 if ($chkmenu > 0) {
                                 ?>
                                     <li class="nav-item">
-                                        <a href="misspunch_report.php" class="nav-link">Incomplete/Misspunch Report</a>
+                                        <a href="on_duty.php" class="nav-link">On Duty</a>
+                                    </li>
+                                <?php }
+                                $chkmenu = $obj->check_menuname("leave_apply.php", $loginid);
+                                if ($chkmenu > 0) {
+                                ?>
+                                    <li class="nav-item">
+                                        <a href="leave_apply.php" class="nav-link">Leave Application</a>
                                     </li>
                                 <?php }
                                 $chkmenu = $obj->check_menuname("excel_att_upload.php", $loginid);
@@ -321,40 +340,27 @@
                                         <a href="excel_att_upload.php" class="nav-link">Excel Upload Employee's Attendance</a>
                                     </li>
                                 <?php }
-                                $chkmenu = $obj->check_menuname("employee_attendence_report.php", $loginid);
-                                if ($chkmenu > 0) {
-                                ?>
-                                    <li class="nav-item">
-                                        <a href="employee_attendence_report.php" class="nav-link"> Employee's Attendance
-                                            Report</a>
-                                    </li>
-                                <?php }
-                                $chkmenu = $obj->check_menuname("att_status_report.php", $loginid);
-                                if ($chkmenu > 0) {
-                                ?>
-                                    <li class="nav-item">
-                                        <a href="att_status_report.php" class="nav-link">Attendance Status
-                                            Report</a>
-                                    </li>
-                                <?php }
-                                $chkmenu = $obj->check_menuname("emp_multi_att_report.php", $loginid);
-                                if ($chkmenu > 0) {
-                                ?>
-                                    <li class="nav-item">
-                                        <a href="emp_multi_att_report.php" class="nav-link"> Employee's Multiple Attendance
-                                            Report</a>
-                                    </li>
-                                <?php }
+
                                 $chkmenu = $obj->check_menuname("att_recall.php", $loginid);
                                 if ($chkmenu > 0) {
                                 ?>
                                     <li class="nav-item">
                                         <a href="att_recall.php" class="nav-link">Attendance Re-call</a>
                                     </li>
-                                <?php } ?>
-                                  <li class="nav-item">
-                                        <a href="emp_coff_report.php" class="nav-link">Employee C Off Details</a>
+
+                                <?php }
+                                $chkmenu = $obj->check_menuname("excel_att_upload_day_wise.php", $loginid);
+                                if ($chkmenu > 0) {
+                                ?>
+                                    <li class="nav-item">
+                                        <a href="excel_att_upload_day_wise.php" class="nav-link">Day Wise Att. Upload</a>
                                     </li>
+                                <?php } ?>
+                                <!-- <li class="nav-item">
+                                <a href="emp_coff_report.php" class="nav-link">Employee C Off Details</a>
+                            </li> -->
+
+
                             </ul>
                         </div>
                     </li>
@@ -365,9 +371,10 @@
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="#salary_structure" data-bs-toggle="collapse" role="button"
                             aria-expanded="false" aria-controls="salary_structure">
-                            <i class=" ri-hand-coin-line">
+                            <i class="">
+                                <img src="img/icon/salary.png" alt="">
                                 <p>Salary <br> Generate</p>
-                            </i> <span data-key="t-Masters">Salary Generate</span>
+                            </i> <span class="ms-1 mt-1" data-key="t-Masters">Salary Generate</span>
                         </a>
                         <div class="collapse menu-dropdown" id="salary_structure">
                             <ul class="nav nav-sm flex-column">
@@ -376,7 +383,7 @@
                                 if ($chkmenu > 0) {
                                 ?>
                                     <li class="nav-item">
-                                        <a href="emp_overtime.php" class="nav-link">Overtime Entry</a>
+                                        <a href="emp_overtime.php" class="nav-link">Extra Off Upload</a>
                                     </li>
                                 <?php }
                                 $chkmenu = $obj->check_menuname("emp_salary_update.php", $loginid);
@@ -445,10 +452,239 @@
                                     <li class="nav-item">
                                         <a href="salary_hold_report.php" class="nav-link">Salary Hold Report</a>
                                     </li>
+                                <?php }
+                                $chkmenu = $obj->check_menuname("pf_esic_formate.php", $loginid);
+                                if ($chkmenu > 0) {
+                                ?>
+                                    <li class="nav-item">
+                                        <a href="pf_esic_formate.php" class="nav-link">PF/ ESIC Format</a>
+                                    </li>
+                                <?php }
+                                $chkmenu = $obj->check_menuname("perform_incentive.php", $loginid);
+                                if ($chkmenu > 0) {
+                                ?>
+                                    <li class="nav-item">
+                                        <a href="perform_incentive.php" class="nav-link">Performance Incentive</a>
+                                    </li>
+                                <?php }
+                                $chkmenu = $obj->check_menuname("bank_sheet.php", $loginid);
+                                if ($chkmenu > 0) {
+                                ?>
+                                    <li class="nav-item">
+                                        <a href="bank_sheet.php" class="nav-link">Bank Sheet</a>
+                                    </li>
                                 <?php } ?>
+
                                 <!-- <li class="nav-item">
                                 <a href="salary_sheet.php" class="nav-link">Salary Sheet</a>
                             </li> -->
+                            </ul>
+                        </div>
+                    </li>
+                    <?php
+                    // $master_chk = $obj->checkmenu("Document", $loginid);
+
+                    // if ($master_chk != '0') {
+                    ?>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link menu-link" href="#document_structure" data-bs-toggle="collapse" role="button"
+                                aria-expanded="false" aria-controls="document_structure">
+
+                                <i class="">
+                                    <img src="img/icon/doc.png" alt="">
+                                    <p>Document</p>
+                                </i>
+
+                                <span class="ms-1 mt-1">
+                                    Document
+                                </span>
+
+                            </a>
+
+
+                            <div class="collapse menu-dropdown" id="document_structure">
+
+                                <ul class="nav nav-sm flex-column">
+
+                                    <?php
+                                    $chkmenu = $obj->check_menuname("intent_letter.php", $loginid);
+
+                                    if (1==1) {
+                                    ?>
+                                        <li class="nav-item">
+                                            <a href="intent_letter.php" class="nav-link" target="_blank">
+                                                Intent Letter
+                                            </a>
+                                        </li>
+                                    <?php
+                                    }
+
+
+                                    $chkmenu = $obj->check_menuname("relieving_letter.php", $loginid);
+
+                                      if (1==1) {
+                                    ?>
+                                        <li class="nav-item">
+                                            <a href="relieving_letter.php" class="nav-link" target="_blank">
+                                                Relieving Letter
+                                            </a>
+                                        </li>
+                                    <?php
+                                    }
+
+
+                                    $chkmenu = $obj->check_menuname("experience_letter.php", $loginid);
+
+                                     if (1==1) {
+                                    ?>
+                                        <li class="nav-item">
+                                            <a href="experience_letter.php" class="nav-link" target="_blank">
+                                                Experience Letter
+                                            </a>
+                                        </li>
+                                    <?php
+                                    }
+
+
+                                    $chkmenu = $obj->check_menuname("current_employment_certificate.php", $loginid);
+
+                                     if (1==1) {
+                                    ?>
+                                        <li class="nav-item">
+                                            <a href="current_employment_certificate.php" class="nav-link" target="_blank">
+                                                Current Employment Certificate
+                                            </a>
+                                        </li>
+                                    <?php
+                                    }
+
+
+                                    $chkmenu = $obj->check_menuname("character_certificate.php", $loginid);
+
+                                      if (1==1) {
+                                    ?>
+                                        <li class="nav-item">
+                                            <a href="character_certificate.php" class="nav-link" target="_blank">
+                                                Character Certificate
+                                            </a>
+                                        </li>
+                                    <?php
+                                    }
+
+
+                                    $chkmenu = $obj->check_menuname("no_dues_form.php", $loginid);
+
+                                      if (1==1) {
+                                    ?>
+                                        <li class="nav-item">
+                                            <a href="no_dues_form.php" class="nav-link" target="_blank">
+                                                No Dues Form
+                                            </a>
+                                        </li>
+                                    <?php
+                                    }
+
+
+                                    $chkmenu = $obj->check_menuname("resignation_acceptance.php", $loginid);
+
+                                      if (1==1) {
+                                    ?>
+                                        <li class="nav-item">
+                                            <a href="resignation_acceptance.php" class="nav-link" target="_blank">
+                                                Resignation Acceptance
+                                            </a>
+                                        </li>
+                                    <?php
+                                    }
+                                    ?>
+
+                                </ul>
+
+                            </div>
+
+                        </li>
+
+                    <?php
+                    // }
+                    ?>
+                    <!--changed now-->
+                <?php }
+                $master_chk = $obj->checkmenu("Reports", $loginid);
+                if ($master_chk != '0') {
+                ?>
+                    <li class="nav-item">
+                        <a class="nav-link menu-link" href="#reports" data-bs-toggle="collapse" role="button"
+                            aria-expanded="false" aria-controls="reports">
+                            <i class="">
+                                <img src="img/icon/report.png" alt="">
+                                <p>Reports</p>
+                            </i> <span class="ms-1 mt-1" data-key="t-Masters">Reports</span>
+                        </a>
+                        <div class="collapse menu-dropdown" id="reports">
+                            <ul class="nav nav-sm flex-column">
+                                <?php
+                                $chkmenu = $obj->check_menuname("employee_report.php", $loginid);
+                                if ($chkmenu > 0) {
+                                ?>
+                                    <li class="nav-item">
+                                        <a href="employee_report.php" class="nav-link">Employee Report</a>
+                                    </li>
+                                <?php }
+                                $chkmenu = $obj->check_menuname("emp_separation_report.php", $loginid);
+                                if ($chkmenu > 0) {
+                                ?>
+                                    <li class="nav-item">
+                                        <a href="emp_separation_report.php" class="nav-link">Emp Separation Report</a>
+                                    </li>
+                                <?php } ?>
+                                <li class="nav-item">
+                                    <a href="loan_advance_report.php" class="nav-link">Loan Advance Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="day_wise_attendence_report1.php" class="nav-link">Day Wise Attendance
+                                        Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="misspunch_report.php" class="nav-link">Misspunch Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="on_duty_report.php" class="nav-link">On Duty Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="leave_apply_report.php" class="nav-link">Leave Apply Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="employee_attendence_report.php" class="nav-link">Employee Attendance Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="att_status_report.php" class="nav-link">Attendance Status Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="emp_multi_att_report.php" class="nav-link">Employee Multi Attendance Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="manual_att_report.php" class="nav-link">Manual Attendance Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="manual_emp_report.php" class="nav-link">Manual Employee Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="emp_public_holiday_details.php" class="nav-link">Emp Public Holiday Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="deduction_report.php" class="nav-link">Deduction Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="additional_pay_report.php" class="nav-link">Additional Pay Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="leave_deduction_report.php" class="nav-link">Leave Dedcution Report</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="negative_leave_bal.php" class="nav-link">Leave Deficit Report</a>
+                                </li>
                             </ul>
                         </div>
                     </li>
@@ -459,9 +695,10 @@
                     <li class="nav-item">
                         <a class="nav-link menu-link" href="#week_off_module" data-bs-toggle="collapse" role="button"
                             aria-expanded="false" aria-controls="week_off_module">
-                            <i class=" ri-settings-5-line">
+                            <i class="">
+                                <img src="img/icon/setting.png" alt="">
                                 <p>Settings</p>
-                            </i> <span data-key="t-Masters">Settings</span>
+                            </i> <span class="ms-1 mt-1" data-key="t-Masters">Settings</span>
                         </a>
                         <div class="collapse menu-dropdown" id="week_off_module">
                             <ul class="nav nav-sm flex-column">
@@ -538,9 +775,10 @@
                 <?php }  ?>
                 <li class="nav-item">
                     <a class="nav-link menu-link" href="change_password.php">
-                        <i class=" ri-shield-keyhole-line">
+                        <i class="">
+                            <img src="img/icon/password.png" alt="">
                             <p>Change Password</p>
-                        </i> <span>Change Password</span>
+                        </i> <span class="mt-1 ms-1">Change Password</span>
                     </a>
                 </li>
 

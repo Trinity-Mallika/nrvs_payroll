@@ -141,7 +141,7 @@ if (isset($_GET['emp_id'])) {
     $count = $obj->getvalfield($tblname, "count(*)", "emp_id='$emp_id' and month='$month' and year ='$year'");
 
     $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $real_total_working_day, $unitid);
-    $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_working_day, $allow_weekly_off);
+    $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_working_day, $emp_id,$month,$year);
 
     $three_month_leave = $obj->getLeave($emp_id, $month, $year);
 

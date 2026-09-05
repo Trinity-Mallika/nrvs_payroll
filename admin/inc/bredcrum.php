@@ -1,6 +1,52 @@
 
 <?php
-$exclude_pages = ['page_privellege.php', 'mngmt_page_privilege.php', 'tds_slabs.php', 'change_emp_code_excel.php', 'emp_promotion_list.php', 'leave_apply_list.php', 'change_password.php', 'category_master.php', 'emp_multi_att_report_copy.php', 'emp_bank_details.php', 'api_call.php','misspunch_report.php','employee_bank_details_excel.php','att_status_report.php','emp_salary_update.php','emp_leave_opb.php','excel_emp_opb_upload.php','emp_leave_monthly.php','emp_coff_report.php'];
+$exclude_pages = [
+    'page_privellege.php',
+    'mngmt_page_privilege.php',
+    'tds_slabs.php',
+    'change_emp_code_excel.php',
+    'emp_promotion_list.php',
+    'leave_apply_list.php',
+    'change_password.php',
+    'category_master.php',
+    'emp_multi_att_report_copy.php',
+    'emp_bank_details.php',
+    'api_call.php',
+    'misspunch_report.php',
+    'employee_bank_details_excel.php',
+    'att_status_report.php',
+    'emp_salary_update.php',
+    'emp_leave_opb.php',
+    'excel_emp_opb_upload.php',
+    'emp_leave_monthly.php',
+    'emp_coff_report.php',
+    'upload_coff_opb.php',
+    'manual_att_report.php',
+    "dob_excel_upload.php",
+    "excel_att_upload_day_wise.php",
+    "employee_leave_ledger.php",
+    "emp_public_holiday_details.php",
+    "pf_esic_formate.php",
+    "perform_incentive.php",
+    "perform_incent_excel.php",
+    "salary_sheet.php",
+    "loan_advance_report.php",
+    "on_duty_report.php",
+    "leave_apply_report.php",
+    "deduction_report.php",
+    "day_wise_attendence_report1.php",
+    "employee_attendence_report1.php",
+    "emp_leave_deduction.php",
+    "leave_deduction_report.php",
+    "daily_attendance_entry.php",
+    "bank_sheet.php",
+    "additional_pay_report.php", 
+    "misspunch_att.php", 
+    "emp_coff_deduction.php", 
+    "unit_master.php", 
+    "additional_pay_list.php",
+    "negative_leave_bal.php"
+];
 $chkmenu = $obj->check_menuname($pagename, $loginid);
 if ($chkmenu > 0 || in_array($pagename, $exclude_pages)) {
 } else {

@@ -21,9 +21,7 @@ if (isset($_POST['submit'])) {
         "emp_id" => $emp_id,
         "month" => $month,
         "year" => $year,
-        "no_of_overtime" => $no_of_overtime,
-
-
+        "no_of_overtime" => $no_of_overtime, 
         "unit_id" => $unitid,
         "createdby" => $loginid,
         "ipaddress" => $ipaddress,

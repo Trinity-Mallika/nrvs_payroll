@@ -1,8 +1,11 @@
 <?php
 include("appsession.php");
 $imgpath = "../admin/uploaded/on_duty/";
-$from = $_POST['from_date'] ?? date('Y-m-d');
-$to   = $_POST['to_date'] ?? date('Y-m-d');
+$from = $_POST['from_date'] ?? date('d-m-Y');
+$to   = $_POST['to_date'] ?? date('d-m-Y');
+
+$from = DateTime::createFromFormat('d-m-Y', $from)->format('Y-m-d');
+$to   = DateTime::createFromFormat('d-m-Y', $to)->format('Y-m-d');
 
 // $data = $obj->executequery("
 //     SELECT m.*, MAX(d.status) as status
@@ -17,7 +20,7 @@ $to   = $_POST['to_date'] ?? date('Y-m-d');
 //     GROUP BY m.on_duty_id
 //     ORDER BY m.on_duty_id DESC
 // ");
- 
+
 $data = $obj->executequery("
     SELECT 
         m.*, 
@@ -56,7 +59,43 @@ $data = $obj->executequery("
                     END
                 ELSE 0
             END
-        ) as pending_days
+        ) as pending_days,
+
+        SUM(
+            CASE 
+                WHEN d.is_apr_hod = 1 THEN 
+                    CASE 
+                        WHEN d.leave_day IN ('FD','SL') THEN 1
+                        WHEN d.leave_day IN ('FHD','SHD') THEN 0.5
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ) as approved_days_hod,
+
+        SUM(
+            CASE 
+                WHEN d.is_apr_hod = 2 THEN 
+                    CASE 
+                        WHEN d.leave_day IN ('FD','SL') THEN 1
+                        WHEN d.leave_day IN ('FHD','SHD') THEN 0.5
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ) as rejected_days_hod,
+
+        SUM(
+            CASE 
+                WHEN d.is_apr_hod = 0 THEN 
+                    CASE 
+                        WHEN d.leave_day IN ('FD','SL') THEN 1
+                        WHEN d.leave_day IN ('FHD','SHD') THEN 0.5
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ) as pending_days_hod
 
     FROM on_duty_master m
 
@@ -78,137 +117,103 @@ $data = $obj->executequery("
 
 ?>
 <div class="row">
-    <?php
-    $statusArr = [
-        0 => ['label' => 'Pending', 'class' => 'warning'],
-        1 => ['label' => 'Approved', 'class' => 'success'],
-        2 => ['label' => 'Rejected', 'class' => 'danger'],
-    ];
+    
+
+    <?php if (!empty($data)) {
+        foreach ($data as $row) {
+
     ?>
 
-    <div class="row g-3">
-        <?php if (!empty($data)) {
-            foreach ($data as $row) {
- 
-        ?>
-
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4">
-
-                <!-- Header -->
-                <div class="card-body pb-2">
-
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-
-                        <div>
-                            <h6 class="mb-0 fw-bold text-primary">
-                                <?= date('d M Y', strtotime($row['application_date'])) ?>
-                            </h6>
-                            <small class="text-muted">Application Date</small>
+                <div class="col-12">
+                    <div class="card leave-list-card">
+                        <div class="d-flex justify-content-between mb-2">
+                            <p class="date-text"><i class="bi bi-calendar-check-fill me-1"></i> <?= date('d M Y', strtotime($row['application_date'])) ?></p>
+                            <div class="dropdown">
+                                <button class="btn btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                     <?php if (!empty($row['doc_file'])) { ?>
+                                    <li><a class="dropdown-item" href="<?= $imgpath . $row['doc_file'] ?>" target="_blank">View Attachment</a></li>
+                                    <?php } ?>
+                                   <li>
+                                        <a class="dropdown-item" href="javascript:void(0)" onclick="openDutyModal(<?= $row['on_duty_id'] ?>)">
+                                            View Details
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <!-- <a href="#0" class="btn btn-sm fs-12">View Attachment</a> -->
                         </div>
-
-
-                    </div>
-
-                    <hr class="my-2">
-
-                    <!-- Info Grid -->
-                    <div class="row g-2 small">
-                        <div class="col-6">
-                            <span class="text-muted">Employee</span><br>
-                            <span class="fw-semibold">
-                                <?= $row['first_name']; ?>
-                            </span>
-                        </div>
-                        <div class="col-6">
-                            <span class="text-muted">Mobile</span><br>
-                            <span class="fw-semibold"><?= $row['contact_no'] ?></span>
-                        </div>
-
-                        <div class="col-6">
-                            <span class="text-muted">Substitute</span><br>
-                            <span class="fw-semibold">
-                                <?= $obj->getvalfield("employee_master", "first_name", "emp_id='" . $row['substitute_emp_id'] . "'"); ?>
-                            </span>
-                        </div>
-
-                        <div class="col-6">
-                            <span class="text-muted">Leave Address</span><br>
-                            <span class="fw-semibold text-truncate d-block">
-                                <?= $row['leave_address'] ?>
-                            </span>
-                        </div>
-
-                        <div class="col-12">
-                            <span class="text-muted">Reason</span><br>
-                            <span class="fw-semibold"><?= $row['reason'] ?></span>
-                        </div>
-
-
-                        <!-- File -->
-                        <div class="col-12 mt-1">
-                            <?php if (!empty($row['doc_file'])) { ?>
-                            <a href="<?= $imgpath . $row['doc_file'] ?>" target="_blank"
-                                class="btn btn-sm btn-light border w-100">
-                                <i class="fa fa-file"></i> View Attachment
-                            </a>
-                            <?php } else { ?>
-                            <span class="text-muted">No Attachment</span>
-                            <?php } ?>
-                        </div>
-
-                        <div class="row mt-3 text-center">
-
-                            <div class="col-4">
-                                <div class=" rounded-3 bg-success bg-opacity-10">
-                                    <div class="fw-bold text-success fs-6">
-                                        <?= $row['approved_days'] ?? 0 ?>
-                                    </div>
-                                    <small class="text-muted">Approved</small>
+                        <div class="card mb-1">
+                            <div class="row small">
+                                <div class="col-12">
+                                    <small>Employee</small>
+                                    <h6 class="fw-semibold">
+                                       <?= $row['first_name']; ?>
+                                    </h6>
+                                </div>
+                                <div class="col-6">
+                                    <small>Mobile</small>
+                                    <h6 class="fw-semibold"><?= $row['contact_no'] ?></h6>
+                                </div>
+                                <div class="col-6">
+                                    <small>Substitute</small>
+                                    <h6 class="fw-semibold">  <?= $obj->getvalfield("employee_master", "first_name", "emp_id='" . $row['substitute_emp_id'] . "'"); ?></h6>
+                                </div>
+                                <div class="col-12">
+                                    <small>Leave Address</small>
+                                    <h6 class="fw-semibold">  <?= $row['leave_address'] ?></h6>
+                                </div>
+                                <div class="col-12">
+                                    <small>Reason</small>
+                                    <h6 class="fw-semibold mb-0"><?= $row['reason'] ?></h6>
                                 </div>
                             </div>
-
-                            <div class="col-4">
-                                <div class=" rounded-3 bg-danger bg-opacity-10">
-                                    <div class="fw-bold text-danger fs-6">
-                                        <?= $row['rejected_days'] ?? 0 ?>
+                        </div>
+                        <div class="row">
+                            <div class="col-6  border-end">
+                                <p class="date-text"><i class="bi bi-check-circle-fill me-1"></i> Approve By HOD</p>
+                            </div>
+                            <div class="col-6">
+                                <p class="date-text"><i class="bi bi-check-circle-fill me-1"></i> Approve By HR</p>
+                            </div>
+                            <div class="col-6 border-end pe-0">
+                                <div class="approve-status">
+                                    <div class="status-list">
+                                        <p class="green"><?= $row['approved_days_hod'] ?? 0 ?> <small>Approved</small> </p>
                                     </div>
-                                    <small class="text-muted">Rejected</small>
+                                    <div class="status-list">
+                                        <p class="red"> <?= $row['rejected_days_hod'] ?? 0 ?> <small>Rejected</small> </p>
+                                    </div>
+                                    <div class="status-list">
+                                        <p class="yellow"><?= $row['pending_days_hod'] ?? 0 ?> <small>Pending</small> </p>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div class="col-4">
-                                <div class=" rounded-3 bg-warning bg-opacity-10">
-                                    <div class="fw-bold text-warning fs-6">
-                                        <?= $row['pending_days'] ?? 0 ?>
+                            <div class="col-6  ps-0">
+                                <div class="approve-status">
+                                    <div class="status-list">
+                                        <p class="green"> <?= $row['approved_days'] ?? 0 ?> <small>Approved</small> </p>
                                     </div>
-                                    <small class="text-muted">Pending</small>
+                                    <div class="status-list">
+                                        <p class="red"> <?= $row['rejected_days'] ?? 0 ?> <small>Rejected</small> </p>
+                                    </div>
+                                    <div class="status-list">
+                                        <p class="yellow">  <?= $row['pending_days'] ?? 0 ?> <small>Pending</small> </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Actions -->
-                    <div class="row mt-3 g-2">
-                        <div class="col-12">
-                            <button onclick="openDutyModal(<?= $row['on_duty_id'] ?>)"
-                                class="btn btn-warning btn-sm w-100">
-                                <i class="fa fa-eye"></i> View
-                            </button>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-
+                </div> 
         <?php }
-        } else { ?>
+    } else { ?>
         <div class="col-12">
             <div class="alert alert-danger text-center rounded-3 shadow-sm">
                 No Records Found
             </div>
         </div>
-        <?php } ?>
-    </div>
+    <?php } ?>
+
 </div>

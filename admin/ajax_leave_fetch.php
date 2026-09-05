@@ -18,26 +18,101 @@ $leaveTypeArr = [
     'EO' => 'EXTRA OFF',
     'L' => 'OPENING LEAVE',
     'WL' => 'Weekly Leave',
+    'CO' => 'C Off',
     'LWP' => 'Leave Without Pay'
 ];
 foreach ($details as $row) {
-
 ?>
-    <tr>
-        <td><?= $sno++ . ")"; ?> </td>
-        <td><?= $obj->dateformatindia($row['date']); ?> </td>
-        <td><?= $leaveDayArr[$row['leave_day']] ?? $row['leave_day']; ?></td>
-        <td><?= $leaveTypeArr[$row['leave_type']] ?? $row['leave_type']; ?></td>
-        <td><?= $row['remark']; ?> </td>
+<tr>
+    <!-- Sr No -->
+    <td>
+        <?= $sno++ . ")"; ?>
 
-        <td>
-            <?php if ($row['status'] == 0) {  ?>
-                <button type="button" class="btn btn-danger btn-sm"
-                    data-nexttab="pills-experience-tab" onclick="funDel('<?= $row['leave_details_id']; ?>');"><i
-                        class="ri-delete-bin-5-line label-icon align-middle fs-14 "></i>Del</button>
-                <button type="button" class="btn btn-primary btn-sm"
-                    onclick="editLeave('<?= $row['leave_details_id']; ?>','<?= $row['date']; ?>','<?= $row['leave_day']; ?>','<?= $row['leave_type']; ?>','<?= $row['remark']; ?>');">Edit</button>
-            <?php } ?>
-        </td>
-    </tr>
+        <!-- Hidden ID -->
+        <input type="hidden" class="leave_details_id" value="<?= $row['leave_details_id']; ?>">
+    </td>
+
+    <!-- Date -->
+    <td>
+        <input type="date" class="form-control form-control-sm leave_date" value="<?= $row['date']; ?>"
+            onchange="saveLeaveRow(this);">
+    </td>
+
+    <!-- Leave Day -->
+    <td>
+        <select class="form-select form-select-sm leave_day" onchange="saveLeaveRow(this);">
+
+            <option value="FD" <?= $row['leave_day'] == 'FD' ? 'selected' : ''; ?>>
+                Full Day
+            </option>
+
+            <option value="FHD" <?= $row['leave_day'] == 'FHD' ? 'selected' : ''; ?>>
+                First Half Day
+            </option>
+
+            <option value="SHD" <?= $row['leave_day'] == 'SHD' ? 'selected' : ''; ?>>
+                Second Half Day
+            </option>
+
+        </select>
+    </td>
+
+    <!-- Leave Type -->
+    <td>
+        <select class="form-select form-select-sm leave_type" onchange="saveLeaveRow(this);">
+
+            <option value="EL" <?= $row['leave_type'] == 'EL' ? 'selected' : ''; ?>>
+                EARNED LEAVE
+            </option>
+
+            <option value="EO" <?= $row['leave_type'] == 'EO' ? 'selected' : ''; ?>>
+                EXTRA OFF
+            </option>
+
+            <option value="CO" <?= $row['leave_type'] == 'CO' ? 'selected' : ''; ?>>
+                C-OFF
+            </option>
+
+        </select>
+    </td> 
+    <!-- Remark -->
+    <td>
+       <input type="text"
+       class="form-control form-control-sm leave_remark"
+       value="<?= htmlspecialchars($row['remark'] ?? '', ENT_QUOTES); ?>"
+       onchange="saveLeaveRow(this);"
+           onkeydown="if(event.key === 'Enter') { event.preventDefault(); saveLeaveRow(this); }">
+    </td> 
+    <!-- Action -->
+    <td>
+        <?php if ($row['status'] == 0) { ?>
+
+        <button type="button" class="btn btn-danger btn-sm" onclick="funDel('<?= $row['leave_details_id']; ?>');">
+            <i class="ri-delete-bin-5-line label-icon align-middle fs-14"></i>
+            Del
+        </button>
+
+        
+
+        <?php } elseif ($row['status'] == 1) { ?>
+
+        <span class="badge bg-success text-white">
+            Approved
+        </span>
+
+        <?php } elseif ($row['status'] == 2) { ?>
+
+        <span class="badge bg-danger text-white">
+            Rejected
+        </span>
+
+        <?php } else { ?>
+
+        <span class="badge bg-warning text-white">
+            Pending
+        </span>
+
+        <?php } ?>
+    </td>
+</tr>
 <?php }  ?>

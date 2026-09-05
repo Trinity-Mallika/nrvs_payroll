@@ -164,7 +164,7 @@ if (isset($_POST['month'], $_POST['year'])) {
             $increment     = 0;
             $revisedSalary = roundVal($presentSalary + $increment);
             $daysWorked = $total_working_day ? $total_working_day : $totalDaysInMonth;
-            $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_working_day, $allow_weekly_off);
+            $week_leave = $obj->totalWeeklyLeave($unitid, $real_total_working_day, $emp_id,$month, $year);
             $earn_leave_present =  $real_total_working_day+$week_leave;
             $monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
             

@@ -38,15 +38,19 @@ if (isset($_GET['application_month'])) {
 } else {
     $application_month = "";
 };
+
 $to_date = $_GET['to_date'] ?? date('Y-m-d');
 $from_date = $_GET['from_date'] ?? date('Y-m-01');
+$is_application_month = $_GET['is_application_month'] ?? 0;
+
+if ($is_application_month == 1) {
 if ($from_date != '' && $to_date != '') {
     $crit .= " AND la.loan_date BETWEEN '$from_date' AND '$to_date'";
 } elseif ($from_date != '') {
     $crit .= " AND la.loan_date >= '$from_date'";
 } elseif ($to_date != '') {
     $crit .= " AND la.loan_date <= '$to_date'";
-};
+}};
 $start_month = $_GET['start_month'] ?? '';
 $start_year  = $_GET['start_year'] ?? '';
 $last_month   = $_GET['last_month'] ?? '';
@@ -113,7 +117,10 @@ if ($last_month != '' && $last_year != '') {
                                     <div class="col-sm">
                                         <div>
                                             <h5 class="card-title mb-0"> <?= $module; ?> <a href="loan_advance.php"
-                                                    class="float-end btn btn-sm btn-primary ms-2">Add</a> <a href="show_loan_details.php" class="float-end btn btn-sm btn-primary">Show Loan/Advance Details</a></h5>
+                                                    class="float-end btn btn-sm btn-primary ms-2">Add</a> <a
+                                                    href="show_loan_details.php"
+                                                    class="float-end btn btn-sm btn-primary">Show Loan/Advance
+                                                    Details</a></h5>
                                         </div>
                                     </div>
                                 </div>
@@ -167,7 +174,10 @@ if ($last_month != '' && $last_year != '') {
                                             </script>
                                         </div>
                                         <div class="col-lg-2 mb-3">
-                                            <label for="">Application Month</label>
+                                            <label for="">Application Month <input type="checkbox"
+                                                    class="form-check-input" name="is_application_month"
+                                                    id="is_application_month" value="1"
+                                                    <?= ($is_application_month == 1) ? 'checked' : '' ?>></label>
                                             <select name="application_month" id="application_month"
                                                 class="form-select form-select-sm chosen-select">
                                                 <option value="">Select Month</option>
@@ -294,7 +304,9 @@ if ($last_month != '' && $last_year != '') {
                                     <div class="col-sm">
                                         <div>
                                             <h5 class="card-title mb-0"> <?= $module; ?> <a href="loan_advance_list.php"
-                                                    class="float-end btn btn-sm btn-primary">Search Again</a></h5>
+                                                    class="float-end btn btn-sm btn-primary ms-2">Search Again</a> <a
+                                                    href="loan_advance.php"
+                                                    class="float-end btn btn-sm btn-primary ms-2">Add</a> </h5>
                                         </div>
                                     </div>
                                 </div>
@@ -302,10 +314,10 @@ if ($last_month != '' && $last_year != '') {
                             <div class="card-body">
                                 <div class="auto-scroll-wrapper">
                                     <div class="table-responsive">
-  <button type="button" class="btn btn-success btn-sm"
-        onclick="bulkLoanAction('1')">
-        <i class="ri-checkbox-circle-fill"></i> Approve Selected
-    </button>
+                                        <button type="button" class="btn btn-success btn-sm"
+                                            onclick="bulkLoanAction('1')">
+                                            <i class="ri-checkbox-circle-fill"></i> Approve Selected
+                                        </button>
                                         <table id="buttons-datatables" class="display table table-sm table-bordered"
                                             style="width:100%">
                                             <thead>
@@ -314,6 +326,8 @@ if ($last_month != '' && $last_year != '') {
                                                     <th>Date</th>
                                                     <th>Emp Code</th>
                                                     <th>Emp Name</th>
+                                                    <th>Department</th>
+                                                    <th>Desigantion</th>
                                                     <th>
                                                         Adv./Loan<br>
                                                         <small class="fw-normal">Amt. + Int</small>
@@ -326,8 +340,9 @@ if ($last_month != '' && $last_year != '') {
                                                         Inst.<br>From
                                                     </th>
                                                     <th> Inst.<br>To</th>
+                                                    <th>Paid<br>Loan/Adv.</th>
 
-                                                    <th>Status   <input type="checkbox" id="checkAll"></th>
+                                                    <th>Status <input type="checkbox" id="checkAll"></th>
                                                     <th>
                                                         Attached File
                                                     </th>
@@ -352,6 +367,8 @@ if ($last_month != '' && $last_year != '') {
                                                             em.first_name,
                                                             em.last_name,
                                                             em.emp_code,
+                                                            depm.department_name,
+                                                            desm.designation,
 
                                                             cu.fullname as created_name,
                                                             cu.username as created_username,
@@ -359,7 +376,24 @@ if ($last_month != '' && $last_year != '') {
 
                                                             uu.fullname as updated_name,
                                                             uu.username as updated_username,
-                                                            uu.mobile as updated_mobile
+                                                            uu.mobile as updated_mobile,
+                                                            (
+                                                                SELECT IFNULL(SUM(ld.amount),0)
+                                                                FROM loan_advance_details ld
+                                                                WHERE ld.loan_advance_id = la.loan_advance_id
+                                                                AND ld.is_paid = '1'
+                                                            ) as total_paid_amount,
+
+                                                          
+                                                            (
+                                                            la.total_amount -
+                                                                (
+                                                                    SELECT IFNULL(SUM(ld.amount),0)
+                                                                    FROM loan_advance_details ld
+                                                                    WHERE ld.loan_advance_id = la.loan_advance_id
+                                                                    AND ld.is_paid='1'
+                                                                )
+                                                            ) AS pending_amount
 
                                                         FROM $tblname la
 
@@ -368,6 +402,11 @@ if ($last_month != '' && $last_year != '') {
 
                                                         LEFT JOIN user cu 
                                                             ON la.createdby = cu.userid
+                                                        LEFT JOIN department_master depm 
+                                                            ON depm.department_id = em.department_id
+
+                                                        LEFT JOIN designation_master desm 
+                                                            ON desm.designation_id = em.designation_id
 
                                                         LEFT JOIN user uu 
                                                             ON la.updatedby = uu.userid
@@ -408,11 +447,13 @@ if ($last_month != '' && $last_year != '') {
                                                     <td>
                                                         <?= $row['first_name'] . " " . $row['last_name']   ?>
                                                     </td>
+                                                    <td><?= $row['department_name'] ?></td>
+                                                    <td><?= $row['designation'] ?></td>
                                                     <td> <?= $row['loan_adv_amt'] . " + " . $row['interest_amount'] ?>
                                                         <br>(<?= $row['type'] ?>)
                                                     </td>
-                                                    <td><?= $row['no_of_inst']; ?></td>
-                                                    <td><?= $row['total_amount']; ?></td>
+                                                    <td><?= $obj->formatAmount($row['no_of_inst']); ?></td>
+                                                    <td><?= $obj->formatAmount($row['total_amount']); ?></td>
                                                     <td>
                                                         <?= date("F", mktime(0, 0, 0, $row['start_month'], 1)) . " - " . $row['start_year'] ?>
                                                     </td>
@@ -420,6 +461,7 @@ if ($last_month != '' && $last_year != '') {
                                                     <td>
                                                         <?= date("F", mktime(0, 0, 0, $row['last_month'], 1)) . " - " . $row['last_year'] ?>
                                                     </td>
+                                                    <td><?= $obj->formatAmount($row['total_paid_amount']); ?></td>
                                                     <td>
                                                         <?php
                                                             if ($row['appr_status'] == "1") {
@@ -431,13 +473,12 @@ if ($last_month != '' && $last_year != '') {
                                                             }
                                                             ?>
 
-                                                            <?php if($row['appr_status'] == 0){ ?>
-                                                                <input type="checkbox"
-                                                                class="loan_checkbox"
-                                                                value="<?= $row['loan_advance_id'] ?>">
-                                                            <?php } ?>   
+                                                        <?php if($row['appr_status'] == 0){ ?>
+                                                        <input type="checkbox" class="loan_checkbox"
+                                                            value="<?= $row['loan_advance_id'] ?>">
+                                                        <?php } ?>
 
-                                                        </td>
+                                                    </td>
                                                     <td>
                                                         <?php if (!empty($row['attach_file'])) { ?>
                                                         <a href="<?= $imgpath1 . $row['attach_file'] ?>"
@@ -456,7 +497,8 @@ if ($last_month != '' && $last_year != '') {
                                                         <?php } elseif ($chkedit == 1) { ?>
                                                         <a href="loan_advance.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>"
                                                             class="edit-item-btn">
-                                                            <i class="ri-edit-fill cursor-pointer text-success fs-4"></i>
+                                                            <i
+                                                                class="ri-edit-fill cursor-pointer text-success fs-4"></i>
                                                         </a>
                                                         <?php } ?>
                                                     </td>
@@ -472,8 +514,25 @@ if ($last_month != '' && $last_year != '') {
                                                         </a>
                                                         <?php } ?>
                                                     </td>
-                                                    <td class="cursor-pointer"
-                                                        onclick="openLoanStstusModal('<?= $row['loan_advance_id'] ?>','<?= $row['loan_date'] ?>','<?= $row['emp_id'] ?>','<?= $row['first_name'] ?>','<?= $row['last_name'] ?>','<?= $row['emp_code'] ?>','<?= $row['loan_adv_amt'] ?>','<?= $row['interest_amount'] ?>','<?= $row['no_of_inst'] ?>','<?= $row['appr_remark'] ?>','<?= $row['total_amount']; ?>','<?= $row['appr_status']; ?>','<?= $row['type'] ?>')">
+                                                    <!-- <td class="cursor-pointer"
+                                                        onclick="openLoanStstusModal('< $row['loan_advance_id'] ?>','< $row['loan_date'] ?>','< $row['emp_id'] ?>','< $row['first_name'] ?>','< $row['last_name'] ?>','< $row['emp_code'] ?>','< $row['loan_adv_amt'] ?>','< $row['interest_amount'] ?>','< $row['no_of_inst'] ?>','< $row['appr_remark'] ?>','< $row['total_amount']; ?>','< $row['appr_status']; ?>','< $row['type'] ?>','< $row['pending_amount'] ?>')"> -->
+
+                                                    <td class="cursor-pointer" onclick='openLoanStstusModal(
+<?= json_encode($row["loan_advance_id"]) ?>,
+<?= json_encode($row["loan_date"]) ?>,
+<?= json_encode($row["emp_id"]) ?>,
+<?= json_encode($row["first_name"]) ?>,
+<?= json_encode($row["last_name"]) ?>,
+<?= json_encode($row["emp_code"]) ?>,
+<?= json_encode($row["loan_adv_amt"]) ?>,
+<?= json_encode($row["interest_amount"]) ?>,
+<?= json_encode($row["no_of_inst"]) ?>,
+<?= json_encode($row["appr_remark"]) ?>,
+<?= json_encode($row["total_amount"]) ?>,
+<?= json_encode($row["appr_status"]) ?>,
+<?= json_encode($row["type"]) ?>,
+<?= json_encode($row["pending_amount"]) ?>
+)'>
                                                         <i class="ri-checkbox-fill text-success fs-5"></i>
                                                     </td>
                                                     <td>
@@ -496,39 +555,7 @@ if ($last_month != '' && $last_year != '') {
 
                                     </div>
                                 </div>
-                                <?php
-                            
-                                        //     $summary = $obj->executequery("
-                                        //     SELECT 
-                                        //         SUM(CASE 
-                                        //                 WHEN la.appr_status = 1 AND la.type='Advance' 
-                                        //                 THEN la.total_amount 
-                                        //                 ELSE 0 
-                                        //             END) as approved_advance,
-
-                                        //         SUM(CASE 
-                                        //                 WHEN la.appr_status = 0 AND la.type='Advance' 
-                                        //                 THEN la.total_amount 
-                                        //                 ELSE 0 
-                                        //             END) as pending_advance,
-
-                                        //         SUM(CASE 
-                                        //                 WHEN la.appr_status = 1 AND la.type='Loan' 
-                                        //                 THEN la.total_amount 
-                                        //                 ELSE 0 
-                                        //             END) as approved_loan,
-
-                                        //         SUM(CASE 
-                                        //                 WHEN la.appr_status = 0 AND la.type='Loan' 
-                                        //                 THEN la.total_amount 
-                                        //                 ELSE 0 
-                                        //             END) as pending_loan
-
-                                        //     FROM $tblname la
-                                        //     WHERE la.unit_id='$unitid' $crit
-                                        // ");
-
-                                       // $sum = $summary[0];
+                                <?php 
 
 $application_month = !empty($application_month) 
     ? $application_month 
@@ -566,39 +593,39 @@ $application_month = !empty($application_month)
                                         $sum = $deduction_summary[0];
                                         $monthName = date("F", mktime(0, 0, 0, $application_month, 1));
                                     ?>
-                                    <div class="row justify-content-end mt-3"> 
-                                        <div class="col-lg-5">
-                                            <div class="card shadow-sm border-0">
+                                <div class="row justify-content-end mt-3">
+                                    <div class="col-lg-5">
+                                        <div class="card shadow-sm border-0">
 
-                                                <div class="card-header py-2">
-                                                    <h6 class="mb-0">
-                                                        <i class="ri-bar-chart-box-line"></i>
-                                                        Loan / Advance Summary  (<?= $monthName ?> - <?= date('Y') ?>)
-                                                    </h6>
+                                            <div class="card-header py-2">
+                                                <h6 class="mb-0">
+                                                    <i class="ri-bar-chart-box-line"></i>
+                                                    Loan / Advance Summary (<?= $monthName ?> - <?= date('Y') ?>)
+                                                </h6>
+                                            </div>
+
+                                            <div class="card-body p-3">
+                                                <div class="d-flex justify-content-between border-bottom py-2">
+                                                    <span class="fw-semibold text-success">
+                                                        Approved Advance
+                                                    </span>
+                                                    <span class="fw-bold">
+                                                        ₹ <?= number_format($sum['advance_deduction'],2) ?>
+                                                    </span>
                                                 </div>
 
-                                                <div class="card-body p-3">
-                                                    <div class="d-flex justify-content-between border-bottom py-2">
-                                                        <span class="fw-semibold text-success">
-                                                            Approved Advance
-                                                        </span>
-                                                        <span class="fw-bold">
-                                                            ₹ <?= number_format($sum['advance_deduction'],2) ?>
-                                                        </span>
-                                                    </div>
-
-                                                    <div class="d-flex justify-content-between border-bottom py-2">
-                                                        <span class="fw-semibold text-success">
-                                                            Approve Loan
-                                                        </span>
-                                                        <span class="fw-bold">
-                                                            ₹ <?= number_format($sum['loan_deduction'],2) ?>
-                                                        </span>
-                                                    </div>
+                                                <div class="d-flex justify-content-between border-bottom py-2">
+                                                    <span class="fw-semibold text-success">
+                                                        Approve Loan
+                                                    </span>
+                                                    <span class="fw-bold">
+                                                        ₹ <?= number_format($sum['loan_deduction'],2) ?>
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -696,6 +723,7 @@ $application_month = !empty($application_month)
             </div>
         </div>
     </div>
+    </div>
 
     <?php include('inc/delete.php') ?>
     <?php include('inc/js.php') ?>
@@ -709,12 +737,27 @@ $application_month = !empty($application_month)
             search_contains: true
         });
     });
-$("#checkAll").on("change", function() {
-    $(".loan_checkbox").prop("checked", $(this).prop("checked"));
-});
+    $("#checkAll").on("change", function() {
+        $(".loan_checkbox").prop("checked", $(this).prop("checked"));
+    });
+
     function openLoanStstusModal(loan_advance_id, loan_date, emp_id, first_name, last_name, emp_code, loan_adv_amt,
-        interest_amount, no_of_inst, appr_remark, total_amount, appr_status, loan_type) {
-        $("#btnApprove, #btnReject, #btnPending").hide();
+        interest_amount, no_of_inst, appr_remark, total_amount, appr_status, loan_type, pending_amount) {
+        $("#btnApprove,#btnReject,#btnPending,#btnInstalment").hide();
+        if (parseFloat(pending_amount) > 0) {
+            if (appr_status == 0) {
+                $("#btnApprove").show();
+                $("#btnReject").show();
+            } else if (appr_status == 1) {
+                $("#btnReject").show();
+                $("#btnPending").show();
+                $("#btnInstalment").show();
+            } else if (appr_status == 2) {
+                $("#btnApprove").show();
+                $("#btnPending").show();
+                $("#btnInstalment").show();
+            }
+        }
         $('#modal_loan_date').val(loan_date);
         $('#modal_loan_type').val(loan_type);
         $('#modal_total_amt').val(total_amount);
@@ -727,21 +770,31 @@ $("#checkAll").on("change", function() {
         $('#modal_no_of_inst').val(no_of_inst);
         $('#modal_no_of_inst').val(no_of_inst);
         $('#modal_loan_advance_id').val(loan_advance_id);
-        if (appr_status == 0) {
-            $("#btnApprove").show();
-            $("#btnReject").show();
-            $("#btnInstalment").hide();
-        } else if (appr_status == 1) {
-            // Approved already → show reject + pending
-            $("#btnReject").show();
-            $("#btnPending").show();
-            $("#btnInstalment").show();
-        } else if (appr_status == 2) {
-            // Rejected already → show approve + pending
-            $("#btnApprove").show();
-            $("#btnPending").show();
-            $("#btnInstalment").show();
-        }
+        // if (appr_status == 0) {
+        //     $("#btnApprove").show();
+        //     $("#btnReject").show();
+        //     $("#btnInstalment").hide();
+        // } else if (appr_status == 1) {
+        //     // Approved already → show reject + pending
+        //     $("#btnReject").show();
+        //     $("#btnPending").show();
+        //     $("#btnInstalment").show();
+        // } else if (appr_status == 2) {
+        //     // Rejected already → show approve + pending
+        //     $("#btnApprove").show();
+        //     $("#btnPending").show();
+        //     $("#btnInstalment").show();
+        // }
+
+        Swal.fire({
+            title: 'Please wait...',
+            text: 'Loading loan details...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
         $.ajax({
             url: "get_loan_adv_details.php",
             type: "POST",
@@ -750,8 +803,20 @@ $("#checkAll").on("change", function() {
                 emp_id: emp_id
             },
             success: function(response) {
+                Swal.close();
                 $("#installment_body").html(response);
                 $("#loanStatusModal").modal('show');
+            },
+            error: function(xhr, status, error) {
+                Swal.close();
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Unable to load loan details.'
+                });
+
+                console.log(error);
             }
         });
     }
@@ -904,7 +969,7 @@ onchange="updateInstallmentTotal()">
                 approval_remark: $('#modal_apr_remark').val()
             },
             success: function(response) {
-               
+
                 if (response.trim() == "success") {
                     Swal.fire({
                         icon: 'success',
@@ -943,72 +1008,72 @@ onchange="updateInstallmentTotal()">
 
     function bulkLoanAction(status) {
 
-    let selected = [];
+        let selected = [];
 
-    $(".loan_checkbox:checked").each(function() {
-        selected.push($(this).val());
-    });
-
-    if (selected.length == 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Warning',
-            text: 'Please select at least one record'
+        $(".loan_checkbox:checked").each(function() {
+            selected.push($(this).val());
         });
-        return;
-    }
 
-    let statusText = '';
-
-    if(status == 1){
-        statusText = 'Approve';
-    }else if(status == 2){
-        statusText = 'Reject';
-    }else{
-        statusText = 'Pending';
-    }
-
-    Swal.fire({
-        title: 'Are you sure?',
-        text: `You want to ${statusText} selected records`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Yes',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            $.ajax({
-                url: "ajax_bulk_approve_loan.php",
-                type: "POST",
-                data: {
-                    ids: selected,
-                    status: status
-                },
-                beforeSend: function() {
-                    $(".btn").prop("disabled", true);
-                },
-                success: function(response) {
-                    console.log('response',response);
-                    $(".btn").prop("disabled", false);
-                    if (response.trim() == "success") {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Status Updated Successfully'
-                        }).then(() => {
-                            location.reload();
-                        });
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Something went wrong'
-                        });
-                    }
-                }
+        if (selected.length == 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Warning',
+                text: 'Please select at least one record'
             });
+            return;
         }
-    });
-}
+
+        let statusText = '';
+
+        if (status == 1) {
+            statusText = 'Approve';
+        } else if (status == 2) {
+            statusText = 'Reject';
+        } else {
+            statusText = 'Pending';
+        }
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `You want to ${statusText} selected records`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: "ajax_bulk_approve_loan.php",
+                    type: "POST",
+                    data: {
+                        ids: selected,
+                        status: status
+                    },
+                    beforeSend: function() {
+                        $(".btn").prop("disabled", true);
+                    },
+                    success: function(response) {
+                        console.log('response', response);
+                        $(".btn").prop("disabled", false);
+                        if (response.trim() == "success") {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: 'Status Updated Successfully'
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Something went wrong'
+                            });
+                        }
+                    }
+                });
+            }
+        });
+    }
 
     function funDel(id, imgname) {
         $('#deleteRecordModal').modal('show');
@@ -1093,6 +1158,37 @@ onchange="updateInstallmentTotal()">
 
     });
     </script>
+
+
+    <script>
+    function toggleApplicationMonth() {
+        let checkbox = document.getElementById('is_application_month');
+        let fromdate = document.getElementById('from_date');
+        let todate = document.getElementById('to_date');
+        let applicationMonth = document.getElementById('application_month');
+
+        if (checkbox.checked) {
+            fromdate.disabled = false;
+            todate.disabled = false;
+            applicationMonth.disabled = false;
+        } else {
+            fromdate.disabled = true;
+            todate.disabled = true;
+            applicationMonth.disabled = true;
+            // Optional: month selection clear karna ho to
+            applicationMonth.value = '';
+            $('#application_month').trigger('chosen:updated');
+        }
+    }
+
+    document.getElementById('is_application_month').addEventListener('change', function() {
+        toggleApplicationMonth();
+    });
+
+    // Page load
+    toggleApplicationMonth();
+    </script>
+
 </body>
 
 </html>

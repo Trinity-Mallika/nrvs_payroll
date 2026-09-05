@@ -9,7 +9,6 @@ $btn_name = "Save";
 
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
-
 ?>
 
 
@@ -90,7 +89,7 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
                                                         <td><?php echo $row['designation']; ?></td>
                                                         <td><?php echo $row['bank_name']; ?></td>
                                                         <td><?php echo $row['acc_holder_name']; ?></td>
-                                                        <td><?php echo $row['account_no']; ?></td>
+                                                        <td>AC : <?php echo $row['account_no']; ?></td>
                                                         <td><?php echo $row['ifsc_code']; ?></td>
                                                         <td><?= $row['is_active'] == 1 ? 'Active' : 'Inactive'; ?></td>
                                                     </tr>

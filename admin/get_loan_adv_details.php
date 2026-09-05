@@ -23,8 +23,8 @@ $details = $obj->executequery("SELECT * FROM loan_advance_details $detail_crit o
             $isReadonly = ($row['is_paid'] == 1) ? 'readonly' : '';
             $isDisabled = ($row['is_paid'] == 1) ? 'disabled' : '';
         ?>
-            <tr>
-                <td class="text-center"><?= $sn++; ?></td>
+           <tr <?= ($row['is_paid'] == 1) ? 'style="background-color:#95f0e2;"' : ''; ?>>
+                <td class="text-center "  ><?= $sn++; ?></td>
                 <td class="d-flex">
                     <select name="modal_month[]" class="form-select chosen-select form-select-sm" <?= $isDisabled ?>>
                         <option value="">Select Month</option>

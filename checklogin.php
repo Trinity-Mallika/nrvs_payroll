@@ -50,6 +50,7 @@ if (isset($_POST['login'])) {
 			$_SESSION['usertype'] = $session_data['usertype'];
 			$_SESSION['unitid'] = $unit_id;
 			$_SESSION['sessionid'] = $session_data['session_id'];
+			$obj->applyEmployeePromotion($unit_id);
 
 			echo "<script>location='admin/dashboard.php'</script>";
 			exit;

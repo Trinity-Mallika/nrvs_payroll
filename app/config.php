@@ -14,7 +14,7 @@ class Database
 			$db = "nrvs_payroll";
 			$this->con = mysqli_connect($dbhost, $dbuser, $dbpass, $db);
 		} else {
-			$dbhost = "localhost";
+			$dbhost = "p:127.0.0.1";
 			$dbuser = "u612877078_nrvs";
 			$dbpass = "4h!Ybg00";
 			$db = "u612877078_nrvs";
@@ -25,3 +25,4 @@ class Database
 		}
 	}
 }
+ 

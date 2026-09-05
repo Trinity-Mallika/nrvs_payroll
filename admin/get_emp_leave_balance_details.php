@@ -3,153 +3,69 @@ include("../adminsession.php");
 
 $emp_id = $_POST['emp_id'];
 $sessionid = $_SESSION['sessionid'];
+$month = $_POST['month'];
+$year  = $_POST['year'];
 
-/* ================= OPENING LEAVE ================= */
-
-
-$total_opening_leave = $obj->getvalfield(
-    "emp_leave_allotment",
-    "SUM(opening_leave)",
-    "emp_id = '$emp_id' 
-    AND sessionid = '$sessionid'"
-	);
-
-$used_opening_leave = 0;
-
-$res = $obj->executequery("
-    SELECT 
-        COALESCE(SUM(
-            CASE 
-                WHEN attendance_status = 'Leave' THEN 1
-                WHEN attendance_status = 'Half Leave' THEN 0.5
-                ELSE 0
-            END
-        ),0) as total_used
-
-    FROM attendance_entry
-
-    WHERE emp_id = '$emp_id'
-    AND attendance_status IN ('Leave','Half Leave')
-    AND sessionid = '$sessionid'
-	");
-
-if (!empty($res)) {
-    $used_opening_leave = $res[0]['total_used'];
-}
-
-$opening_leave_balance = $total_opening_leave - $used_opening_leave;
-
-if ($opening_leave_balance < 0) {
-    $opening_leave_balance = 0;
-}
-    $used_earning_leave = $obj->getvalfield(
-			"attendance_entry",
-			"IFNULL(SUM(
-				CASE 
-					WHEN attendance_status = 'Earning Leave' THEN 1
-					WHEN attendance_status = 'Half Earning Leave' THEN 0.5
-					ELSE 0
-				END
-			),0)",
-			"emp_id='$emp_id'
-			AND sessionid='$sessionid'"
-	);
-    $earning_leave = $obj->getvalfield(
-			"emp_monthly_leave",
-			"IFNULL(SUM(total_leave),0)",
-			"emp_id='$emp_id'
-         AND leave_type='earning'
-         AND sessionid='$sessionid'"
-		);
-	$total_earning = $earning_leave-$used_earning_leave;
-
-/* ================= EXTRA OFF MONTH WISE ================= */
-
+ 
+$opening_earning = $obj->getOpeningLeave($emp_id,'earning',$month,$year,$sessionid);
+$opening_weekly  = $obj->getOpeningLeave($emp_id,'weekly',$month,$year,$sessionid);
+$opening_eoff    = $obj->getOpeningLeave($emp_id,'eoff',$month,$year,$sessionid);
+ 
 $sql = "
 SELECT 
     month,
     year,
     leave_type,
-    COALESCE(SUM(total_leave),0) as uploaded_leave
-
+    COALESCE(SUM(total_leave),0) AS uploaded_leave
 FROM emp_monthly_leave
-
-WHERE emp_id = '$emp_id' and leave_type='eoff'
-
-GROUP BY year, month, leave_type
+WHERE emp_id='$emp_id' and month='$month' and year='$year'  
 ORDER BY year ASC, month ASC
 ";
-
 $res1 = $obj->executequery($sql);
 
 ?>
 
 <!-- SUMMARY -->
+ <?php
+$monthName = date("F", mktime(0, 0, 0, $month, 1));
+?>
+
+<h6 class="mb-3 fw-bold">
+    <?= $monthName ?> Opening Balance
+</h6>
 <div class="row g-2 mb-3">
-
-    <!-- OPENING LEAVE -->
-    <div class="col-md-2">
-        <div class="card border shadow-sm">
-            <div class="card-body text-center p-2">
-                <h6 class="mb-1" style="font-size:12px;">Total Opening</h6>
-                <h5 class="text-primary mb-0">
-                    <?=$total_opening_leave?>
-                </h5>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-2">
-        <div class="card border shadow-sm">
-            <div class="card-body text-center p-2">
-                <h6 class="mb-1" style="font-size:12px;">Used Opening</h6>
-                <h5 class="text-danger mb-0">
-                    <?=$used_opening_leave?>
-                </h5>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-2">
-        <div class="card border shadow-sm">
-            <div class="card-body text-center p-2">
-                <h6 class="mb-1" style="font-size:12px;">Opening Balance</h6>
-                <h5 class="text-success mb-0">
-                    <?=$opening_leave_balance?>
-                </h5>
-            </div>
-        </div>
-    </div>
+ 
 
     <!-- EARNING LEAVE -->
-    <div class="col-md-2">
+     
+    <div class="col-md-4">
         <div class="card border shadow-sm">
             <div class="card-body text-center p-2">
-                <h6 class="mb-1" style="font-size:12px;">Total Earning</h6>
+                <h6 class="mb-1" style="font-size:12px;">Earn Leave</h6>
                 <h5 class="text-primary mb-0">
-                    <?=$earning_leave?>
+                    <?=$opening_earning?>
                 </h5>
             </div>
         </div>
     </div>
 
-    <div class="col-md-2">
+    <div class="col-md-4">
         <div class="card border shadow-sm">
             <div class="card-body text-center p-2">
-                <h6 class="mb-1" style="font-size:12px;">Used Earning</h6>
+                <h6 class="mb-1" style="font-size:12px;">C Off</h6>
                 <h5 class="text-danger mb-0">
-                    <?=$used_earning_leave?>
+                    <?=$opening_weekly?>
                 </h5>
             </div>
         </div>
     </div>
 
-    <div class="col-md-2">
+    <div class="col-md-4">
         <div class="card border shadow-sm">
             <div class="card-body text-center p-2">
-                <h6 class="mb-1" style="font-size:12px;">Earning Balance</h6>
+                <h6 class="mb-1" style="font-size:12px;">Extra Off</h6>
                 <h5 class="text-success mb-0">
-                    <?=$total_earning?>
+                    <?=$opening_eoff?>
                 </h5>
             </div>
         </div>
@@ -157,87 +73,168 @@ $res1 = $obj->executequery($sql);
 
 </div>
 
+<?php
+
+$ledger = [];
+
+/* ================= CREDIT ENTRIES ================= */
+
+$credit_res = $obj->executequery("
+    SELECT
+        CONCAT(year,'-',LPAD(month,2,'0'),'-01') AS trans_date,
+        leave_type,
+        total_leave
+    FROM emp_monthly_leave
+    WHERE emp_id='$emp_id'
+    AND month='$month'
+    AND year='$year'
+    ORDER BY year,month
+");
+
+foreach($credit_res as $row){
+
+    $ledger[] = [
+        'date'       => $row['trans_date'],
+        'leave_type' => $row['leave_type'],
+        'particular' => 'Leave Credit',
+        'credit'     => $row['total_leave'],
+        'debit'      => 0
+    ];
+}
+
+
+/* ================= USED ENTRIES ================= */
+
+$used_res = $obj->executequery("
+    SELECT
+        attendance_date,
+        attendance_status
+    FROM attendance_entry
+    WHERE emp_id='$emp_id'
+    AND MONTH(attendance_date)='$month'
+    AND YEAR(attendance_date)='$year'
+    AND attendance_status IN (
+        'Extra Off','Half Extra Off',
+        'C Off','Half C Off',
+        'Earning Leave','Half Earning Leave',
+        'Leave','Half Leave'
+    )
+");
+
+foreach($used_res as $row){
+
+    $leave_type = '';
+
+    if(in_array($row['attendance_status'],['Extra Off','Half Extra Off'])){
+        $leave_type = 'eoff';
+    }
+    elseif(in_array($row['attendance_status'],['C Off','Half C Off'])){
+        $leave_type = 'weekly';
+    }
+    else{
+        $leave_type = 'earning';
+    }
+
+    $debit = (
+        strpos($row['attendance_status'],'Half') !== false
+    ) ? 0.5 : 1;
+
+    $ledger[] = [
+        'date'       => $row['attendance_date'],
+        'leave_type' => $leave_type,
+        'particular' => $row['attendance_status'],
+        'credit'     => 0,
+        'debit'      => $debit
+    ];
+}
+
+/* ================= SORT BY DATE ================= */
+
+usort($ledger,function($a,$b){
+    return strtotime($a['date']) - strtotime($b['date']);
+});
+
+/* ================= BALANCES ================= */
+
+$balances = [
+    'earning' => $opening_earning,
+    'weekly'  => $opening_weekly,
+    'eoff'    => $opening_eoff
+];
+  
+?>
+
+
+
 
 <div class="table-responsive">
-
+    
     <table class="table table-bordered table-sm">
 
         <thead class="table-primary">
-
             <tr>
-                <th>Month</th>
-                <th>Year</th>
+                <th>Date</th>
                 <th>Leave Type</th>
-                <th>Total</th>
-                <th>Used</th>
+                <th>Particular</th>
+                <th>Credit</th>
+                <th>Debit</th>
                 <th>Balance</th>
             </tr>
-
         </thead>
 
         <tbody>
 
             <?php
-            foreach ($res1 as $row) {
-                $month = $row['month'];
-                $year  = $row['year'];
-                $month_name = date(
-                    "F",
-                    mktime(0, 0, 0, $month, 1)
-                );
 
-                $leave_type = $row['leave_type'];
-                $uploaded = $row['uploaded_leave'];
-                /* ================= USED LEAVE ================= */
-                
-                    $used = 0;
-               $used_res = $obj->executequery("
-    SELECT 
-        COALESCE(SUM(
-            CASE 
-                WHEN attendance_status = 'Extra Off' THEN 1
-                WHEN attendance_status = 'Half Extra Off' THEN 0.5
-                ELSE 0
-            END
-        ),0) as total_used
+foreach($ledger as $row){
 
-    FROM attendance_entry 
-    WHERE emp_id = '$emp_id'
-    AND MONTH(attendance_date) = '$month'
-    AND YEAR(attendance_date) = '$year'
-    AND attendance_status IN ('Extra Off','Half Extra Off')
-");
- 
+    $balances[$row['leave_type']] += $row['credit'];
+    $balances[$row['leave_type']] -= $row['debit'];
 
-if (!empty($used_res)) {
-    $used = $used_res[0]['total_used'];
-}
+    switch($row['leave_type']){
 
-                $balance = $uploaded - $used;
+        case 'earning':
+            $leave_name = 'Earning Leave';
+            break;
 
-                if ($balance < 0) {
-                    $balance = 0;
-                }
-            ?>
+        case 'weekly':
+            $leave_name = 'C Off';
+            break;
+
+        case 'eoff':
+            $leave_name = 'Extra Off';
+            break;
+
+        default:
+            $leave_name = ucfirst($row['leave_type']);
+    }
+
+?>
 
             <tr>
 
-                <td><?=$month_name?></td>
-
-                <td><?=$year?></td>
-
                 <td>
-                    <?=ucwords(str_replace('_',' ',$leave_type))?>
+                    <?=date('d-m-Y',strtotime($row['date']))?>
                 </td>
 
-                <td><?=$uploaded?></td>
-
-                <td><?=$used?></td>
+                <td>
+                    <?=$leave_name?>
+                </td>
 
                 <td>
-                   
-                        <?=$balance?>
-                     
+                    <?=$row['particular']?>
+                </td>
+
+                <td class="text-success fw-bold">
+                    <?=$row['credit']?>
+                </td>
+
+                <td class="text-danger fw-bold">
+                    <?=$row['debit']?>
+                </td>
+
+                <td>
+                    <?=$balances[$row['leave_type']]?>
                 </td>
 
             </tr>
@@ -247,5 +244,4 @@ if (!empty($used_res)) {
         </tbody>
 
     </table>
-
 </div>

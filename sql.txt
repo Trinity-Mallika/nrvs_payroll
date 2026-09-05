@@ -1,0 +1,1 @@
+ALTER TABLE `unit_master` ADD `watermark` VARCHAR(500) NULL DEFAULT NULL AFTER `logo_image`;

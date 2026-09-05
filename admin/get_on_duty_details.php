@@ -13,7 +13,25 @@ if ($type == "approved") {
 }
 $sn = 1;
 $emp_id = $obj->getvalfield("on_duty_master", "emp_id", "on_duty_id='$on_duty_id'");
-$details = $obj->executequery("SELECT * FROM on_duty_details $detail_crit");
+
+$details = $obj->executequery("
+    SELECT 
+        odd.*, 
+        em.first_name AS hod_name,
+        em.emp_code AS hod_code,
+        u.fullname AS updated_by_name
+        
+    FROM on_duty_details odd
+    LEFT JOIN user u 
+        ON odd.approve_by = u.userid
+    LEFT JOIN employee_master em 
+        ON em.emp_id = odd.hod_apr_id
+    $detail_crit
+    ORDER BY odd.date ASC
+");
+
+
+// $details = $obj->executequery("SELECT * FROM on_duty_details $detail_crit"); 
 ?>
 <table class="table table-bordered table-sm">
     <thead class="table-light text-center">
@@ -25,13 +43,15 @@ $details = $obj->executequery("SELECT * FROM on_duty_details $detail_crit");
             <th>Remarks</th>
             <th>Appr <input type="checkbox" id="appr_check" class="form-check-input" /></th>
             <th>Rej <input type="checkbox" id="rej_check" class="form-check-input" /></th>
-            <th>Status</th>
+            <th>Pen <input type="checkbox" id="pen_check" class="form-check-input" /></th>
+            <th>HOD Status</th>
+            <th>HR Status</th>
             <th>Off Day</th>
         </tr>
     </thead>
     <tbody>
 
-        <?php foreach ($details as $row) {
+        <?php foreach ($details as $row) { 
         ?>
             <tr class="detail_row" data-id="<?= $row['on_duty_details_id'] ?>">
                 <td class="text-center"><?= $sn++; ?></td>
@@ -49,17 +69,38 @@ $details = $obj->executequery("SELECT * FROM on_duty_details $detail_crit");
                 </td>
 
                 <td><?= $row['place'] ?></td>
-                <td><?= $row['remark'] ?></td>
-
+                <td><?= $row['remark'] ?></td> 
+               
                 <td class="text-center">
-                    <input type="checkbox" <?= $row['status'] == 1 ? 'checked' : '' ?> data-id="<?= $row['on_duty_details_id'] ?>" class="form-check-input approve_chk" <?= ($row['status'] == 1 || $row['status'] == 2) ? 'disabled' : '' ?>>
+                    <input type="checkbox" <?= $row['status'] == 1 ? 'checked' : '' ?> data-id="<?= $row['on_duty_details_id'] ?>" class="form-check-input approve_chk">
                 </td>
 
                 <td class="text-center">
-                    <input type="checkbox" <?= $row['status'] == 2 ? 'checked' : '' ?> data-id="<?= $row['on_duty_details_id'] ?>" class="form-check-input reject_chk" <?= ($row['status'] == 1 || $row['status'] == 2) ? 'disabled' : '' ?>>
+                    <input type="checkbox" <?= $row['status'] == 2 ? 'checked' : '' ?> data-id="<?= $row['on_duty_details_id'] ?>" class="form-check-input reject_chk">
                 </td>
 
-                <td>
+                <td class="text-center">
+                    <input type="checkbox" <?= $row['status'] == 0 ? 'checked' : '' ?> data-id="<?= $row['on_duty_details_id'] ?>" class="form-check-input pending_chk" >  
+                </td>
+                  <td class="text-center">
+                    <?php
+                    if ($row['is_apr_hod'] == "1") {
+                        echo '<span class="badge bg-success text-white">Approved</span>';
+                    } elseif ($row['is_apr_hod'] == "2") {
+                        echo '<span class="badge bg-danger text-white">Rejected</span>';
+                    } else {
+                        echo '<span class="badge bg-warning text-white">Pending</span>';
+                    }
+                     if ($row['is_apr_hod'] == 1 || $row['is_apr_hod'] == 2) {
+                    ?>
+                        <br>
+                        <?=$row['hod_code'].'-'.$row['hod_name']?> 
+                        Dt: <?=$obj->dateformatindia($row['lastupdated_hod'])?>
+
+                    <?php } ?>
+                </td>
+
+                 <td class="text-center">
                     <?php
                     if ($row['status'] == "1") {
                         echo '<span class="badge bg-success text-white">Approved</span>';
@@ -68,7 +109,14 @@ $details = $obj->executequery("SELECT * FROM on_duty_details $detail_crit");
                     } else {
                         echo '<span class="badge bg-warning text-white">Pending</span>';
                     }
+                    if($row['status'] == "1" || $row['status'] == "2"){
                     ?>
+                    <br>
+                    
+                    <?=$row['updated_by_name']?> 
+                        Dt: <?=$obj->dateformatindia($row['approved_date'])?>
+                    <?php } ?>
+
                 </td>
                 <td></td>
 

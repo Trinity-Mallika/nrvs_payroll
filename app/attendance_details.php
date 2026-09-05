@@ -57,42 +57,84 @@ $res = $obj->executequery("
         END) AS total_half1,
 
         SUM(CASE 
-            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave') THEN 1 
+            WHEN attendance_status IN ('Earning Leave','Leave') THEN 1 
+            ELSE 0 
+        END) AS availed_leave,
+
+        SUM(CASE 
+            WHEN attendance_status IN ('Half Earning Leave','Half Leave') THEN 0.5 
+            ELSE 0 
+        END) AS half_availed_leave,
+        SUM(CASE 
+            WHEN attendance_status = 'C Off' THEN 1 
+            ELSE 0 
+        END) AS total_c_off,
+
+        SUM(CASE 
+            WHEN attendance_status = 'Half C Off' THEN 0.5
+            ELSE 0 
+        END) AS total_half_c_off,
+
+        SUM(CASE 
+            WHEN attendance_status = 'Extra Off' THEN 1 
+            ELSE 0 
+        END) AS total_e_off,
+
+        SUM(CASE 
+            WHEN attendance_status = 'Half Extra Off' THEN 0.5
+            ELSE 0 
+        END) AS total_half_e_off,
+
+        SUM(CASE 
+            WHEN attendance_status IN ('Present','Weekly Leave','Earning Leave','C Off','Extra Off','Leave','Public Holiday','National Holiday','Religion Holiday','Seasonal Holiday') THEN 1 
             ELSE 0 
         END) AS total_present,
 
         SUM(CASE 
+            WHEN attendance_status IN ('National Holiday','Religion Holiday','Seasonal Holiday') THEN 1 
+            ELSE 0 
+        END) AS tot_paid_holiday,
+
+        SUM(CASE 
+            WHEN attendance_status IN ('National Holiday') THEN 1 
+            ELSE 0 
+        END) AS national_holiday,
+        SUM(CASE 
+            WHEN attendance_status IN ('Religion Holiday') THEN 1 
+            ELSE 0 
+        END) AS religion_holiday,
+        SUM(CASE 
+            WHEN attendance_status IN ('Seasonal Holiday') THEN 1 
+            ELSE 0 
+        END) AS seasonal_holiday,
+
+        SUM(CASE 
             WHEN attendance_status IN ('Half Day','Half Weekly Leave','Half Earning Leave','Half C Off','Half Extra Off','Half Leave') THEN 1 
             ELSE 0 
-        END) AS total_half
-
+        END) AS total_half 
     FROM attendance_entry
     WHERE emp_id = '$emp_id' 
     AND month = '$currentMonth' 
     AND year = '$currentYear' AND unit_id='$unitid'
 ");
 
-$row = $res[0] ?? [];
-
+$row = $res[0] ?? []; 
 $total_present1 = $row['total_present1'] ?? 0;
 $total_half1    = $row['total_half1'] ?? 0;
 
 $total_present  = $row['total_present'] ?? 0;
 $total_half     = $row['total_half'] ?? 0;
 
-$real_total_attandence = $total_present1 + ($total_half1 / 2);
-$total_attandence      = $total_present + ($total_half / 2);
-
-$totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
-$week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $allow_weekly_off);
-$earn_leave_present =  $real_total_attandence + $week_leave;
-$monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
-
-//$three_month_leave = $obj->getLeave($emp_id, $currentMonth, $currentYear);
-$extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear);
-$opening_leave_balance =$obj->get_opening_leave_balance($emp_id, $sessionid);
-$total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid);
-$total_curr_week_leave = $obj->getCurrentWeekLeave($emp_id, $currentMonth, $currentYear);
+$availed_leave     = $row['availed_leave'] ?? 0;
+$half_availed_leave     = $row['half_availed_leave'] ?? 0;
+$total_c_off     = $row['total_c_off'] ?? 0;
+$total_half_c_off     = $row['total_half_c_off'] ?? 0;
+$total_e_off     = $row['total_e_off'] ?? 0;
+$total_half_e_off     = $row['total_half_e_off'] ?? 0;
+$tot_paid_holiday     = $row['tot_paid_holiday'] ?? 0;
+$national_att_holiday     = $row['national_holiday'] ?? 0;
+$religion_att_holiday     = $row['religion_holiday'] ?? 0;
+$seasonal_att_holiday     = $row['seasonal_holiday'] ?? 0;
 
 $holidayData = $obj->getHolidayCountWithSandwichRule(
     $emp_id,
@@ -102,9 +144,24 @@ $holidayData = $obj->getHolidayCountWithSandwichRule(
 );
 
 $holiday_total     = $holidayData['total'] ?? 0;
-$holiday_national  = $holidayData['national'] ?? 0;
-$holiday_religious = $holidayData['religious'] ?? 0;
-$holiday_seasonal  = $holidayData['seasonal'] ?? 0;
+$holiday_national  = $holidayData['national']+ $national_att_holiday ?? 0;
+$holiday_religious = $holidayData['religious']+ $religion_att_holiday ?? 0;
+$holiday_seasonal  = $holidayData['seasonal']+ $seasonal_att_holiday ?? 0;
+
+$real_total_attandence1 = $total_present1 + ($total_half1 / 2);
+$real_total_attandence = $total_present1 + ($total_half1 / 2)+$holiday_total+$tot_paid_holiday;
+$total_attandence      = $total_present + ($total_half / 2);
+
+$totalDaysInMonth = cal_days_in_month(CAL_GREGORIAN, $currentMonth, $currentYear);
+$week_leave = $obj->totalWeeklyLeave($unitid, $real_total_attandence, $emp_id, $currentMonth, $currentYear);
+$earn_leave_present =  $real_total_attandence + $week_leave;
+$monthly_leave = $obj->getTotalLeaveByWorkingDays($setting_type, $earn_leave_present, $unitid);
+$extra_off =$obj->getExtraOffBalance($emp_id, $currentMonth, $currentYear); 
+$total_earning_leave = $obj->getEarningLeave($emp_id, $sessionid,$currentMonth, $currentYear);
+$total_curr_week_leave = $obj->getCurrentWeekLeave($emp_id, $currentMonth, $currentYear);
+$pending_coff =$obj->getEmpCoffLeave($emp_id, $sessionid, $currentMonth, $currentYear);
+
+ 
 
 
 
@@ -114,9 +171,9 @@ if ($is_all_leave_add == 1) {
     $total_payable_days += $monthly_leave;
 }
 //$total_payable_days += $three_month_leave;
-if ($is_allow_c_off == 1) {
+//if ($is_allow_c_off == 1) {
     $total_payable_days = min($total_payable_days, $totalDaysInMonth);
-}
+//}
 
 ?>
 
@@ -140,7 +197,11 @@ if ($is_allow_c_off == 1) {
             <div class="card p-1 attendance-card border-0 shadow-lg mb-2 rounded-pill">
                 <div class="row">
                     <div class="col-3 ">
-                        <!-- <a href="?prev&currentYear=<?php echo $currentYear ?>&currentMonth=<?php echo $currentMonth; ?>&emp_id=<?php echo $emp_id ?>"><i class="bi bi-arrow-left-circle-fill fs-5 text-blue"></i></a> -->
+                        <?php if (!($currentMonth == 5 && $currentYear == 2026)) { ?>
+                        <a
+                            href="?prev&currentYear=<?php echo $currentYear ?>&currentMonth=<?php echo $currentMonth; ?>&emp_id=<?php echo $emp_id ?>"><i
+                                class="bi bi-arrow-left-circle-fill fs-5 text-blue"></i></a>
+                        <?php } ?>
                     </div>
                     <div class="col-6 text-center ">
                         <h6 class="mb-0 mt-1 text-blue">
@@ -149,38 +210,61 @@ if ($is_allow_c_off == 1) {
                         </h6>
                     </div>
                     <div class="col-3 text-end">
-                        <!-- <a href="?next&currentYear=<?php echo $currentYear ?>&currentMonth=<?php echo $currentMonth; ?>&emp_id=<?php echo $emp_id ?>"><i class="bi bi-arrow-right-circle-fill fs-5 text-blue"></i></a> -->
+                        <a
+                            href="?next&currentYear=<?php echo $currentYear ?>&currentMonth=<?php echo $currentMonth; ?>&emp_id=<?php echo $emp_id ?>"><i
+                                class="bi bi-arrow-right-circle-fill fs-5 text-blue"></i></a>
                     </div>
                 </div>
             </div>
 
             <h6 class="text-center text-white mt-3 fs-5">Employee Wise Attendance List</h6>
-
+ 
             <div class="scroll-container mt-4">
                 <div class="box border-card-blue bg-light-blue">
-                    <h3 class="mb-1"><?= $real_total_attandence; ?></h3>
-                    <h6 class="mb-0 text-center">Total Present</h6>
+                    <h3 class="mb-1"><?= $real_total_attandence1; ?></h3>
+                    <h6 class="mb-0 text-center">Present</h6>
                 </div>
-                <div class="box border-card-red bg-light-red">
-                    <h3 class="mb-1"><?= $total_attandence ?></h3>
-                    <h6 class="mb-0 text-center">Total Attendance <br> With Leave</h6>
-                </div>
+
                 <div class="box border-card-green bg-light-green">
                     <h3 class="mb-1"><?= $week_leave ?></h3>
-                    <h6 class="mb-0 text-center">Weekly Off</h6>
+                    <h6 class="mb-0 text-center">Week Off</h6>
                 </div>
+
+                <div class="box border-card-purple bg-light-purple">
+                    <h3 class="mb-1"><?= $availed_leave  ?></h3>
+                    <h6 class="mb-0 text-center">Availed Leave</h6>
+                </div>
+                <div class="box border-card-red bg-light-red">
+                    <h3 class="mb-1"><?= $half_availed_leave ?></h3>
+                    <h6 class="mb-0 text-center">Availed Half Leave</h6>
+                </div>
+                <div class="box border-card-blue bg-light-blue">
+                    <h3 class="mb-1"><?= $total_c_off  ?></h3>
+                    <h6 class="mb-0 text-center">Availed C Off</h6>
+                </div>
+                <div class="box border-card-green bg-light-green">
+                    <h3 class="mb-1"><?= $total_half_c_off ?></h3>
+                    <h6 class="mb-0 text-center">Availed Half C Off</h6>
+                </div>
+                <div class="box border-card-purple bg-light-purple">
+                    <h3 class="mb-1"><?= $total_e_off  ?></h3>
+                    <h6 class="mb-0 text-center">Availed Extra Off</h6>
+                </div>
+                <div class="box border-card-red bg-light-red">
+                    <h3 class="mb-1"><?= $total_half_e_off ?></h3>
+                    <h6 class="mb-0 text-center">Availed Half<br> Extra Off</h6>
+                </div> 
+
+                <div class="box border-card-blue bg-light-blue">
+                    <h3 class="mb-1"><?= $total_payable_days ?></h3>
+                    <h6 class="mb-0 text-center">Total Payable Days</h6>
+                </div>
+
                 <div class="box border-card-yellow bg-light-yellow">
                     <h3 class="mb-1"><?= $monthly_leave ?></h3>
                     <h6 class="mb-0 text-center">Earn Leave</h6>
                 </div>
-                <div class="box border-card-pink bg-light-pink">
-                    <h3 class="mb-1"><?= $total_payable_days ?></h3>
-                    <h6 class="mb-0 text-center">Total Payable Days</h6>
-                </div>
-                <div class="box border-card-purple bg-light-purple">
-                    <h3 class="mb-1"><?= $holiday_total  ?></h3>
-                    <h6 class="mb-0 text-center">Holiday</h6>
-                </div>
+               
             </div>
 
             <h6>
@@ -201,10 +285,10 @@ if ($is_allow_c_off == 1) {
             <div class="card border-0 shadow-lg today-date-card p-2 mb-2 bg-darkc">
                 <div class="row">
                     <div class="col-9 ">
-                        <small class="fw-bold text-white">Opening Leave Balance </small>
+                        <small class="fw-bold text-white">C Off </small>
                     </div>
                     <div class="col-3 text-center">
-                        <h4 class="mb-0"><?= $opening_leave_balance ?></h4>
+                        <h4 class="mb-0"><?= $pending_coff ?></h4>
                     </div>
                 </div>
             </div>
@@ -230,47 +314,48 @@ if ($is_allow_c_off == 1) {
 
     <?php include('inc/js-file.php') ?>
     <script>
-        $(document).ready(function() {
+    $(document).ready(function() {
 
-            showatttype();
-        });
+        showatttype();
+    });
 
-        function showatttype() {
-            var emp_id = '<?php echo $emp_id ?>';
-            var currentMonth = '<?php echo $currentMonth ?>';
-            var currentYear = '<?php echo $currentYear ?>';
-            var date_as_new = '<?php echo $date_as_new ?>';
-            var doj = '<?php echo $doj ?>';
-            if (emp_id > 0) {
-                jQuery.ajax({
-                    type: 'POST',
-                    url: 'view_att_details.php',
-                    data: 'currentMonth=' + currentMonth + '&currentYear=' + currentYear + '&emp_id=' + emp_id + '&date_as_new=' + date_as_new + '&doj=' + doj,
-                    dataType: 'html',
-                    beforeSend: function() {
-                        Swal.fire({
-                            title: 'Please wait',
-                            text: 'Loading attendance details...',
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-                    },
-                    success: function(data) {
-                        Swal.close();
-                        document.getElementById('show_att_data').innerHTML = data;
-                        //total(emp_id, currentMonth, currentYear);
-                    },
-                    error: function() {
-                        Swal.close();
-                        Swal.fire('Error', 'Unable to load attendance data', 'error');
-                    }
+    function showatttype() {
+        var emp_id = '<?php echo $emp_id ?>';
+        var currentMonth = '<?php echo $currentMonth ?>';
+        var currentYear = '<?php echo $currentYear ?>';
+        var date_as_new = '<?php echo $date_as_new ?>';
+        var doj = '<?php echo $doj ?>';
+        if (emp_id > 0) {
+            jQuery.ajax({
+                type: 'POST',
+                url: 'view_att_details.php',
+                data: 'currentMonth=' + currentMonth + '&currentYear=' + currentYear + '&emp_id=' + emp_id +
+                    '&date_as_new=' + date_as_new + '&doj=' + doj,
+                dataType: 'html',
+                beforeSend: function() {
+                    Swal.fire({
+                        title: 'Please wait',
+                        text: 'Loading attendance details...',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                },
+                success: function(data) {
+                    Swal.close();
+                    document.getElementById('show_att_data').innerHTML = data;
+                    //total(emp_id, currentMonth, currentYear);
+                },
+                error: function() {
+                    Swal.close();
+                    Swal.fire('Error', 'Unable to load attendance data', 'error');
+                }
 
-                }); //ajax close
-            }
+            }); //ajax close
         }
+    }
     </script>
 
 </body>

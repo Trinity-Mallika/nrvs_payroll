@@ -77,13 +77,48 @@ if (isset($_GET['gender'])) {
 
 if (isset($_GET['resign_status'])) {
     $resign_status = $obj->test_input($_GET['resign_status']);
-    if ($resign_status == '0') {
-        $crit .= " and (em.resign_status != '1' OR (em.resign_status = '1' AND em.last_working_date >= CURDATE()))";
-    } else {
-        $crit .= " and em.resign_status = '1'";
+    // if ($resign_status != '') {
+    //     $crit .= " and em.is_active='$resign_status'";
+    // }
+   if (isset($_GET['resign_status'])) {
+
+    $resign_status = $obj->test_input($_GET['resign_status']);
+
+    if ($resign_status == '1') {
+
+        // ACTIVE EMPLOYEES
+        $crit .= "
+            AND em.is_active = '1'
+            AND (
+                em.resign_status != '1'
+                OR (
+                    em.resign_status = '1'
+                    AND em.last_working_date >= CURDATE()
+                )
+            )
+        ";
+
+    } elseif ($resign_status == '0') {
+
+        // INACTIVE / RESIGNED EMPLOYEES
+        $crit .= "
+            AND (
+                em.is_active = '0'
+                OR (
+                    em.resign_status = '1'
+                    AND em.last_working_date < CURDATE()
+                )
+            )
+        ";
     }
+
 } else {
-    $resign_status = "0";
+
+    // ALL
+    $resign_status = "";
+}
+} else {
+    $resign_status = "";
 };
 
 $dob = $_GET['dob'] ?? '';
@@ -91,7 +126,14 @@ if ($dob != '') {
     $day   = date('d', strtotime($dob));
     $month = date('m', strtotime($dob));
 
-    $crit .= " AND DAY(em.dob) = '$day' AND MONTH(em.dob) = '$month'";
+    $crit .= " AND DAY(em.dob) = '$day' AND MONTH(em.dob) = '$month' AND em.is_active = '1'
+            AND (
+                em.resign_status != '1'
+                OR (
+                    em.resign_status = '1'
+                    AND em.last_working_date >= CURDATE()
+                )
+            )";
 }
 
 $anniversary_date = $_GET['anniversary_date'] ?? '';
@@ -99,77 +141,98 @@ if ($anniversary_date != '') {
     $day   = date('d', strtotime($anniversary_date));
     $month = date('m', strtotime($anniversary_date));
 
-    $crit .= " AND DAY(em.anniversary_date) = '$day' AND MONTH(em.anniversary_date) = '$month'";
+    $crit .= " AND DAY(em.anniversary_date) = '$day' AND MONTH(em.anniversary_date) = '$month' AND em.is_active = '1'
+            AND (
+                em.resign_status != '1'
+                OR (
+                    em.resign_status = '1'
+                    AND em.last_working_date >= CURDATE()
+                )
+            )";
 }
 
 $work_anniversary = $_GET['work_anniversary'] ?? '';
 if ($work_anniversary != '') {
     $day   = date('d', strtotime($work_anniversary));
     $month = date('m', strtotime($work_anniversary));
-    $crit .= " AND DAY(em.date_of_joining) = '$day' AND MONTH(em.date_of_joining) = '$month'";
+    $crit .= " AND DAY(em.date_of_joining) = '$day' AND MONTH(em.date_of_joining) = '$month' AND em.is_active = '1'
+            AND (
+                em.resign_status != '1'
+                OR (
+                    em.resign_status = '1'
+                    AND em.last_working_date >= CURDATE()
+                )
+            )";
 }
 
 $sixty_plus_age = $_GET['sixty_plus_age'] ?? '0';
 if ($sixty_plus_age == 1) {
-    $crit .= " AND TIMESTAMPDIFF(YEAR, em.dob, CURDATE()) >= 60";
+    $crit .= " AND TIMESTAMPDIFF(YEAR, em.dob, CURDATE()) >= 60   AND em.is_active = '1'
+            AND (
+                em.resign_status != '1'
+                OR (
+                    em.resign_status = '1'
+                    AND em.last_working_date >= CURDATE()
+                )
+            )" ; 
 }
 
-
 $fieldMap = [
-    1 => ['label' => 'Gender',         'key' => 'gender'],
-    2 => ['label' => 'Date of Birth',    'key' => 'dob'],
-    3 => ['label' => 'Age',             'key' => 'age'],
-    4 => ['label' => 'Blood Group',             'key' => 'blood_group'],
-    5 => ['label' => 'Marital Status',        'key' => 'marital_status'],
-    6 => ['label' => 'Nationality',       'key' => 'nationality'],
-    7 => ['label' => 'Religion',   'key' => 'religion'],
-    8 => ['label' => 'Caste',       'key' => 'caste'],
-    9 => ['label' => 'Mobile Number',        'key' => 'mobile_no'],
-    10 => ['label' => 'Alternate Mobile',        'key' => 'alt_mobile_no'],
-    11 => ['label' => 'Email',        'key' => 'email_id'],
-    12 => ['label' => 'Emergency Contact Name',        'key' => 'emer_contact_name'],
-    13 => ['label' => 'Emergency Contact Relation',        'key' => 'emer_contact_relation'],
-    14 => ['label' => 'Emergency Contact Number',        'key' => 'emer_contact_no'],
-    15 => ['label' => 'Present Address',        'key' => 'present_address'],
-    16 => ['label' => 'Permanent Address',        'key' => 'permanent_address'],
-    17 => ['label' => 'Aadhaar No',        'key' => 'aadhar_no'],
-    18 => ['label' => 'PAN No',        'key' => 'pan_no'],
-    19 => ['label' => 'Driving License',        'key' => 'driving_license'],
-    20 => ['label' => 'Passport No',        'key' => 'passport_no'],
-    21 => ['label' => 'Is Form 21',        'key' => 'shift_hours'],
-    22 => ['label' => 'Identification Marks',        'key' => 'identification_masks'],
-    23 => ['label' => 'Present Salary',        'key' => 'basic_salary'],
-    24 => ['label' => 'Opening Leave',        'key' => 'opening_balance'],
-    25 => ['label' => 'Extra Off',        'key' => 'ecoff'],
-    26 => ['label' => 'C-Off',        'key' => 'coff'],
-    27 => ['label' => 'Opening Leave Date',        'key' => 'opening_date'],
-    28 => ['label' => 'Grade',        'key' => 'grade_id'],
-    29 => ['label' => 'Department',        'key' => 'department_id'],
-    30 => ['label' => 'Designation',        'key' => 'designation_id'],
-    31 => ['label' => 'Date of Joining',        'key' => 'date_of_joining'],
-    32 => ['label' => 'Job Location',        'key' => 'job_location'],
-    33 => ['label' => 'Shift Code',        'key' => 'shift_id'],
-    34 => ['label' => 'Reporting Manager',        'key' => 'reporting_manager'],
-    35 => ['label' => 'Employment Type',        'key' => 'employee_type'],
-    36 => ['label' => 'Employer Name',        'key' => 'employer_name'],
-    37 => ['label' => 'Employer Designation',        'key' => 'employer_designation_id'],
-    38 => ['label' => 'Service Period From',        'key' => 'service_from'],
-    39 => ['label' => 'Service Period To',        'key' => 'service_to'],
-    40 => ['label' => 'Last Drawn Salary',        'key' => 'last_salary'],
-    41 => ['label' => 'Reason for Leaving',        'key' => 'reason'],
-    42 => ['label' => 'Job Responsibilities',        'key' => 'job_responsibility'],
-    43 => ['label' => 'Is PF',        'key' => 'is_pf'],
-    44 => ['label' => 'Is ESI',        'key' => 'is_esic'],
-    45 => ['label' => 'Allow Weekly Off',        'key' => 'allow_weekly_off'],
-    46 => ['label' => 'PF NO.',        'key' => 'pf_uan'],
-    47 => ['label' => 'UAN NO.',        'key' => 'uan_no'],
-    48 => ['label' => 'ESIC Number',        'key' => 'esic_no'],
-    49 => ['label' => 'PF Joining Date',        'key' => 'pf_joining_date'],
-    50 => ['label' => 'ESIC Joining Date',        'key' => 'esic_joining_date'],
-    51 => ['label' => 'Bank Name',        'key' => 'bank_name'],
-    52 => ['label' => 'Acc Holder Name',  'key' => 'acc_holder_name'],
-    53 => ['label' => 'Account No.',      'key' => 'account_no'],
-    54 => ['label' => 'IFSC Code',        'key' => 'ifsc_code'],
+    1  => ['label' => 'Gender', 'key' => 'gender'],
+    2  => ['label' => 'Date of Birth', 'key' => 'dob'],
+    3  => ['label' => 'Age', 'key' => 'age'],
+    4  => ['label' => 'Blood Group', 'key' => 'blood_group'],
+    5  => ['label' => 'Marital Status', 'key' => 'marital_status'],
+    6  => ['label' => 'Nationality', 'key' => 'nationality'],
+    7  => ['label' => 'Religion', 'key' => 'religion'],
+    8  => ['label' => 'Caste', 'key' => 'caste'],
+    9  => ['label' => 'Mobile Number', 'key' => 'mobile_no'],
+    10 => ['label' => 'Alternate Mobile', 'key' => 'alt_mobile_no'],
+    11 => ['label' => 'Email', 'key' => 'email_id'],
+    12 => ['label' => 'Emergency Contact Name', 'key' => 'emer_contact_name'],
+    13 => ['label' => 'Emergency Contact Relation', 'key' => 'emer_contact_relation'],
+    14 => ['label' => 'Emergency Contact Number', 'key' => 'emer_contact_no'],
+    15 => ['label' => 'Present Address', 'key' => 'present_address'],
+    16 => ['label' => 'Permanent Address', 'key' => 'permanent_address'],
+    17 => ['label' => 'Aadhaar No', 'key' => 'aadhar_no'],
+    18 => ['label' => 'PAN No', 'key' => 'pan_no'],
+    19 => ['label' => 'Driving License', 'key' => 'driving_license'],
+    20 => ['label' => 'Driving License Expiry Date', 'key' => 'driving_lic_expiry_date'],
+    21 => ['label' => 'Driving License Category', 'key' => 'driving_licence_cat_id'],
+    22 => ['label' => 'Passport No', 'key' => 'passport_no'],
+    23 => ['label' => 'Is Form 21', 'key' => 'shift_hours'],
+    24 => ['label' => 'Identification Marks', 'key' => 'identification_masks'],
+    25 => ['label' => 'Present Salary', 'key' => 'basic_salary'],
+    26 => ['label' => 'Employee Category', 'key' => 'emp_category'],
+    27 => ['label' => 'Opening Leave Date', 'key' => 'opening_date'],
+    28 => ['label' => 'Grade', 'key' => 'grade_id'],
+    29 => ['label' => 'Department', 'key' => 'department_id'],
+    30 => ['label' => 'Designation', 'key' => 'designation_id'],
+    31 => ['label' => 'Date of Joining', 'key' => 'date_of_joining'],
+    32 => ['label' => 'Job Location', 'key' => 'job_location'],
+    33 => ['label' => 'Shift Code', 'key' => 'shift_id'],
+    34 => ['label' => 'Reporting Manager', 'key' => 'reporting_manager'],
+    35 => ['label' => 'Employment Type', 'key' => 'employee_type'],
+    36 => ['label' => 'Employer Name', 'key' => 'employer_name'],
+    37 => ['label' => 'Employer Designation', 'key' => 'employer_designation_id'],
+    38 => ['label' => 'Service Period From', 'key' => 'service_from'],
+    39 => ['label' => 'Service Period To', 'key' => 'service_to'],
+    40 => ['label' => 'Last Drawn Salary', 'key' => 'last_salary'],
+    41 => ['label' => 'Reason for Leaving', 'key' => 'reason'],
+    42 => ['label' => 'Job Responsibilities', 'key' => 'job_responsibility'],
+    43 => ['label' => 'Is PF', 'key' => 'is_pf'],
+    44 => ['label' => 'Is ESI', 'key' => 'is_esic'],
+    45 => ['label' => 'Allow Weekly Off', 'key' => 'allow_weekly_off'],
+    46 => ['label' => 'PF NO.', 'key' => 'pf_uan'],
+    47 => ['label' => 'UAN NO.', 'key' => 'uan_no'],
+    48 => ['label' => 'ESIC Number', 'key' => 'esic_no'],
+    49 => ['label' => 'PF Joining Date', 'key' => 'pf_joining_date'],
+    50 => ['label' => 'ESIC Joining Date', 'key' => 'esic_joining_date'],
+    51 => ['label' => 'Bank Name', 'key' => 'bank_name'],
+    52 => ['label' => 'Acc Holder Name', 'key' => 'acc_holder_name'],
+    53 => ['label' => 'Account No.', 'key' => 'account_no'],
+    54 => ['label' => 'IFSC Code', 'key' => 'ifsc_code'],
+    55 => ['label' => 'Is Active', 'key' => 'is_active_emp'],
 ];
 
 $showFields = isset($_GET['show_field']) ? array_map('intval', $_GET['show_field']) : [];
@@ -206,6 +269,7 @@ if (isset($_GET['submit'])) {
 </style>
 
 <body>
+    <?php include('inc/loader.php') ?>
     <?php include('inc/header.php') ?>
     <?php include('inc/sidebar.php') ?>
     <!-- end auth-page-wrapper -->
@@ -217,6 +281,7 @@ if (isset($_GET['submit'])) {
                 <?php include('inc/alert.php'); ?>
                 <div class="row">
                     <?php if (!isset($_GET['submit'])) { ?>
+
                     <div class="col-lg-12">
                         <div class="card" id="customerList">
                             <div class="card-header border-bottom-dashed">
@@ -319,8 +384,9 @@ if (isset($_GET['submit'])) {
                                             <label class="form-label">Status</label>
                                             <select class="form-select form-select-sm" name="resign_status"
                                                 id="resign_status">
-                                                <option value="0">Active</option>
-                                                <option value="1">Inactive (Resigned)</option>
+                                                <option value="">All</option>
+                                                <option value="1">Active</option>
+                                                <option value="0">Inactive (Resigned)</option>
                                             </select>
                                             <script>
                                             document.getElementById('resign_status').value = '<?= $resign_status ?>'
@@ -352,6 +418,53 @@ if (isset($_GET['submit'])) {
                     <?php } ?>
                     <?php
                     if (isset($_GET['submit'])) {
+                        $smonth = date('n');
+                        $syear = date('Y');
+                        $firstDateOfMonth = date("Y-m-01", strtotime("$syear-$smonth-01"));
+                        $lastDateOfMonth = date("Y-m-t", strtotime("$syear-$smonth-01")); 
+                        $slno = 1;
+                        
+                        $sql ="
+                        SELECT 
+                            em.*,
+                            em.is_active as is_active_emp,
+                            dm.department_name,
+                            erpt.reporting_manager,
+                            bnk.bank_name,
+                            ebd.bank_id,
+                            ebd.acc_holder_name,
+                            ebd.account_no,
+                            ebd.ifsc_code,
+                            ebd.is_active,
+                            dem.designation AS current_designation,
+                            dem2.designation AS previous_designation,
+                            gm.grade_name,
+                            dlc.licence_cat_name,
+                            dlc.short_name as licence_cat_short_name,
+                            erpt.first_name as reporting_manager_name
+                        FROM $tblname AS em
+                        LEFT JOIN department_master dm 
+                            ON em.department_id = dm.department_id
+                        LEFT JOIN emp_bank_details ebd 
+                            ON em.emp_id = ebd.emp_id and ebd.is_active = 1
+                        LEFT JOIN bank_master bnk 
+                            ON ebd.bank_id = bnk.bank_id
+                        LEFT JOIN designation_master dem 
+                            ON em.designation_id = dem.designation_id
+                        LEFT JOIN driving_licence_cat dlc 
+                            ON em.driving_licence_cat_id = dlc.driving_licence_cat_id
+                        LEFT JOIN designation_master dem2 
+                            ON em.employer_designation_id = dem2.designation_id
+                        LEFT JOIN employee_master erpt 
+                            ON em.reporting_manager = erpt.emp_id
+                        LEFT JOIN grade_master gm 
+                            ON em.grade_id = gm.grade_id
+                        WHERE em.unit_id = '$unitid' $crit  
+                        group by em.emp_id
+                        ORDER BY em.emp_code ASC
+                        "; 
+                        $res =  $obj->executequery($sql);
+                         $count_res = count($res);
                     ?>
                     <div class="col-lg-12">
                         <div class="card" id="customerList">
@@ -363,15 +476,8 @@ if (isset($_GET['submit'])) {
                                                 <?= $submodule; ?>
                                             </h5>
                                             <div class="ms-2 text-muted">
-                                                <?php if (!empty($_GET['year'])) { ?>
-                                                <b>Year:</b> <?= $_GET['year']; ?>
-                                                <?php } ?>
-                                                <?php if (!empty($month_name)) { ?>
-                                                | <b>Month:</b> <?= $month_name; ?>
-                                                <?php } ?>
-
                                                 <?php if (!empty($department_name)) { ?>
-                                                | <b>Dept:</b> <?= $department_name; ?>
+                                                <b>Dept:</b> <?= $department_name; ?>
                                                 <?php } ?>
                                             </div>
                                             <div class="mb-3">
@@ -386,6 +492,7 @@ if (isset($_GET['submit'])) {
                             </div>
                             <div class="card-body">
                                 <div class="auto-scroll-wrapper">
+                                    <h5 class="text-primary">Total Employee : <?= $count_res ?></h5>
                                     <div class="table-responsive">
                                         <table id="buttons-datatables" class="display table table-sm table-bordered"
                                             style="width:100%">
@@ -405,45 +512,15 @@ if (isset($_GET['submit'])) {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php
-                                                    $slno = 1;
-                                                    $res = $obj->executequery("
-                                                                        SELECT 
-                                                                            em.*,
-                                                                            dm.department_name,
-                                                                            bnk.bank_name,
-                                                                            ebd.bank_id,
-                                                                            ebd.acc_holder_name,
-                                                                            ebd.account_no,
-                                                                            ebd.ifsc_code,
-                                                                            ebd.is_active,
-                                                                            dem.designation AS current_designation,
-                                                                            dem2.designation AS previous_designation,
-                                                                            gm.grade_name,
-                                                                            erpt.first_name as reporting_manager_name
-                                                                        FROM $tblname AS em
-                                                                        LEFT JOIN department_master dm 
-                                                                            ON em.department_id = dm.department_id
-                                                                        LEFT JOIN emp_bank_details ebd 
-                                                                            ON em.emp_id = ebd.emp_id and ebd.is_active = 1
-                                                                        LEFT JOIN bank_master bnk 
-                                                                            ON ebd.bank_id = bnk.bank_id
-                                                                        LEFT JOIN designation_master dem 
-                                                                            ON em.designation_id = dem.designation_id
-                                                                        LEFT JOIN designation_master dem2 
-                                                                            ON em.employer_designation_id = dem2.designation_id
-                                                                              LEFT JOIN employee_master erpt 
-                                                                            ON em.emp_id = erpt.reporting_manager
-                                                                        LEFT JOIN grade_master gm 
-                                                                            ON em.grade_id = gm.grade_id
-                                                                        WHERE em.unit_id = '$unitid' $crit
-                                                                        ORDER BY em.emp_code ASC
-                                                                        ");
-                                                                       
+                                                <?php                 
                                                     foreach ($res as $row) {
                                                     ?>
                                                 <tr id="tr_<?= $row["emp_id"]; ?>">
-                                                    <td><?php echo $slno++; ?></td>
+                                                    <td><?php echo $slno++; ?> <a
+                                                            href="employee_master.php?emp_id=<?= $row['emp_id'] ?>&mode=view"
+                                                            class="btn btn-sm btn-primary">
+                                                           view
+                                                        </a></td>
                                                     <td><?= $row["emp_code"]; ?></td>
                                                     <td> <?= ucfirst($row['first_name'] ?? ''); ?>
                                                         <?= ucfirst($row['last_name'] ?? ''); ?></td>
@@ -457,6 +534,8 @@ if (isset($_GET['submit'])) {
                                                                     $value = $row['department_name'] ?? '-';
                                                                 } elseif ($key == 'designation_id') {
                                                                     $value = $row['current_designation'] ?? '-';
+                                                                } elseif ($key == 'driving_licence_cat_id') {
+                                                                    $value = $row['licence_cat_name']." - ".$row['licence_cat_short_name'] ?? '-';
                                                                 } elseif ($key == 'grade_id') {
                                                                     $value = $row['grade_name'] ?? '-';
                                                                 } elseif ($key == 'reporting_manager') {
@@ -467,6 +546,8 @@ if (isset($_GET['submit'])) {
                                                                     $value = $row['previous_designation'] ?? '-';
                                                                 } elseif ($key == 'is_pf') {
                                                                     $value = ($row['is_pf'] == '1') ? 'Yes' : 'No';
+                                                                }elseif ($key == 'is_active_emp') {
+                                                                    $value = ($row['is_active_emp'] == '1') ? 'Yes' : 'No';
                                                                 } elseif ($key == 'is_esic') {
                                                                     $value = ($row['is_esic'] == '1') ? 'Yes' : 'No';
                                                                 } elseif ($key == 'allow_weekly_off') {
@@ -483,7 +564,7 @@ if (isset($_GET['submit'])) {
                                                                     $value = $row[$key] ?? '-';
                                                                 }
                                                                 // Date format example
-                                                                if (in_array($key, ['dob', 'date_of_joining', 'opening_date', 'pf_joining_date', 'esic_joining_date']) && !empty($value)) {
+                                                                if (in_array($key, ['dob', 'date_of_joining', 'opening_date', 'pf_joining_date', 'esic_joining_date','driving_lic_expiry_date']) && !empty($value)) {
                                                                     $value = $obj->dateformatindia1($value);
                                                                 }
                                                             ?>

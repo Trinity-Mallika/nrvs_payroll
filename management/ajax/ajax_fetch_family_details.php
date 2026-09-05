@@ -108,8 +108,8 @@ if ($type == 'family') {
         <tr>
             <td><?= $bank_name; ?> </td>
             <td><?= $row['acc_holder_name']; ?> </td>
-            <td><?= $row['account_no']; ?> </td>
-            <td><?= $row['ifsc_code']; ?> </td>
+            <td>AC : <?= $row['account_no']; ?> </td>
+            <td><?= $row['ifsc_code']; ?></td>
 
 
             <td class="text-center">

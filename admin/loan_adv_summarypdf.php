@@ -62,21 +62,27 @@ if (isset($_GET[$tblpkey])) {
     }
 
     $loan_type = $obj->getvalfield("loan_type", "loan_type", "loan_type_id='$loan_type_id'");
-    $first_name = $obj->getvalfield("employee_master", "first_name", "emp_id='$emp_id'");
-    $emp_code = $obj->getvalfield("employee_master", "emp_code", "emp_id='$emp_id'");
-    $date_of_joining = $obj->getvalfield("employee_master", "date_of_joining", "emp_id='$emp_id'");
-    $salary = $obj->getvalfield("employee_master", "basic_salary", "emp_id='$emp_id'");
-    $designation_id = $obj->getvalfield("employee_master", "designation_id", "emp_id='$emp_id'");
-    $department_id  = $obj->getvalfield("employee_master", "department_id", "emp_id='$emp_id'");
+    $empData = $obj->select_record("employee_master", ['emp_id' => $emp_id]);
+
+    $first_name      = $empData['first_name']??'';
+    $emp_code        = $empData['emp_code']??'';
+    $date_of_joining = $empData['date_of_joining']??'';
+    $salary          = $empData['basic_salary']??'';
+    $designation_id  = $empData['designation_id']??'';
+    $department_id   = $empData['department_id']??'';
+    
     $designation_name = $obj->getvalfield("designation_master", "designation", "designation_id='$designation_id'");
     $department_name = $obj->getvalfield("department_master", "department_name", "department_id='$department_id'");
-    $unit_logo = $obj->getvalfield("unit_master", "logo_image", "unit_id='$unit_id'");
-    $unit_name    = $obj->getvalfield("unit_master", "unit_name", "unit_id='$unit_id'");
-    $head_name    = $obj->getvalfield("unit_master", "unithead", "unit_id='$unit_id'");
-    $unit_mobile  = $obj->getvalfield("unit_master", "mobile", "unit_id='$unit_id'");
-    $unit_email   = $obj->getvalfield("unit_master", "email_id", "unit_id='$unit_id'");
-    $unit_address = $obj->getvalfield("unit_master", "address", "unit_id='$unit_id'");
-    $gst = $obj->getvalfield("unit_master", "gstin_no", "unit_id='$unit_id'");
+
+    $unitData = $obj->select_record("unit_master", ['unit_id' => $unit_id]);
+    $unit_logo    = $unitData['logo_image']??'';
+    $unit_name    = $unitData['unit_name']??'';
+    $head_name    = $unitData['unithead']??'';
+    $unit_mobile  = $unitData['mobile']??'';
+    $unit_email   = $unitData['email_id']??'';
+    $unit_address = $unitData['address']??'';
+    $gst          = $unitData['gstin_no']??'';
+ 
 
     $bank_row = $obj->select_record(
         "emp_bank_details",

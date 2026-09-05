@@ -36,23 +36,40 @@ if (isset($_GET['emp_id'])) {
     $emp_id = "";
 };
 
-$fromdate = $_GET['fromdate'] ?? '';
-$todate = $_GET['todate'] ?? '';
+if (isset($_GET['status1'])) {
+    $status1 = $obj->test_input($_GET['status1']);
+    if ($status1 != '') {
+        $crit .= " and t.is_approved='$status1'";
+    }
+} else {
+    $status1 = "0";
+};
 
-if ($fromdate != '' && $todate != '') {
-    $crit .= " AND t.resignation_date BETWEEN '$fromdate' AND '$todate'";
-} elseif ($fromdate != '') {
-    $crit .= " AND t.resignation_date >= '$fromdate'";
-} elseif ($todate != '') {
-    $crit .= " AND t.resignation_date <= '$todate'";
+$fromdate = $_GET['fromdate'] ?? date('Y-m-01');
+$todate = $_GET['todate'] ?? date('Y-m-d');
+$is_application_month = $_GET['is_application_month'] ?? 0;
+ 
+$resignation_month=date('n'); 
+if ($is_application_month == 1) {
+    if ($fromdate != '' && $todate != '') {
+        $crit .= " AND t.resignation_date BETWEEN '$fromdate' AND '$todate'";
+    } elseif ($fromdate != '') {
+        $crit .= " AND t.resignation_date >= '$fromdate'";
+    } elseif ($todate != '') {
+        $crit .= " AND t.resignation_date <= '$todate'";
+    }
 }
-
 if (isset($_REQUEST['ajstatus'])) {
     $status = $obj->test_input($_REQUEST['ajstatus']);
     $exit_idd = $obj->test_input($_REQUEST['exit_idd']);
     $emp_idd = $obj->test_input($_REQUEST['emp_id']);
     $reason_for_reject = $obj->test_input($_REQUEST['reason'] ?? '');
     $last_working_date = $obj->test_input($_REQUEST['last_working_date']);
+
+    if($status==0 ){
+      $last_working_date= NULL;
+    }
+    
 
     $obj->update_record("employee_exit", array("exit_id" => $exit_idd), array('is_approved' => $status, 'reason_for_reject' => $reason_for_reject, 'approved_date' => $createdate));
     $obj->update_record("employee_master", array("emp_id" => $emp_idd), array('resign_status' => $status, 'last_working_date' => $last_working_date, 'resign_approve_date' => $createdate));
@@ -88,34 +105,54 @@ if (isset($_REQUEST['ajstatus'])) {
 if (isset($_POST['bulk_approve']) && $_POST['bulk_approve'] == 1) {
 
     $ids = $_POST['ids'];
-
+    $status = $_POST['status'];
     if (!empty($ids)) {
-
         $id_list = implode(",", array_map('intval', $ids));
-
         $records = $obj->executequery(
             "SELECT exit_id, emp_id, last_working_date 
              FROM employee_exit 
              WHERE exit_id IN ($id_list)"
         );
-
         foreach ($records as $row) {
             $exit_id = $row['exit_id'];
             $emp_id = $row['emp_id'];
             $last_working_date = $row['last_working_date'];
-
             // Update emp_separation
             $obj->update_record(
                 "employee_exit",
                 ['exit_id' => $exit_id],
                 [
-                    'is_approved' => 1,
-                    'approved_date' => $createdate
+                    'is_approved' => $status,
+                    'approved_date' => $createdate,
+                    'lastupdated' => $createdate,
+                    'updatedby' => $loginid
                 ]
             );
 
             // Update employee_master
-            if ($last_working_date != '') {
+            // if ($last_working_date != '') {
+            //     $obj->update_record(
+            //         "employee_master",
+            //         ['emp_id' => $emp_id],
+            //         [
+            //             'resign_status' => 1,
+            //             'last_working_date' => $last_working_date,
+            //             'resign_approve_date' => $createdate
+            //         ]
+            //     );
+            // }
+
+            if ($status == 0) {
+                $obj->update_record(
+                    "employee_master",
+                    ['emp_id' => $emp_id],
+                    [
+                        'resign_status' => 0,
+                        'last_working_date' => NULL,
+                        'resign_approve_date' => $createdate
+                    ]
+                );
+            } elseif ($status == 1) {
                 $obj->update_record(
                     "employee_master",
                     ['emp_id' => $emp_id],
@@ -125,6 +162,18 @@ if (isset($_POST['bulk_approve']) && $_POST['bulk_approve'] == 1) {
                         'resign_approve_date' => $createdate
                     ]
                 );
+
+            } elseif ($status == 2) {
+                $obj->update_record(
+                    "employee_master",
+                    ['emp_id' => $emp_id],
+                    [
+                        'resign_status' => 2,
+                        'last_working_date' => NULL,
+                        'resign_approve_date' => $createdate
+                    ]
+                );
+
             }
         }
 
@@ -137,10 +186,12 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
 
     $exit_id = $obj->test_input($_POST['exit_id']) ?? 0;
     $rejoin_emp_id = $obj->test_input($_POST['rejoin_emp_id']) ?? 0;
+    $actual_date_of_joining =$obj->getvalfield("employee_master","date_of_joining","emp_id='$rejoin_emp_id'");
     $rejoin_date = $obj->test_input($_POST['rejoin_date']) ?? "";
     $remark =  $obj->test_input($_POST['remark']) ?? '';
     $prev_join_date = $obj->getvalfield("employee_master", "date_of_joining", "emp_id='$rejoin_emp_id'");
     $rejoin_with_new_id = $obj->test_input($_POST['new_emp_checkbox']) ?? 0;
+    $new_join_checkbox = $obj->test_input($_POST['new_join_checkbox']) ?? 0;
     $new_emp_code = $obj->test_input($_POST['new_emp_code']) ?? '';
     $biometric_id = $obj->test_input($_POST['biometric_id']) ?? '';
     $show_emp_code = $obj->test_input($_POST['show_emp_code']) ?? '';
@@ -160,6 +211,10 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
         );
     }
 
+    if($new_join_checkbox == 0){
+        $rejoin_date=$actual_date_of_joining;
+    }
+
     // Update emp_separation
     $obj->update_record(
         "employee_exit",
@@ -173,6 +228,8 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
             'new_emp_code' => $new_emp_code,
             'biometric_id' => $biometric_id,
             'prev_emp_code' => $show_emp_code,
+            'lastupdated' => $createdate,
+            'updatedby' => $loginid
         ]
     );
     // Update employee_master
@@ -183,7 +240,7 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
             'resign_status' => 0,
             'emp_code' => $new_emp_code,
             'biomatric_id' => $biometric_id,
-            'date_of_joining' => $rejoin_date,
+            'date_of_joining' => $rejoin_date, 
             'last_working_date' => NULL
         ]
     );
@@ -191,6 +248,7 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
     echo json_encode(["status" => "success"]);
     exit;
 }
+
 ?>
 
 
@@ -204,10 +262,10 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
     <?php include('inc/css.php') ?>
 </head>
 <style>
-    .table-borderless tr td {
-        border: 0px !important;
-        padding-bottom: 0px;
-    }
+.table-borderless tr td {
+    border: 0px !important;
+    padding-bottom: 0px;
+}
 </style>
 
 <body>
@@ -221,6 +279,7 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
                 <?php include('inc/bredcrum.php') ?>
                 <?php include('inc/alert.php'); ?>
                 <div class="row">
+                    <?php if (!isset($_GET['submit'])) { ?>
                     <div class="col-lg-12">
                         <div class="card" id="customerList">
                             <div class="card-header border-bottom-dashed">
@@ -244,17 +303,47 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
                                                 id="emp_id">
                                                 <option value="">All</option>
                                                 <?php
-                                                //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
-                                                $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' ORDER BY first_name ASC");
-                                                foreach ($res as $key) { ?>
-                                                    <option value="<?= $key['emp_id']; ?>">
-                                                        <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?>
-                                                        <?= ucfirst($key['last_name'] ?? ''); ?></option>
+                                                    //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
+                                                    $res = $obj->executequery("SELECT * FROM employee_master WHERE unit_id = '$unitid' ORDER BY first_name ASC");
+                                                    foreach ($res as $key) { ?>
+                                                <option value="<?= $key['emp_id']; ?>">
+                                                    <?= $key['emp_code']; ?>-<?= ucfirst($key['first_name'] ?? ''); ?>
+                                                    <?= ucfirst($key['last_name'] ?? ''); ?></option>
                                                 <?php } ?>
                                             </select>
                                             <script>
-                                                document.getElementById('emp_id').value =
-                                                    '<?= $emp_id; ?>';
+                                            document.getElementById('emp_id').value =
+                                                '<?= $emp_id; ?>';
+                                            </script>
+                                        </div>
+
+                                        <div class="col-lg-3 mb-3">
+                                            <label for="">Application Month
+
+                                                <input type="checkbox" class="form-check-input"
+                                                    name="is_application_month" id="is_application_month" value="1"
+                                                    <?= ($is_application_month == 1) ? 'checked' : '' ?>>
+
+                                            </label>
+                                            <select name="resignation_month" id="resignation_month"
+                                                class="form-select form-select-sm chosen-select">
+                                                <option value="">Select Month</option>
+                                                <option value="1">January</option>
+                                                <option value="2">February</option>
+                                                <option value="3">March</option>
+                                                <option value="4">April</option>
+                                                <option value="5">May</option>
+                                                <option value="6">June</option>
+                                                <option value="7">July</option>
+                                                <option value="8">August</option>
+                                                <option value="9">September</option>
+                                                <option value="10">October</option>
+                                                <option value="11">November</option>
+                                                <option value="12">December</option>
+                                            </select>
+                                            <script>
+                                            document.getElementById('resignation_month').value =
+                                                '<?= $resignation_month ?>';
                                             </script>
                                         </div>
 
@@ -270,6 +359,21 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
                                             </div>
                                         </div>
 
+                                        <div class="col-lg-3 mb-2">
+                                            <label for="status1" class="form-label">Status<span
+                                                    class="text-danger fw-bold"> </span></label>
+                                            <select class="form-select form-select-sm chosen-select" name="status1"
+                                                id="status1">
+                                                <option value="">All</option>
+                                                <option value="0">Pending</option>
+                                                <option value="1">Approved</option>
+                                                <option value="2">Reject</option>
+                                            </select>
+                                            <script>
+                                            document.getElementById('status1').value = '<?= $status1; ?>';
+                                            </script>
+                                        </div>
+
                                         <div class="col-lg-3 mt-4">
                                             <input type="submit" name="submit" class="btn btn-sm btn-primary add-btn"
                                                 value="Search">
@@ -281,13 +385,17 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
                             </div>
                         </div>
                     </div>
+                    <?php } ?>
+                    <?php if (isset($_GET['submit'])) { ?>
                     <div class="col-lg-12">
                         <div class="card" id="customerList">
                             <div class="card-header border-bottom-dashed">
                                 <div class="row g-4 align-items-center">
                                     <div class="col-sm">
                                         <div>
-                                            <h5 class="card-title mb-0"><?php echo $submodule; ?> </h5>
+                                            <h5 class="card-title mb-0"><?php echo $submodule; ?> <a
+                                                    href="emp_separation_list.php"
+                                                    class="float-end btn btn-primary btn-sm">Search Again</a></h5>
                                         </div>
                                     </div>
                                 </div>
@@ -321,177 +429,190 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
                                         </thead>
                                         <tbody>
                                             <?php
-                                            $slno = 1;
-                                            // $res = $obj->executequery("SELECT * FROM $tblname where unit_id='$unitid' $crit ORDER BY $tblpkey desc ");
+                                                $slno = 1;
+                                                // $res = $obj->executequery("SELECT * FROM $tblname where unit_id='$unitid' $crit ORDER BY $tblpkey desc ");
 
-                                            $res = $obj->executequery("SELECT 
-                                                    t.*, 
-                                                    em.date_of_joining,
-                                                    em.emp_code,
-                                                    em.basic_salary,
-                                                    em.first_name,
-                                                    em.last_name,
-                                                    dm.department_name,
-                                                    em.mobile_no,
-                                                    em.aadhar_no,
-                                                    desi.designation,
-                                                    cu.fullname as created_name,
-                                                    cu.username as created_username,
-                                                    cu.mobile as created_mobile,
+                                                $res = $obj->executequery("SELECT 
+                                                        t.*, 
+                                                        em.date_of_joining,
+                                                        em.emp_code,
+                                                        em.basic_salary,
+                                                        em.first_name,
+                                                        em.last_name,
+                                                        dm.department_name,
+                                                        em.mobile_no,
+                                                        em.aadhar_no,
+                                                        desi.designation,
+                                                        cu.fullname as created_name,
+                                                        cu.username as created_username,
+                                                        cu.mobile as created_mobile,
+                                                         
+                                                        uu.fullname as updated_name,
+                                                        uu.username as updated_username,
+                                                        uu.mobile as updated_mobile,
+                                                        (
+                                                            SELECT COUNT(*)
+                                                            FROM salary_structure ss
+                                                            WHERE ss.emp_id = t.emp_id
+                                                            AND ss.month = MONTH(t.last_working_date)
+                                                            AND ss.year = YEAR(t.last_working_date)
+                                                        ) AS salary_generated
+                                                    FROM $tblname t
+                                                    LEFT JOIN employee_master em ON em.emp_id = t.emp_id
+                                                    LEFT JOIN department_master dm ON dm.department_id = em.department_id
+                                                    LEFT JOIN designation_master desi ON desi.designation_id = em.designation_id
+                                                    LEFT JOIN user cu ON t.createdby = cu.userid
+                                                    LEFT JOIN user uu ON t.updatedby = uu.userid
+                                                    
+                                                    WHERE em.unit_id = '$unitid' $crit
+                                                    ORDER BY t.$tblpkey DESC
+                                                ");
 
-                                                    uu.fullname as updated_name,
-                                                    uu.username as updated_username,
-                                                    uu.mobile as updated_mobile
-                                                FROM $tblname t
-                                                LEFT JOIN employee_master em ON em.emp_id = t.emp_id
-                                                LEFT JOIN department_master dm ON dm.department_id = em.department_id
-                                                LEFT JOIN designation_master desi ON desi.designation_id = em.designation_id
-                                                LEFT JOIN user cu ON t.createdby = cu.userid
-                                                LEFT JOIN user uu ON t.updatedby = uu.userid
-                                                WHERE t.unit_id = '$unitid' $crit
-                                                ORDER BY t.$tblpkey DESC
-                                            ");
+                                                foreach ($res as $row) {  
+                                                    if ($row['is_approved'] == 0) {
+                                                        $statusText = 'Pending';
+                                                        $badgeClass = 'bg-warning';
+                                                    } elseif ($row['is_approved'] == 1) {
+                                                        $statusText = 'Approved';
+                                                        $badgeClass = 'bg-success';
+                                                    } else {
+                                                        $statusText = 'Rejected';
+                                                        $badgeClass = 'bg-danger';
+                                                    }
+                                                ?>
+                                            <tr data-details="
+                                        <div style='background:#dafced; padding:4px;'>
+                                        <?php if (!empty($row['created_name'])): ?>
+                                        Added by (User: <?= $row['created_name'] ?>,
+                                        Username: <?= $row['created_username'] ?>,
+                                        Mobile: <?= $row['created_mobile'] ?>,
+                                        Date: <?= $row['createdate'] ?>,)<br>
+                                        <?php endif; ?>
 
-                                            foreach ($res as $row) {
+                                        <?php if (!empty($row['updated_name'])): ?>
+                                        Last Edited by (User: <?= $row['updated_name'] ?>,
+                                        Username: <?= $row['updated_username'] ?>,
+                                        Mobile: <?= $row['updated_mobile'] ?>,
+                                        Date: <?= $row['lastupdated'] ?>) 
+                                        <?php endif; ?>
+                                        </div>
+                                    ">
+                                                <td class="details-control text-center" style="cursor:pointer;">
+                                                    <?php echo $slno++; ?> <i
+                                                        class="ri-add-circle-fill text-primary"></i></td>
+                                                <td><?= $row['emp_code']; ?> </td>
+                                                <td> <?= ucfirst($row['first_name'] ?? ''); ?>
+                                                    <?= ucfirst($row['last_name'] ?? ''); ?></td>
+                                                <td><?php echo $row["department_name"]; ?></td>
+                                                <td><?php echo $row["designation"]; ?></td>
+                                                <td><?php echo $row["basic_salary"]; ?></td>
+                                                <td><?php echo $row["aadhar_no"]; ?></td>
+                                                <td><?php echo $row["mobile_no"]; ?></td>
+                                                <td><?php echo $row["exit_type"]; ?></td>
+                                                <td><?php echo $obj->dateformatindia($row["date_of_joining"]); ?></td>
+                                                <td><?= $obj->dateformatindia($row["resignation_date"]); ?></td>
+                                                <td><?= $obj->dateformatindia($row["last_working_date"]); ?></td>
+                                                <td>
+                                                    <?php
+                                                            echo $obj->getWorkingDuration($row["date_of_joining"], $row["last_working_date"]);
+                                                            ?>
+                                                </td>
+                                                <td><?php echo $row["notice_period"]; ?></td>
+                                                <td><?php echo $row["reason_for_leaving"]; ?></td>
+                                                <td class="text-center">
+                                                    <?php $chkapr = $obj->check_aprBtn($pagename, $loginid);
+                                                            if ($chkapr == 1) { ?>
+                                                    <a href="javascript:void(0)" title="Change Status"
+                                                        onclick="openStatusModal('<?= $row['is_approved']; ?>','<?= $row['exit_id']; ?>','<?= $row['emp_id']; ?>','<?= $row['last_working_date']; ?>')">
+                                                        <span class="badge <?= $badgeClass; ?> me-2">
+                                                            <?= $statusText; ?>
+                                                        </span>
+                                                        <p><?= $row["reason_for_reject"]; ?></p>
+                                                    </a>
+
+                                                    <!-- < if ($row['salary_generated'] == 0) { ?> -->
+                                                    <input type="checkbox" class="appr_single form-check-input"
+                                                        value="<?= $row['exit_id'] ?>" />
+                                                    <?php  }  else { ?>
+                                                    <span class="badge <?= $badgeClass; ?> me-2">
+                                                        <?= $statusText; ?>
+                                                    </span>
+                                                    <p><?= $row["reason_for_reject"]; ?></p>
+                                                    <?php } ?>
+                                                </td>
 
 
-                                                if ($row['is_approved'] == 0) {
-                                                    $statusText = 'Pending';
-                                                    $badgeClass = 'bg-warning';
-                                                } elseif ($row['is_approved'] == 1) {
-                                                    $statusText = 'Approved';
-                                                    $badgeClass = 'bg-success';
-                                                } else {
-                                                    $statusText = 'Rejected';
-                                                    $badgeClass = 'bg-danger';
-                                                }
-                                            ?>
-                                                <tr data-details="
-                                    <div style='background:#dafced; padding:4px;'>
-                                    <?php if (!empty($row['created_name'])): ?>
-                                    Added by (User: <?= $row['created_name'] ?>,
-                                    Username: <?= $row['created_username'] ?>,
-                                    Mobile: <?= $row['created_mobile'] ?>,
-                                     Date: <?= $row['createdate'] ?>,)<br>
-                                    <?php endif; ?>
-
-                                    <?php if (!empty($row['updated_name'])): ?>
-                                    Last Edited by (User: <?= $row['updated_name'] ?>,
-                                    Username: <?= $row['updated_username'] ?>,
-                                    Mobile: <?= $row['updated_mobile'] ?>,
-                                    Date: <?= $row['lastupdated'] ?>) 
-                                    <?php endif; ?>
-                                     </div>
-                                ">
-                                                    <td class="details-control text-center" style="cursor:pointer;">
-                                                        <?php echo $slno++; ?> <i
-                                                            class="ri-add-circle-fill text-primary"></i></td>
-                                                    <td><?= $row['emp_code']; ?> </td>
-                                                    <td> <?= ucfirst($row['first_name'] ?? ''); ?>
-                                                        <?= ucfirst($row['last_name'] ?? ''); ?></td>
-                                                    <td><?php echo $row["department_name"]; ?></td>
-                                                    <td><?php echo $row["designation"]; ?></td>
-                                                    <td><?php echo $row["basic_salary"]; ?></td>
-                                                    <td><?php echo $row["aadhar_no"]; ?></td>
-                                                    <td><?php echo $row["mobile_no"]; ?></td>
-                                                    <td><?php echo $row["exit_type"]; ?></td>
-                                                    <td><?php echo $row["date_of_joining"]; ?></td>
-                                                    <td><?= $obj->dateformatindia($row["resignation_date"]); ?></td>
-                                                    <td><?= $obj->dateformatindia($row["last_working_date"]); ?></td>
-                                                    <td>
+                                                <td>
+                                                    <ul class="list-inline hstack gap-2 mb-0">
                                                         <?php
-                                                        echo $obj->getWorkingDuration($row["date_of_joining"], $row["last_working_date"]);
-                                                        ?>
-                                                    </td>
-                                                    <td><?php echo $row["notice_period"]; ?></td>
-                                                    <td><?php echo $row["reason_for_leaving"]; ?></td>
-                                                    <td class="text-center">
-                                                        <?php $chkapr = $obj->check_aprBtn($pagename, $loginid);
-                                                        if ($chkapr == 1 && $row['is_approved'] == 0) { ?>
-                                                            <a href="javascript:void(0)" title="Change Status"
-                                                                onclick="openStatusModal('<?= $row['is_approved']; ?>','<?= $row['exit_id']; ?>','<?= $row['emp_id']; ?>','<?= $row['last_working_date']; ?>')">
-                                                                <span class="badge <?= $badgeClass; ?> me-2">
-                                                                    <?= $statusText; ?>
-                                                                </span>
+                                                                $chkdel = $obj->check_delBtn($pagename, $loginid);
+                                                                if ($chkdel == 1 && ($row['is_approved'] == 0 || $row['is_approved'] == 2)) { ?>
+                                                        <li class="list-inline-item" data-bs-toggle="tooltip"
+                                                            data-bs-trigger="hover" data-bs-placement="top"
+                                                            title="Delete">
+                                                            <a class="remove-item-btn" type="button"
+                                                                onclick="funDel('<?php echo $row[$tblpkey]; ?>','<?= $row['emp_id'] ?>');">
+                                                                <i
+                                                                    class="ri-delete-bin-fill align-bottom text-danger"></i>
                                                             </a>
-                                                            <input type="checkbox" class="appr_single form-check-input"
-                                                                value="<?= $row['exit_id'] ?>" />
-                                                        <?php } else { ?>
-                                                            <span class="badge <?= $badgeClass; ?> me-2">
-                                                                <?= $statusText; ?>
-                                                            </span>
-                                                            <p><?= $row["reason_for_reject"]; ?></p>
+                                                        </li>
                                                         <?php } ?>
-                                                    </td>
+                                                        <?php $chkedit = $obj->check_editBtn($pagename, $loginid);
+                                                                if ($chkedit == 1 && $row['is_approved'] == 0) {  ?>
 
+                                                        <li class="list-inline-item " data-bs-toggle="tooltip"
+                                                            data-bs-trigger="hover" data-bs-placement="top"
+                                                            title="Edit">
+                                                            <a href="emp_separation.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>"
+                                                                class="edit-item-btn">
+                                                                <i class="ri-pencil-fill align-bottom text-success"></i>
+                                                            </a>
+                                                        </li>
+                                                        <?php  }
 
-                                                    <td>
-                                                        <ul class="list-inline hstack gap-2 mb-0">
-                                                            <?php
-                                                            $chkdel = $obj->check_delBtn($pagename, $loginid);
-                                                            if ($chkdel == 1 && ($row['is_approved'] == 0 || $row['is_approved'] == 2)) { ?>
-                                                                <li class="list-inline-item" data-bs-toggle="tooltip"
-                                                                    data-bs-trigger="hover" data-bs-placement="top"
-                                                                    title="Delete">
-                                                                    <a class="remove-item-btn" type="button"
-                                                                        onclick="funDel('<?php echo $row[$tblpkey]; ?>','<?= $row['emp_id'] ?>');">
-                                                                        <i
-                                                                            class="ri-delete-bin-fill align-bottom text-danger"></i>
-                                                                    </a>
-                                                                </li>
-                                                            <?php } ?>
-                                                            <?php $chkedit = $obj->check_editBtn($pagename, $loginid);
-                                                            if ($chkedit == 1 && $row['is_approved'] == 0) {  ?>
+                                                                if ($row['is_approved'] == 1 && $row['is_rejoined'] == 0 && $row['exit_type'] != 'Blacklist') { ?>
+                                                        <span class="badge bg-primary me-2 cursor-pointer"
+                                                            onclick="openRejoinModal('<?php echo $row[$tblpkey]; ?>','<?php echo $row['emp_id']; ?>','<?= ucfirst($row['first_name'] ?? ''); ?>','<?= $row['emp_code']; ?>');">
+                                                            Rejoin
+                                                        </span>
+                                                        <?php }
+                                                                if ($row['is_rejoined'] == 1) { ?>
+                                                        <div style="cursor:pointer;" onclick="openRejoinDetailsModal(
+                                                                '<?= ucfirst($row['first_name'] . ' ' . $row['last_name']); ?>',
+                                                                '<?= $row['rejoin_with_new_id']; ?>',
+                                                                '<?= $row['prev_emp_code']; ?>',
+                                                                '<?= $row['new_emp_code']; ?>',
+                                                                '<?= $row['biometric_id']; ?>',
+                                                                '<?= $row['emp_code']; ?>',
+                                                            
+                                                                '<?= addslashes($row['rejoin_remark']); ?>'
+                                                            )">
 
-                                                                <li class="list-inline-item " data-bs-toggle="tooltip"
-                                                                    data-bs-trigger="hover" data-bs-placement="top"
-                                                                    title="Edit">
-                                                                    <a href="emp_separation.php?<?php echo $tblpkey ?>=<?php echo $row[$tblpkey]; ?>"
-                                                                        class="edit-item-btn">
-                                                                        <i class="ri-pencil-fill align-bottom text-success"></i>
-                                                                    </a>
-                                                                </li>
-                                                            <?php  }
+                                                            <span class="badge bg-success mb-1 d-inline-block">
+                                                                Re-joined
+                                                            </span>
 
-                                                            if ($row['is_approved'] == 1 && $row['is_rejoined'] == 0 && $row['exit_type'] != 'Blacklist') { ?>
-                                                                <span class="badge bg-primary me-2 cursor-pointer"
-                                                                    onclick="openRejoinModal('<?php echo $row[$tblpkey]; ?>','<?php echo $row['emp_id']; ?>','<?= ucfirst($row['first_name'] ?? ''); ?>','<?= $row['emp_code']; ?>');">
-                                                                    Rejoin
-                                                                </span>
-                                                            <?php }
-                                                            if ($row['is_rejoined'] == 1) { ?>
-                                                                <div style="cursor:pointer;" onclick="openRejoinDetailsModal(
-                                                            '<?= ucfirst($row['first_name'] . ' ' . $row['last_name']); ?>',
-                                                            '<?= $row['rejoin_with_new_id']; ?>',
-                                                            '<?= $row['prev_emp_code']; ?>',
-                                                            '<?= $row['new_emp_code']; ?>',
-                                                            '<?= $row['biometric_id']; ?>',
-                                                            '<?= $row['emp_code']; ?>',
-                                                           
-                                                            '<?= addslashes($row['rejoin_remark']); ?>'
-                                                        )">
-
-                                                                    <span class="badge bg-success mb-1 d-inline-block">
-                                                                        Re-joined
-                                                                    </span>
-
-                                                                </div>
-                                                            <?php } ?>
-                                                        </ul>
-                                                    </td>
-                                                </tr>
+                                                        </div>
+                                                        <?php } ?>
+                                                    </ul>
+                                                </td>
+                                            </tr>
                                             <?php } ?>
                                         </tbody>
                                     </table>
-                                    <div class="col-lg-12 mt-4 text-end">
-                                        <input type="submit" name="appr_status" class="btn btn-sm btn-primary add-btn"
-                                            value="Approve All" onclick="updateStatus();">
-                                    </div>
+
+                                </div>
+                                <div class="col-lg-12 mt-4 text-end">
+                                    <input type="submit" name="appr_status" class="btn btn-sm btn-primary add-btn"
+                                        value="Approve All" onclick="updateStatus(1);">
+                                    <input type="submit" name="appr_status" class="btn btn-sm btn-warning add-btn"
+                                        value="Pending All" onclick="updateStatus(0);">
                                 </div>
                             </div>
 
                         </div>
                     </div>
+                    <?php } ?>
                 </div>
                 <!--end col-->
             </div>
@@ -582,6 +703,15 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
                         </div>
                     </div>
 
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="new_join_checkbox">
+                            <label class="form-check-label" for="new_join_checkbox">
+                                Rejoin With New Joining Date
+                            </label>
+                        </div>
+                    </div>
+
                     <div id="new_emp_fields" style="display:none;">
 
                         <div class="mb-3">
@@ -592,8 +722,8 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
 
                         <div class="mb-3">
                             <label class="form-label">Biometric ID</label>
-                            <input type="text" class="form-control form-control-sm" id="biometric_id" placeholder="Enter Biometric ID"
-                                value="<?= $new_emp_code; ?>" readonly>
+                            <input type="text" class="form-control form-control-sm" id="biometric_id"
+                                placeholder="Enter Biometric ID" value="<?= $new_emp_code; ?>" readonly>
                         </div>
 
                     </div>
@@ -657,323 +787,443 @@ if (isset($_POST['rejoin_action']) && $_POST['rejoin_action'] == 1) {
     <?php include('inc/js.php') ?>
     <?php include('inc/footer.php') ?>
     <script>
-        $(document).ready(function() {
-            $('#example').DataTable();
-            $(".chosen-select").select2({
-                width: '100%',
-                search_contains: true
-            });
-            toggleReasonField();
+    $(document).ready(function() {
+        $('#example').DataTable();
+        $(".chosen-select").select2({
+            width: '100%',
+            search_contains: true
         });
+        toggleReasonField();
+    });
 
-        function toggleNewEmpFields() {
+    function toggleNewEmpFields() {
 
-            let checkbox = document.getElementById('new_emp_checkbox');
-            let fields = document.getElementById('new_emp_fields');
+        let checkbox = document.getElementById('new_emp_checkbox');
+        let fields = document.getElementById('new_emp_fields');
 
-            if (checkbox.checked) {
-                fields.style.display = 'block';
-            } else {
-                fields.style.display = 'none';
+        if (checkbox.checked) {
+            fields.style.display = 'block';
+        } else {
+            fields.style.display = 'none';
 
-            }
+        }
+    }
+
+    function openStatusModal(status, exit_id, emp_id, lwd) {
+        $('#modal_status').val(status);
+        $('#modal_exit_id').val(exit_id);
+        $('#modal_emp_id').val(emp_id);
+        $('#modal_lwd').val(lwd);
+        $('#modal_reason').val('');
+        $('#statusModal').modal('show');
+    }
+
+    function toggleReasonField() {
+        let status = $('#modal_status').val();
+
+        if (status == '2') {
+            $('#modal_reason').closest('.mb-3').show();
+            $('#modal_reason').prop('required', true);
+        } else {
+            $('#modal_reason').closest('.mb-3').hide();
+            $('#modal_reason').prop('required', false).val('');
+        }
+    }
+
+    function openRejoinDetailsModal(emp_name, rejoin_type, prev_code, new_code, biometric_id, emp_code, remark) {
+        $('#detail_emp_name').text(emp_name);
+        if (rejoin_type == 1) {
+            $('#detail_rejoin_type').html(
+                '<span class="badge bg-info text-dark">With New Employee Code</span>'
+            );
+            $('#detail_prev_code').text(prev_code);
+            $('#detail_new_code').text(new_code);
+        } else {
+            $('#detail_rejoin_type').html(
+                '<span class="badge bg-secondary">With Same Employee Code</span>'
+            );
+            // same code case
+            $('#detail_prev_code').text(emp_code);
+            $('#detail_new_code').text(emp_code);
+        }
+        // biometric
+        if (biometric_id != '') {
+            $('#bio_div').show();
+            $('#detail_biometric').text(biometric_id);
+        } else {
+            $('#bio_div').hide();
+        }
+        // remark
+        $('#detail_remark').text(remark);
+        // open modal
+        $('#rejoinDetailsModal').modal('show');
+    }
+
+
+    function funDel(id, emp_id) {
+        $('#deleteRecordModal').modal('show');
+        tblname = '<?php echo $tblname; ?>';
+        tblpkey = '<?php echo $tblpkey; ?>';
+
+        pagename = '<?php echo $pagename; ?>';
+        submodule = '<?php echo $submodule; ?>';
+
+        $('#delete-record').click(function() {
+            $.ajax({
+                type: 'POST',
+                url: 'ajax/delete_master_separation.php',
+                data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&submodule=' +
+                    submodule + '&emp_id=' + emp_id + '&pagename=' + pagename,
+                dataType: 'html',
+                success: function(data) {
+                    // alert(data);
+                    location = '<?php echo $pagename; ?>';
+                }
+            });
+            $('#deleteRecordModal').modal('hide');
+        });
+    };
+
+    function numberOnly(evt) {
+        var theEvent = evt || window.event;
+
+        // Handle paste
+        if (theEvent.type === 'paste') {
+            key = event.clipboardData.getData('text/plain');
+        } else {
+            // Handle key press
+            var key = theEvent.keyCode || theEvent.which;
+            key = String.fromCharCode(key);
+        }
+        var regex = /[0-9]|\.|\s/;
+        if (!regex.test(key)) {
+            theEvent.returnValue = false;
+            if (theEvent.preventDefault) theEvent.preventDefault();
+        }
+    }
+
+
+    function confirmStatusChange() {
+        let status = $('#modal_status').val();
+        let reason = $('#modal_reason').val().trim();
+        let modal_exit_id = $('#modal_exit_id').val();
+        let modal_emp_id = $('#modal_emp_id').val();
+        let modal_lwd = $('#modal_lwd').val();
+        let modal_reason = $('#modal_reason').val();
+        if (status == '2' && reason === '') {
+            alert('Reason is required for rejection');
+            return;
         }
 
-        function openStatusModal(status, exit_id, emp_id, lwd) {
-            $('#modal_status').val(status);
-            $('#modal_exit_id').val(exit_id);
-            $('#modal_emp_id').val(emp_id);
-            $('#modal_lwd').val(lwd);
-            $('#modal_reason').val('');
-            $('#statusModal').modal('show');
+        let title = "";
+        let text = "";
+        let icon = "";
+
+        if (status == "1") {
+            title = "Approve Application?";
+            text = "Are you sure you want to approve this application?";
+            icon = "question";
+        } else if (status == "0") {
+            title = "Mark as Pending?";
+            text = "Are you sure you want to mark this application as Pending?";
+            icon = "warning";
+        } else if (status == "2") {
+            title = "Reject Application?";
+            text = "Are you sure you want to reject this application?";
+            icon = "warning";
         }
 
-        function toggleReasonField() {
-            let status = $('#modal_status').val();
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: icon,
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
 
-            if (status == '2') {
-                $('#modal_reason').closest('.mb-3').show();
-                $('#modal_reason').prop('required', true);
-            } else {
-                $('#modal_reason').closest('.mb-3').hide();
-                $('#modal_reason').prop('required', false).val('');
-            }
-        }
+            if (result.isConfirmed) {
 
-        function openRejoinDetailsModal(emp_name, rejoin_type, prev_code, new_code, biometric_id, emp_code, remark) {
-            $('#detail_emp_name').text(emp_name);
-            if (rejoin_type == 1) {
-                $('#detail_rejoin_type').html(
-                    '<span class="badge bg-info text-dark">With New Employee Code</span>'
-                );
-                $('#detail_prev_code').text(prev_code);
-                $('#detail_new_code').text(new_code);
-            } else {
-                $('#detail_rejoin_type').html(
-                    '<span class="badge bg-secondary">With Same Employee Code</span>'
-                );
-                // same code case
-                $('#detail_prev_code').text(emp_code);
-                $('#detail_new_code').text(emp_code);
-            }
-            // biometric
-            if (biometric_id != '') {
-                $('#bio_div').show();
-                $('#detail_biometric').text(biometric_id);
-            } else {
-                $('#bio_div').hide();
-            }
-            // remark
-            $('#detail_remark').text(remark);
-            // open modal
-            $('#rejoinDetailsModal').modal('show');
-        }
-
-
-        function funDel(id, emp_id) {
-            $('#deleteRecordModal').modal('show');
-            tblname = '<?php echo $tblname; ?>';
-            tblpkey = '<?php echo $tblpkey; ?>';
-
-            pagename = '<?php echo $pagename; ?>';
-            submodule = '<?php echo $submodule; ?>';
-
-            $('#delete-record').click(function() {
-                $.ajax({
-                    type: 'POST',
-                    url: 'ajax/delete_master_separation.php',
-                    data: 'id=' + id + '&tblname=' + tblname + '&tblpkey=' + tblpkey + '&submodule=' +
-                        submodule + '&emp_id=' + emp_id + '&pagename=' + pagename,
-                    dataType: 'html',
-                    success: function(data) {
-                        // alert(data);
-                        location = '<?php echo $pagename; ?>';
+                $('#confirm_btn').prop('disabled', true).text('Saving...');
+                Swal.fire({
+                    title: 'Please Wait...',
+                    text: 'Processing your request...',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
                     }
                 });
-                $('#deleteRecordModal').modal('hide');
-            });
-        };
 
-        function numberOnly(evt) {
-            var theEvent = evt || window.event;
+                $.ajax({
+                    type: "POST",
+                    url: "",
+                    data: {
+                        ajstatus: status,
+                        exit_idd: modal_exit_id,
+                        emp_id: modal_emp_id,
+                        last_working_date: modal_lwd,
+                        reason: reason
+                    },
+                    dataType: "json",
+                    success: function() {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Status Updated',
+                            text: 'Approval status has been updated successfully.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function() {
+                        alert('Something went wrong. Please try again.');
 
-            // Handle paste
-            if (theEvent.type === 'paste') {
-                key = event.clipboardData.getData('text/plain');
-            } else {
-                // Handle key press
-                var key = theEvent.keyCode || theEvent.which;
-                key = String.fromCharCode(key);
-            }
-            var regex = /[0-9]|\.|\s/;
-            if (!regex.test(key)) {
-                theEvent.returnValue = false;
-                if (theEvent.preventDefault) theEvent.preventDefault();
-            }
-        }
-
-
-        function confirmStatusChange() {
-            let status = $('#modal_status').val();
-            let reason = $('#modal_reason').val().trim();
-            let modal_exit_id = $('#modal_exit_id').val();
-            let modal_emp_id = $('#modal_emp_id').val();
-            let modal_lwd = $('#modal_lwd').val();
-            let modal_reason = $('#modal_reason').val();
-            if (status == '2' && reason === '') {
-                alert('Reason is required for rejection');
-                return;
-            }
-            $('#confirm_btn').prop('disabled', true).text('Saving...');
-
-            $.ajax({
-                type: "POST",
-                url: "",
-                data: {
-                    ajstatus: status,
-                    exit_idd: modal_exit_id,
-                    emp_id: modal_emp_id,
-                    last_working_date: modal_lwd,
-                    reason: reason
-                },
-                dataType: "json",
-                success: function() {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Status Updated',
-                        text: 'Approval status has been updated successfully.',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
-                },
-                error: function() {
-                    alert('Something went wrong. Please try again.');
-
-                    $('#confirm_btn').prop('disabled', false).text('Confirm');
-                }
-            });
-        }
-
-        $("#checkAll").on("change", function() {
-            $(".appr_single").prop("checked", $(this).prop("checked"));
-        });
-
-        // If any unchecked manually → uncheck header
-        $(document).on("change", ".appr_single", function() {
-            if (!$(this).prop("checked")) {
-                $("#checkAll").prop("checked", false);
-            } else if ($(".appr_single:checked").length === $(".appr_single").length) {
-                $("#checkAll").prop("checked", true);
-            }
-        });
-
-        function updateStatus() {
-
-            let selected = [];
-
-            $('.appr_single:checked').each(function() {
-                selected.push($(this).val());
-            });
-
-            if (selected.length === 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'No Selection',
-                    text: 'Please select at least one record.'
+                        $('#confirm_btn').prop('disabled', false).text('Confirm');
+                    }
                 });
-                return;
             }
+        })
+    };
 
+    $("#checkAll").on("change", function() {
+        $(".appr_single").prop("checked", $(this).prop("checked"));
+    });
+
+    // If any unchecked manually → uncheck header
+    $(document).on("change", ".appr_single", function() {
+        if (!$(this).prop("checked")) {
+            $("#checkAll").prop("checked", false);
+        } else if ($(".appr_single:checked").length === $(".appr_single").length) {
+            $("#checkAll").prop("checked", true);
+        }
+    });
+
+    function updateStatus(status) {
+        let selected = [];
+        $('.appr_single:checked').each(function() {
+            selected.push($(this).val());
+        });
+
+        if (selected.length === 0) {
             Swal.fire({
-                title: 'Approve Selected?',
-                text: "You are about to approve selected resignations.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, Approve'
-            }).then((result) => {
-
-                if (result.isConfirmed) {
-
-                    $.ajax({
-                        type: "POST",
-                        url: "", // same page
-                        data: {
-                            bulk_approve: 1,
-                            ids: selected
-                        },
-                        dataType: "json",
-                        success: function(response) {
-                            console.log(response);
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Approved',
-                                text: 'Selected records approved successfully.',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                location.reload();
-                            });
-
-                        },
-                        error: function(err) {
-                            console.log(err);
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: 'Something went wrong.'
-                            });
-                        }
-                    });
-
-                }
-
+                icon: 'warning',
+                title: 'No Selection',
+                text: 'Please select at least one record.'
             });
+            return;
         }
+        let actionText = (status == 1) ? "Approve" : "Pending";
+        Swal.fire({
+            title: actionText + ' Selected?',
+            text: 'You are about to mark the selected resignations as ' + actionText + '.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Approve'
+        }).then((result) => {
 
-        function openRejoinModal(exit_id, emp_id, emp_name, emp_code) {
-            $('#rejoin_exit_id').val(exit_id);
-            $('#rejoin_emp_id').val(emp_id);
-            $('#rejoin_date').val('<?= date('Y-m-d') ?>');
-            $('#rejoin_remark').val('');
-            $('#show_emp_name').text(emp_name);
-            $('#show_emp_code').text(emp_code);
-            $('#prevv_emp_code').val(emp_code);
-            $('#rejoinModal').modal('show');
-        }
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Please Wait...',
+                    text: 'Processing your request...',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
 
-        function saveRejoin() {
+                $.ajax({
+                    type: "POST",
+                    url: "", // same page
+                    data: {
+                        bulk_approve: 1,
+                        status: status,
+                        ids: selected
+                    },
+                    dataType: "json",
+                    success: function(response) {
+                        console.log(response);
+                        Swal.fire({
+                            icon: 'success',
+                            title: actionText + ' Successfully',
+                            text: 'Selected records have been marked as ' + actionText +
+                                '.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
 
-            let exit_id = $('#rejoin_exit_id').val();
-            let rejoin_date = $('#rejoin_date').val();
-            let rejoin_emp_id = $('#rejoin_emp_id').val();
-            let remark = $('#rejoin_remark').val().trim();
-            let new_emp_checkbox = $('#new_emp_checkbox').is(':checked') ? 1 : 0;
-            let new_emp_code = $('#new_emp_code').val().trim();
-            let biometric_id = $('#biometric_id').val().trim();
-            let show_emp_code = $('#prevv_emp_code').val().trim();
+                    },
+                    error: function(err) {
+                        console.log(err);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Something went wrong.'
+                        });
+                    }
+                });
 
-            if (rejoin_date === '') {
-                alert('Rejoining date is required');
-                return;
             }
-
-            $.ajax({
-                type: "POST",
-                url: "",
-                data: {
-                    rejoin_action: 1,
-                    exit_id: exit_id,
-                    rejoin_emp_id: rejoin_emp_id,
-                    rejoin_date: rejoin_date,
-                    remark: remark,
-                    new_emp_checkbox: new_emp_checkbox,
-                    new_emp_code: new_emp_code,
-                    biometric_id: biometric_id,
-                    show_emp_code: show_emp_code
-                },
-                dataType: "json",
-                success: function() {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Rejoined Successfully',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
-                },
-                error: function() {
-                    alert('Something went wrong');
-                }
-            });
-        }
-
-
-
-        $(document).ready(function() {
-
-            var table = $('#buttons-datatables').DataTable();
-
-            $('#buttons-datatables tbody').on('click', 'td.details-control', function() {
-
-                var tr = $(this).closest('tr');
-                var row = table.row(tr);
-
-                if (row.child.isShown()) {
-                    row.child.hide();
-                    tr.removeClass('shown');
-                } else {
-                    var details = tr.data('details');
-                    row.child(details).show();
-                    tr.addClass('shown');
-                }
-
-            });
 
         });
+    }
+
+    function openRejoinModal(exit_id, emp_id, emp_name, emp_code) {
+        $('#rejoin_exit_id').val(exit_id);
+        $('#rejoin_emp_id').val(emp_id);
+        $('#rejoin_date').val('<?= date('Y-m-d') ?>');
+        $('#rejoin_remark').val('');
+        $('#show_emp_name').text(emp_name);
+        $('#show_emp_code').text(emp_code);
+        $('#prevv_emp_code').val(emp_code);
+        $('#rejoinModal').modal('show');
+    }
+
+    function saveRejoin() {
+
+        let exit_id = $('#rejoin_exit_id').val();
+        let rejoin_date = $('#rejoin_date').val();
+        let rejoin_emp_id = $('#rejoin_emp_id').val();
+        let remark = $('#rejoin_remark').val().trim();
+        let new_emp_checkbox = $('#new_emp_checkbox').is(':checked') ? 1 : 0;
+        let new_join_checkbox = $('#new_join_checkbox').is(':checked') ? 1 : 0;
+        let new_emp_code = $('#new_emp_code').val().trim();
+        let biometric_id = $('#biometric_id').val().trim();
+        let show_emp_code = $('#prevv_emp_code').val().trim();
+
+        if (rejoin_date === '') {
+            alert('Rejoining date is required');
+            return;
+        }
+        if (remark == '') {
+            alert('Rejoining Remark is required');
+            return;
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "",
+            data: {
+                rejoin_action: 1,
+                exit_id: exit_id,
+                rejoin_emp_id: rejoin_emp_id,
+                rejoin_date: rejoin_date,
+                remark: remark,
+                new_emp_checkbox: new_emp_checkbox,
+                new_join_checkbox: new_join_checkbox,
+                new_emp_code: new_emp_code,
+                biometric_id: biometric_id,
+                show_emp_code: show_emp_code
+            },
+            dataType: "json",
+            success: function() {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Rejoined Successfully',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    location.reload();
+                });
+            },
+            error: function() {
+                alert('Something went wrong');
+            }
+        });
+    }
+
+
+
+    $(document).ready(function() {
+
+        var table = $('#buttons-datatables').DataTable();
+
+        $('#buttons-datatables tbody').on('click', 'td.details-control', function() {
+
+            var tr = $(this).closest('tr');
+            var row = table.row(tr);
+
+            if (row.child.isShown()) {
+                row.child.hide();
+                tr.removeClass('shown');
+            } else {
+                var details = tr.data('details');
+                row.child(details).show();
+                tr.addClass('shown');
+            }
+
+        });
+
+    });
+
+    $(document).ready(function() {
+
+        $('#resignation_month').on('change', function() {
+            let month = parseInt($(this).val());
+            if (!month) return;
+            // Current year
+            let year = new Date().getFullYear();
+            // First date of month
+            let firstDate = new Date(year, month - 1, 1);
+            // Last date of month
+            let lastDate = new Date(year, month, 0);
+            // Format YYYY-MM-DD
+            let fromDate =
+                firstDate.getFullYear() + '-' +
+                String(firstDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(firstDate.getDate()).padStart(2, '0');
+
+            let toDate =
+                lastDate.getFullYear() + '-' +
+                String(lastDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(lastDate.getDate()).padStart(2, '0');
+
+            // Set values
+            $('#fromdate').val(fromDate);
+            $('#todate').val(toDate);
+
+        });
+
+    });
+
+    
     </script>
+
+    <script>
+    function toggleApplicationMonth() {
+
+        let checkbox = document.getElementById('is_application_month');
+        let fromdate = document.getElementById('fromdate');
+        let todate = document.getElementById('todate');
+
+        if (checkbox.checked) {
+
+            // Enable date fields
+            fromdate.disabled = false;
+            todate.disabled = false;
+
+        } else {
+
+            // Disable date fields
+            fromdate.disabled = true;
+            todate.disabled = true;
+        }
+    }
+
+    // Checkbox change
+    document.getElementById('is_application_month').addEventListener('change', function() {
+        toggleApplicationMonth();
+    });
+
+    // Page load
+    toggleApplicationMonth();
+</script>
 </body>
 
 </html>

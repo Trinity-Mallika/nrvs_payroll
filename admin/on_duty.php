@@ -8,6 +8,7 @@ $submodule = "On Duty Master List";
 $btn_name = "Save";
 $keyvalue = (isset($_GET[$tblpkey])) ? $obj->test_input($_GET[$tblpkey]) : 0;
 $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
+$emp_id = (isset($_GET['emp_id'])) ? $obj->test_input($_GET['emp_id']) : '';
 $imgpath1 = 'uploaded/on_duty/';
 if (isset($_POST['submit'])) {
     $application_date  = $obj->test_input($_POST['application_date']);
@@ -28,6 +29,7 @@ if (isset($_POST['submit'])) {
         "on_duty_type" => $on_duty_type,
         "total_day" => $total_day,
         "unit_id" => $unitid,
+        "entry_by" => 'hr',
         "createdby" => $loginid,
         "sessionid" => $sessionid,
         "ipaddress" => $ipaddress
@@ -114,7 +116,7 @@ if (isset($_GET[$tblpkey])) {
     $img = "";
 } else {
     $application_date = date('Y-m-d');
-    $emp_id = "";
+    
     $on_duty_type = "On Duty";
 
     $doc_file = "";
@@ -175,11 +177,11 @@ if (isset($_POST['on_duty_details_idd'])) {
                                     <div class="row">
                                         <div class="col-lg-4 mb-2">
                                             <label for="application_date" class="form-label">Application Date<span class="text-danger fw-bold">*</span></label>
-                                            <input type="date" id="application_date" name="application_date" class="form-control form-control-sm" value="<?= $application_date ?>" autocomplete="off" readonly />
+                                            <input type="date" id="application_date" name="application_date" class="form-control form-control-sm" value="<?= $application_date ?>" autocomplete="off" />
                                         </div>
                                         <div class="col-lg-4 mb-2">
                                             <label for="emp_id" class="form-label">Employee Name<span class="text-danger fw-bold">*</span></label>
-                                            <select class="form-select form-select-sm chosen-select" name="emp_id" id="emp_id">
+                                            <select class="form-select form-select-sm chosen-select" name="emp_id" id="emp_id" onchange="get_url(this.value);">
                                                 <option value="">Select Employee</option>
                                                 <?php
                                                 //$res = $obj->executequery("Select * from employee_master where unit_id='$unitid' order by first_name asc");
@@ -212,6 +214,75 @@ if (isset($_POST['on_duty_details_idd'])) {
                                 </div>
                             </div>
                         </div>
+                           <div class="col-lg-12">
+                                <button type="button" class="btn btn-sm btn-danger mb-2" onclick="toggleMultiDay()">
+                                    Show Multi Day
+                                </button>
+                                <div id="multiDaySection" style="display:none;">
+                                    <div class="card" id="customerList">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <table  class="display table table-sm table-bordered"
+                                                    style="width:100%">
+                                                    <thead>
+                                                        <tr class="table-primary">
+                                                            <th>Sr No.</th>
+                                                            <th>Date</th>
+                                                            <th>Number Of Day</th>
+                                                            <th>In Time</th>
+                                                            <th>Out Time</th>
+                                                            <th>Place </th>
+                                                            <th>With Employee </th>
+                                                            <th>Remarks</th>
+                                                            <th>Action</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <td>#.</td>
+                                                        <td>
+                                                             <input type="date" id="multi_date" class="form-control form-control-sm"  value="<?=date('Y-m-d')?>">
+                                                           
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" id="no_of_days"
+                                                                class="form-control form-control-sm" value="1"
+                                                                style="width:70px;">
+                                                        </td>
+                                                        <td>
+                                                            <input type="time" id="multi_intime"
+                                                                class="form-control form-control-sm">
+                                                        </td>
+                                                        <td>
+                                                            <input type="time" id="multi_outtime"
+                                                                class="form-control form-control-sm">
+                                                        </td>
+                                                        <td>
+                                                            <input type="text" id="multi_place"
+                                                                class="form-control form-control-sm">
+                                                        </td>
+                                                        <td>
+                                                            <input type="text" id="multi_with_employee"
+                                                                class="form-control form-control-sm">
+                                                        </td>
+                                                        <td>
+                                                            <input type="text" id="multi_remark"
+                                                                class="form-control form-control-sm">
+                                                        </td>
+                                                        <td>
+                                                            <input type="hidden" id="on_duty_details_id" value="0">
+                                                            <button type="button" class="btn btn-sm btn-success"
+                                                                onclick="save_duty_details('multi');"
+                                                                id="ajax_btn">Add</button>
+                                                        </td>
+                                                    </tbody>
+
+                                                </table>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                         <div class="col-lg-12">
                             <div class="card" id="customerList">
@@ -253,6 +324,7 @@ if (isset($_POST['on_duty_details_idd'])) {
                                                             <input type="text" id="remark" class="form-control form-control-sm">
                                                         </td>
                                                         <td>
+                                                             <input type="hidden" id="on_duty_details_id" class="form-control form-control-sm" value="0">
                                                             <button type="button" class="btn btn-sm btn-success" onclick="save_duty_details();" id="ajax_btn">Add</button>
                                                         </td>
                                                     </tbody>
@@ -333,6 +405,20 @@ if (isset($_POST['on_duty_details_idd'])) {
             fetch_duty_details()
         });
 
+             function get_url(emp_id) {
+            window.location.href = "on_duty.php?emp_id=" + emp_id;
+
+        }
+          function toggleMultiDay() {
+        let section = document.getElementById("multiDaySection");
+
+        if (section.style.display === "none") {
+            section.style.display = "block";
+        } else {
+            section.style.display = "none";
+        }
+    }
+
         function funDel(id) {
             $('#deleteRecordModal').modal('show');
             tblname = 'on_duty_details';
@@ -399,109 +485,148 @@ if (isset($_POST['on_duty_details_idd'])) {
                 theEvent.returnValue = false;
                 if (theEvent.preventDefault) theEvent.preventDefault();
             }
-        }
+        } 
+        
+    function save_duty_details(type = '') {
+        const prefix = type === 'multi' ? 'multi_' : '';
+        const emp_id = $('#emp_id').val();
+        const date = $('#' + prefix + 'date').val();
+        const intime = $('#' + prefix + 'intime').val();
+        const outtime = $('#' + prefix + 'outtime').val();
+        const place = $('#' + prefix + 'place').val();
+        const with_employee = $('#' + prefix + 'with_employee').val();
+        const remark = $('#' + prefix + 'remark').val();
 
-        function save_duty_details() {
-            const date = $('#date').val();
-            const intime = $('#intime').val();
-            const outtime = $('#outtime').val();
-            const place = $('#place').val();
-            const with_employee = $('#with_employee').val();
-            const remark = $('#remark').val();
-            const emp_id = $('#emp_id').val();
-            const keyvalue = '<?= $keyvalue; ?>';
-            if (emp_id == "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required',
-                    text: 'Please Select Employee'
-                });
-                return;
-            }
-            if (date === "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required',
-                    text: 'Please enter Date'
-                });
-                return;
-            }
+        const on_duty_details_id = $('#on_duty_details_id').val() || 0;
 
-            if (intime === "" || outtime === "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required',
-                    text: 'Please enter IN /OUT Time'
-                });
-                return;
-            }
-
-            if (place === "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Required',
-                    text: 'Please enter Place Name'
-                });
-                return;
-            }
-
-
-            $.ajax({
-                url: 'ajax_on_duty_save.php',
-                type: 'POST',
-                data: {
-                    date: date,
-                    keyvalue: keyvalue,
-                    emp_id: emp_id,
-                    place: place,
-                    intime: intime,
-                    outtime: outtime,
-                    with_employee: with_employee,
-                    remark: remark
-                },
-                beforeSend: function() {
-                    $('#ajax_btn').prop("disabled", true).text("Saving...");
-                },
-                success: function(response) {
-                    let res = JSON.parse(response);
-                    if (res.status === "success") {
-
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Success',
-                            text: 'Details added successfully',
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            fetch_duty_details();
-                            $('#total_day').val(res.total_days);
-                            $('#date,#intime,#outtime,#place,#with_employee,#remark').val('');
-                        })
-
-                    } else if (res.status === "duplicate") {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Duplicate Entry',
-                            text: res.message
-                        });
-                        return;
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: response
-                        });
-                    }
-                },
-                error: function() {
-                    Swal.fire("Error", "Error while uploading. Try again.");
-                },
-                complete: function() {
-                    $('#ajax_btn').prop("disabled", false).text("Add");
-                }
+        const no_of_days = type === 'multi' ?
+            $('#no_of_days').val() :
+            1;
+        const keyvalue = '<?= $keyvalue; ?>';
+        if (emp_id == "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter Employee First'
             });
+            return;
+        }
+        if (date === "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter Date'
+            });
+            return;
         }
 
+        if (intime === "" || outtime === "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter IN /OUT Time'
+            });
+            return;
+        }
+
+        if (place === "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Required',
+                text: 'Please enter Place Name'
+            });
+            return;
+        } 
+
+        $.ajax({
+            url: 'ajax_on_duty_save.php',
+            type: 'POST',
+            data: {
+                emp_id: emp_id,
+                date: date,
+                keyvalue: keyvalue,
+                no_of_days: no_of_days,
+                place: place,
+                on_duty_details_id: on_duty_details_id,
+                intime: intime,
+                outtime: outtime,
+                with_employee: with_employee,
+                remark: remark
+            },
+            beforeSend: function() {
+                $('#' + prefix + 'ajax_btn').prop("disabled", true).text("Saving...");
+            },
+            success: function(response) {
+                 console.log(response);
+                let res = JSON.parse(response);             
+                  
+                if (res.status === "success") {
+ 
+                        fetch_duty_details();
+                        $('#total_day').val(res.total_days);
+                         $(
+                        '#' + prefix + 'date,' +
+                        '#' + prefix + 'intime,' +
+                        '#' + prefix + 'outtime,' +
+                        '#' + prefix + 'place,' +
+                        '#' + prefix + 'with_employee,' +
+                        '#' + prefix + 'remark'
+                    ).val('');
+
+                    $('#on_duty_details_id').val('0')
+                    
+                }
+                else if (res.status === "duplicate") {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Duplicate Entry',
+                        text: 'Selected dates already exist: ' + res.duplicates.join(', '),
+                        confirmButtonText: 'OK'
+                    });
+                }
+                else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: res.message || 'Something went wrong'
+                    });
+                }
+            },
+
+            error: function() {
+                Swal.fire("Error", "Error while uploading. Try again.");
+            },
+            complete: function() {
+                $('#' + prefix + 'ajax_btn').prop("disabled", false).text("Add");
+            }
+        });
+    }
+function editOnDuty(
+    on_duty_details_id,
+    date,
+    intime,
+    outtime,
+    place,
+    with_employee,
+    remark
+) {
+
+    $('#on_duty_details_id').val(on_duty_details_id);
+    $('#date').val(date);
+    $('#intime').val(intime);
+    $('#outtime').val(outtime);
+    $('#place').val(place);
+    $('#with_employee').val(with_employee);
+    $('#remark').val(remark);
+
+    $('#ajax_btn')
+        .removeClass('btn-success')
+        .addClass('btn-primary')
+        .text('Update');
+
+    $('#date').focus();
+}
+ 
         function fetch_duty_details() {
             let keyvalue = '<?= $keyvalue; ?>';
             jQuery.ajax({

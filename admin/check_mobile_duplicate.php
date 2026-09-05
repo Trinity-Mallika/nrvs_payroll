@@ -3,19 +3,17 @@
 $type = $_POST['type'] ?? '';
 if ($type == 'mobile') {
     $mobile = $_POST['mobile_no'] ?? '';
-    $unit_id = $obj->getvalfield(
-        "employee_master",
-        "unit_id",
-        "mobile_no='$mobile'"
-    );
-    $unit_name = $obj->getvalfield(
-        "unit_master",
-        "unit_name",
-        "unit_id='$unit_id'"
-    );
+    $emp_data = $obj->select_record("employee_master", ["mobile_no" => $mobile]);
+    if (!empty($emp_data)) {
+        $unit_id = $emp_data['unit_id'];
+        $emp_id = $emp_data['emp_id'];
+        $emp_code = $emp_data['emp_code'];
+        $emp_name = $emp_data['first_name'];
+        $unit_name = $obj->getvalfield("unit_master", "unit_name", "unit_id='$unit_id'");
+    }
 
     if (!empty($unit_id)) {
-        echo "EXISTS|" . $unit_name . "|" . $mobile;
+        echo "EXISTS|" . $unit_name . "|" . $mobile . "|" . $emp_code . "|" . $emp_name;
     } else {
         echo "OK";
     }
@@ -24,7 +22,6 @@ if ($type == 'mobile') {
     $emp_data = $obj->select_record("employee_master", ["aadhar_no" => $aadhar_no]);
 
     if (!empty($emp_data)) {
-
         $unit_id = $emp_data['unit_id'];
         $emp_id = $emp_data['emp_id'];
         $emp_code = $emp_data['emp_code'];

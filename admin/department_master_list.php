@@ -81,8 +81,7 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
                                             </select>
 
                                         </div>
-                                        <?php $chkadd = $obj->check_addBtn($pagename, $loginid);
-                                        if ($chkadd == 1) {  ?>
+                                        
                                             <div class="col-lg-4 mb-3 mt-2">
                                                 <br>
                                                 <input type="hidden" name="<?php echo $tblpkey ?>"
@@ -92,7 +91,7 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
                                                 <a href=" <?php echo $pagename ?>" type="button"
                                                     class="btn btn-sm btn-danger add-btn">Reset</a>
                                             </div>
-                                        <?php } ?>
+                                        
                                     </div>
                                 </div>
                             </div>
@@ -120,14 +119,18 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
                                                 <th>Sr No.</th>
                                                 
                                                 <th>Sub Division</th>
+                                                <th>Division</th>
                                                 <th>Department Name</th>
+                                                <th>Reporting Manager Name</th>
                                                 <th>C-Off</th>
+                                                <th> No. Of Employee</th>
 
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody><?php
                                                 $slno = 1;
+                                                $totalemp = 0;
                                                 $search_department = isset($_GET['department_name']) ? $obj->test_input($_GET['department_name']) : '';
                                                 $c_off_filter = isset($_GET['c_off_check']) ? $_GET['c_off_check'] : '';
 
@@ -141,38 +144,55 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
                                                 if ($c_off_filter !== '') {
                                                     $where .= " AND c_off_check = '$c_off_filter'";
                                                 }
+$res = $obj->executequery("
+    SELECT 
+        t.*,
+        em.first_name,
+        em.emp_code,
+        em.department_id,
 
-                                                $res = $obj->executequery("
-                                                    SELECT 
-                                                        t.*,
+        (
+            SELECT COUNT(*)
+            FROM employee_master e2
+            WHERE e2.department_id = em.department_id
+        ) AS department_total,
 
-                                                        cu.fullname as created_name,
-                                                        cu.username as created_username,
-                                                        cu.mobile as created_mobile,
+        cu.fullname AS created_name,
+        cu.username AS created_username,
+        cu.mobile AS created_mobile,
 
-                                                        uu.fullname as updated_name,
-                                                        uu.username as updated_username,
-                                                        uu.mobile as updated_mobile,
-                                                        sm.sub_division_name AS subdivision_name
-                                                       
-                                                    FROM $tblname t
+        uu.fullname AS updated_name,
+        uu.username AS updated_username,
+        uu.mobile AS updated_mobile,
 
-                                                    LEFT JOIN user cu 
-                                                        ON t.createdby = cu.userid
+        sm.sub_division_name AS subdivision_name,
+        divi.division_name
 
-                                                    LEFT JOIN user uu 
-                                                        ON t.updatedby = uu.userid
+    FROM $tblname t
 
-                                                    LEFT JOIN subdivision_master sm 
-                                                        ON t.subdivision_id = sm.subdivision_id                               
+    LEFT JOIN user cu
+        ON t.createdby = cu.userid
 
-                                                    WHERE $where
+    LEFT JOIN employee_master em
+        ON t.emp_id = em.emp_id
 
-                                                    ORDER BY t.$tblpkey DESC
-                                                ");
+    LEFT JOIN user uu
+        ON t.updatedby = uu.userid
 
+    LEFT JOIN subdivision_master sm
+        ON t.subdivision_id = sm.subdivision_id
+
+    LEFT JOIN division_master divi
+        ON sm.division_id = divi.division_id
+
+    WHERE $where
+
+    ORDER BY t.$tblpkey DESC
+");
 
                                                 foreach ($res as $row) {
+
+                                                $totalemp += $row["department_total"];
                                                    
                                                 ?>
                                                 <tr data-details="
@@ -200,13 +220,13 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
                                                     </td>
                                                     
                                                     <td><?php echo $row["subdivision_name"]; ?></td>
+                                                    <td><?php echo $row["division_name"]; ?></td>
                                                     <td><?php echo $row["department_name"]; ?></td>
+                                                    <td><?= $row["emp_code"].'-'. $row["first_name"]; ?></td>
                                                     <td>
                                                         <?= ($row['c_off_check'] == 1) ? 'Allowed' : 'Not Allowed' ?>
                                                     </td>
-
-
-
+<td  class="text-end"><?php echo $row["department_total"]; ?></td>
                                                     <td>
                                                         <ul class="list-inline hstack gap-2 mb-0">
                                                             <?php $chkedit = $obj->check_editBtn($pagename, $loginid);
@@ -236,6 +256,14 @@ $action = (isset($_GET['action'])) ? $obj->test_input($_GET['action']) : '';
                                                 </tr>
                                             <?php } ?>
                                         </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td>Total</td>
+                                                <td  colspan="6" class="text-end" ><?php echo $totalemp
+                                                ?></td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>

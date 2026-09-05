@@ -21,7 +21,6 @@ for ($i = 0; $i < count($months); $i++) {
     $amount = $amounts[$i] ?? 0;
     $remark = $remarks[$i] ?? '';
     $check_paid  = $obj->getvalfield("loan_advance_details", "is_paid", "loan_advance_id='$loan_advance_id' and month=$month and year=$year");
-
     if ($check_paid == 1) {
         continue; // Skip paid record
     }

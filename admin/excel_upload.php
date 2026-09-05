@@ -55,8 +55,22 @@ if (isset($_POST['submit'])) {
                     }
 
                     $totalRecords++;
+                    $isDuplicate = 0;
 
-                    // $isDuplicate = $obj->getvalfield($tblname, "COUNT(*)", "(biomatric_id = '$biomatric_id' OR emp_code = '$emp_code' OR mobile_no = '$mobile_no') and unit_id='$unitid'");
+                    $isDuplicate = $obj->getvalfield($tblname, "COUNT(*)", "(biomatric_id = '$biomatric_id' OR emp_code = '$emp_code') and unit_id='$unitid'");
+                     if ($isDuplicate > 0) {
+                        //$skippedEpicNumbers[] = $biomatric_id;
+
+                        $skippedEpicNumbers[] = [
+                            'row_no'        => $k + 1,
+                            'emp_code'      => $emp_code,
+                            'biomatric_id'  => $biomatric_id,
+                            'mobile_no'     => $mobile_no,
+                            'reason'        => 'Duplicate employee'
+                        ];
+                        $skippedCount++;
+                        continue;
+                    } 
 
                     $conditions = [];
 
@@ -69,16 +83,16 @@ if (isset($_POST['submit'])) {
                
                     $where = implode(" OR ", $conditions);
 
-                 $existing_emp_id = 0;
+                    $existing_emp_id = 0;
 
-if (!empty($where)) {
+                    if (!empty($where)) {
 
-    $existing_emp_id = $obj->getvalfield(
-        $tblname,
-        "emp_id",
-        "($where) AND unit_id='$unitid'"
-    );
-}
+                        $existing_emp_id = $obj->getvalfield(
+                            $tblname,
+                            "emp_id",
+                            "($where) AND unit_id='$unitid'"
+                        );
+                    }
 
                     if ($insertedCount >= $MAX_INSERT) {
                         $skippedEpicNumbers[] = [
@@ -249,7 +263,7 @@ if (!empty($where)) {
 
                     $pf_joining_date   = (!empty($pf_joining_date))
                         ? date('Y-m-d', strtotime($pf_joining_date))
-                        : '0000-00-00';
+                        : null;
 
                     $esic_joining_date = (!empty($esic_joining_date))
                         ? date('Y-m-d', strtotime($esic_joining_date))
@@ -356,7 +370,8 @@ if (!empty($where)) {
                             $form_data_emp_promotion = array(
                                 'emp_id' => $existing_emp_id,
                                 'promotion_date' => $date_of_joining,
-                                'unit_id' => $unitid,                 
+                                'unit_id' => $unitid,      
+                                'is_initial' => '1',               
                                 'type' => 'promotion',                 
                                 'department_id' => $department_id,
                                 'designation_id' => $designation_id,
@@ -405,6 +420,7 @@ if (!empty($where)) {
                                 'promotion_date' => $date_of_joining,
                                 'unit_id' => $unitid,                 
                                 'type' => 'promotion',                 
+                                'is_initial' => '1',    
                                 'department_id' => $department_id,
                                 'designation_id' => $designation_id,
                                 'basic_salary' => $basic_salary,

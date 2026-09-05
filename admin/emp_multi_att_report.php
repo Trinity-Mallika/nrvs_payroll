@@ -189,11 +189,14 @@ table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
                                             </div>
                                             <div class="col-lg-3 mb-3">
                                                 <label for="department_id" class="form-label">Department Name<span
-                                                        class="text-danger fw-bold">*</span></label>
+                                                        class="text-danger fw-bold"> </span></label>
                                                 <select class="form-select chosen-select" name="department_id"
                                                     id="department_id">
                                                     <option value="">Please Select</option>
-                                                    <?php $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_name asc");
+                                                    <?php 
+                                                    $res = $obj->executequery("Select * from department_master where unit_id='$unitid' order by department_name asc");
+                                                    $first = true;
+
                                                     foreach ($res as $key) {
                                                         echo "<option value='" . $key['department_id'] . "'>" . $key['department_name'] . "</option>";
                                                     } ?>
@@ -259,7 +262,7 @@ table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
 
                                             <div class="col-md-3 mt-4 ">
                                                 <input type="submit" class="btn btn-primary add-btn"
-                                                    onclick="return checkinputmaster('department_id,year,month')"
+                                                    onclick="return checkinputmaster('year,month')"
                                                     name="search" value="Search">
                                                 <a href="<?php echo $pagename; ?>" class="btn btn-danger" name="reset"
                                                     id="reset">Reset</a>
@@ -283,13 +286,11 @@ table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
 
                             <div class="card-body">
 
-                                <?php
-
-                                    $fromDate = "$year-$month-01";
-                                    $toDate   = date("Y-m-t", strtotime($fromDate));
-
-                                    /* ---------------- EMPLOYEES ---------------- */
-
+                                <?php 
+                                    $reportFromDate = "$year-$month-01";          // report start
+                                    $fromDate = date('Y-m-d', strtotime("$reportFromDate -1 day")); // fetch start
+                                    $toDate   = date("Y-m-t", strtotime($reportFromDate));  
+                                    /* ---------------- EMPLOYEES ---------------- */ 
                                     $employees = $obj->executequery("
                                         SELECT 
                                         e.emp_id,
@@ -344,12 +345,19 @@ table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
 
  
 
+    // $entryData = $obj->executequery("
+    //     SELECT emp_id, attendance_date, working_hours, overtime, attendance_status
+    //     FROM attendance_entry
+    //     WHERE emp_id IN ($empIdsStr)
+    //     AND attendance_date BETWEEN '$fromDate' AND '$toDate'
+    // ");
+
     $entryData = $obj->executequery("
-        SELECT emp_id, attendance_date, working_hours, overtime, attendance_status
-        FROM attendance_entry
-        WHERE emp_id IN ($empIdsStr)
-        AND attendance_date BETWEEN '$fromDate' AND '$toDate'
-    ");
+SELECT emp_id, attendance_date, working_hours, overtime, attendance_status
+FROM attendance_entry
+WHERE emp_id IN ($empIdsStr)
+AND attendance_date BETWEEN '$fromDate' AND '$toDate'
+");
 
     foreach ($entryData as $row) {
         $entryMap[$row['emp_id']][$row['attendance_date']] = [
@@ -359,17 +367,31 @@ table.dataTable>thead>tr>td:last-child:not(.sorting_disabled) {
         ];
     }
 
-                                    $punchData = $obj->executequery("
-    SELECT 
-        l.emp_id,
-        em.shift_id,
-        l.attendance_date,
-        l.attendance_stamp,
-        l.in_status
-    FROM attendance_log l left join employee_master em on em.emp_id=l.emp_id
-    WHERE l.emp_id IN ($empIdsStr)
-    AND l.attendance_date BETWEEN '$fromDate' AND '$toDate'
-    ORDER BY l.emp_id, l.attendance_stamp
+//                                     $punchData = $obj->executequery("
+//     SELECT 
+//         l.emp_id,
+//         em.shift_id,
+//         l.attendance_date,
+//         l.attendance_stamp,
+//         l.in_status
+//     FROM attendance_log l left join employee_master em on em.emp_id=l.emp_id
+//     WHERE l.emp_id IN ($empIdsStr)
+//     AND l.attendance_date BETWEEN '$fromDate' AND '$toDate'
+//     ORDER BY l.emp_id, l.attendance_stamp
+// ");
+
+$punchData = $obj->executequery("
+SELECT
+    l.emp_id,
+    em.shift_id,
+    l.attendance_date,
+    l.attendance_stamp,
+    l.in_status
+FROM attendance_log l
+LEFT JOIN employee_master em ON em.emp_id=l.emp_id
+WHERE l.emp_id IN ($empIdsStr)
+AND l.attendance_date BETWEEN '$fromDate' AND '$toDate'
+ORDER BY l.emp_id,l.attendance_stamp
 ");
 
                                         
@@ -534,18 +556,27 @@ if (!empty($punchMap[$emp][$pDate][$idx]['out'])) {
 
                                             <?php
 
-                                                $daysInMonth = date('t', strtotime($fromDate));
+                                                // $daysInMonth = date('t', strtotime($fromDate));
 
+                                                $reportFromDate = "$year-$month-01";
+$daysInMonth = date('t', strtotime($reportFromDate));
+$prevEmpId = 0;
                                                 foreach ($employees as $emp) {
 
                                                     $empId = $emp['emp_id'];
 
                                                     for ($d = 1; $d <= $daysInMonth; $d++) {
 
-                                                        $date = date("Y-m-d", strtotime("$year-$month-$d"));
+                                                       // $date = date("Y-m-d", strtotime("$year-$month-$d"));
+                                                        $date = date('Y-m-d', strtotime("$reportFromDate +".($d-1)." days"));
                                                         $punches = $punchMap[$empId][$date] ?? [];
+                                                        $rowStyle = "";
+                                                        if ($prevEmpId != $empId) {
+                                                            $rowStyle = 'style="background:#fff3cd;font-weight:bold;"';
+                                                            $prevEmpId = $empId;
+                                                        }
 
-                                                        echo "<tr>";
+                                                        echo "<tr $rowStyle>";
                                                         echo "<td>{$emp['unit_name']}</td>";
 
                                                         foreach ($showFields as $fid) {

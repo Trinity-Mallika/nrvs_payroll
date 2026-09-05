@@ -60,7 +60,9 @@ body {
 .bg-card-light {
   background-color: #d0e1f7;
 }
-
+.fs-12 {
+  font-size: 12px;
+}
 .h-80 {
   height: 80px;
 }
@@ -407,4 +409,112 @@ header {
 /* Optional: hide scrollbar */
 .scroll-container::-webkit-scrollbar {
   display: none;
+}
+.approve-sec {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+.approve-sec .box {
+  width: calc(100% / 3);
+}
+.modal .leave-list-card.card {
+  border: 1px solid #070d1047;
+  margin-bottom: 10px;
+  padding: 5px;
+}
+.leave-list-card.card {
+  border: 0px;
+  margin-bottom: 5px;
+  padding: 8px 5px;
+}
+.leave-list-card.card .card {
+  background-color: #e0edfe;
+  border: 0px;
+  padding: 10px;
+}
+.leave-list-card .date-text {
+  margin: 2px 5px 5px;
+  color: #12456f;
+  font-size: 15px;
+  font-weight: 600;
+}
+.leave-list-card.card .card h6 {
+  color: var(--main-color);
+}
+/* .leave-list-card .approve-status {
+  padding: 5px 0px 0px 30px;
+} */
+.leave-list-card .approve-status p {
+  position: relative;
+  margin: 3px 0;
+  font-weight: 600;
+}
+
+.leave-list-card .approve-status {
+  position: relative;
+  padding-left: 35px;
+  border-top: 1px solid #dadcdd;
+}
+
+/* Vertical Line */
+.leave-list-card .approve-status::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  top: 11px;
+  bottom: 15px;
+  width: 1px;
+  background: black;
+}
+
+/* Each item */
+.leave-list-card .approve-status .status-list {
+  position: relative;
+  padding: 2px 0;
+}
+
+.leave-list-card .approve-status .status-list p {
+  position: relative;
+  margin: 0;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Dots */
+.leave-list-card .approve-status .status-list p::before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  left: -23px;
+  top: 4px;
+  z-index: 1;
+}
+
+/* Colors */
+.leave-list-card .approve-status p.green::before {
+  background: #013d16;
+}
+
+.leave-list-card .approve-status p.red::before {
+  background: rgb(156, 0, 0);
+}
+
+.leave-list-card .approve-status p.yellow::before {
+  background: rgb(196, 160, 2);
+}
+
+/* Text Colors */
+.leave-list-card .approve-status p.green {
+  color: #013d16;
+}
+
+.leave-list-card .approve-status p.red {
+  color: rgb(156, 0, 0);
+}
+
+.leave-list-card .approve-status p.yellow {
+  color: rgb(196, 160, 2);
 }

@@ -96,6 +96,7 @@ if (isset($_POST['submit'])) {
                         $skippedCount++;
                         continue;
                     }
+                    
                     if ($insertedCount >= $MAX_INSERT) {
                         $skippedEpicNumbers[] = [
                             'row_no'        => $k + 1,

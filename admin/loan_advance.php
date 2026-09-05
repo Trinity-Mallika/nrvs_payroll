@@ -545,7 +545,6 @@ if (isset($_GET[$tblpkey])) {
         }
 
         function generateInstallments(byType) {
-
             let totalAmount = parseInt(document.getElementById('total_amount').value) || 0;
             let startMonth = parseInt(document.getElementById('start_month').value);
             let startYear = parseInt(document.getElementById('start_year').value);
